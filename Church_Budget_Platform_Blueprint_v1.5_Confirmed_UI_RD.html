@@ -1,0 +1,2602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Church Budget Management Platform — Feature Blueprint v1.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* --- Palette: cool limestone, slate, copper patina, brass, stained glass --- */
+  --paper:#F2F3F1;
+  --card:#FFFFFF;
+  --ink:#1F2A33;
+  --ink2:#4A5761;
+  --muted:#6F7B85;
+  --faint:#8F99A1;
+  --line:#DEE2DF;
+  --line2:#EBEEEB;
+  --brass:#A07A33;
+  --verd:#3F7E72;
+  --glass:#3C63A0;
+  --rose:#A6413C;
+  --amber:#C08A2E;
+
+  --s1:#3F7E72;  /* 1 Implementation */
+  --s2:#3C63A0;  /* 2 Approved */
+  --s3:#A07A33;  /* 3 Submitted */
+  --s4:#8A939B;  /* 4 In Development */
+
+  --gantt-fill:#E7F0F5;
+  --gantt-edge:#7FA8C4;
+  --gantt-fill2:#EFEAF6;
+  --gantt-edge2:#9280BC;
+
+  --r:4px;
+  --shadow:0 1px 2px rgba(31,42,51,.05), 0 6px 20px rgba(31,42,51,.05);
+
+  --display:'Spectral', Georgia, 'Times New Roman', serif;
+  --body:'Source Sans 3','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{
+  font-family:var(--body);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:15.5px;
+  line-height:1.66;
+  -webkit-font-smoothing:antialiased;
+  overflow-wrap:break-word;
+  word-break:normal;
+}
+
+/* ---------- Layout shell ---------- */
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px 120px}
+@media(max-width:640px){.wrap{padding:0 14px 80px}}
+
+/* ---------- Top nav ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  background:rgba(242,243,241,.94);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-in{
+  max-width:1280px;margin:0 auto;padding:9px 24px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.topbar .mark{
+  font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.2px;
+  white-space:nowrap;color:var(--ink);
+}
+.topbar .mark small{
+  font-family:var(--mono);font-size:10px;font-weight:500;color:var(--brass);
+  letter-spacing:.1em;text-transform:uppercase;margin-left:8px;
+}
+.navlinks{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+.navlinks a{
+  font-size:12px;color:var(--ink2);text-decoration:none;
+  padding:5px 9px;border-radius:var(--r);white-space:nowrap;
+}
+.navlinks a:hover{background:#E6E9E5;color:var(--ink)}
+@media(max-width:900px){.navlinks{width:100%;margin-left:0;overflow-x:auto}}
+
+/* ---------- Cover ---------- */
+.cover{padding:74px 0 54px;border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--brass);margin-bottom:22px;
+}
+.cover h1{
+  font-family:var(--display);font-weight:400;
+  font-size:clamp(34px,5.6vw,62px);line-height:1.06;letter-spacing:-.015em;
+  max-width:20ch;
+}
+.cover h1 em{font-style:italic;color:var(--ink2)}
+.cover .lede{
+  margin-top:26px;max-width:64ch;font-size:17px;color:var(--ink2);line-height:1.66;
+}
+.cover-meta{
+  margin-top:40px;display:flex;flex-wrap:wrap;gap:0;
+  border-top:1px solid var(--line);
+}
+.cover-meta div{
+  padding:16px 24px 16px 0;margin-right:24px;border-right:1px solid var(--line);
+}
+.cover-meta div:last-child{border-right:none}
+.cover-meta dt{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:5px;
+}
+.cover-meta dd{font-size:14px;font-weight:500}
+
+/* ---------- Sections ---------- */
+section{padding-top:64px}
+.sec-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:8px}
+.arch{
+  flex:none;width:30px;height:38px;
+  border-radius:15px 15px 2px 2px;
+  border:1.5px solid var(--brass);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;color:var(--brass);
+}
+.sec-head h2{
+  font-family:var(--display);font-weight:600;font-size:clamp(23px,3vw,31px);
+  line-height:1.2;letter-spacing:-.01em;
+}
+.sec-sub{color:var(--ink2);max-width:76ch;margin:10px 0 26px 46px;font-size:14.5px}
+@media(max-width:640px){.sec-sub{margin-left:0}}
+
+h3{
+  font-family:var(--display);font-weight:600;font-size:19px;
+  margin:38px 0 12px;letter-spacing:-.005em;
+}
+h4{
+  font-size:12px;font-family:var(--mono);font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--brass);margin:26px 0 10px;
+}
+p{margin-bottom:12px;max-width:76ch}
+b,strong{font-weight:600}
+ul,ol{margin:0 0 14px 20px}
+li{margin-bottom:6px;max-width:80ch}
+a{color:var(--glass)}
+code{font-family:var(--mono);font-size:12.5px;background:#EAEDEA;padding:1px 5px;border-radius:3px}
+
+/* ---------- Cards ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:22px 24px;box-shadow:var(--shadow);margin-bottom:16px;
+}
+.card-tight{padding:16px 18px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+/* ---------- Tables: fluid + wrap controlled ---------- */
+.tw{
+  width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  margin-bottom:18px;box-shadow:var(--shadow);
+}
+table{
+  width:100%;min-width:0;border-collapse:collapse;table-layout:auto;
+  font-size:13.5px;
+}
+.tw table{min-width:620px}
+.tw.narrow table{min-width:460px}
+th{
+  text-align:left;font-weight:600;font-size:10.5px;font-family:var(--mono);
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  padding:11px 14px;border-bottom:1px solid var(--line);
+  background:#FAFBFA;vertical-align:bottom;white-space:nowrap;
+}
+td{
+  padding:11px 14px;border-bottom:1px solid var(--line2);
+  vertical-align:top;overflow-wrap:anywhere;hyphens:auto;
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFBF9}
+td.id,th.id{font-family:var(--mono);font-size:12px;color:var(--brass);white-space:nowrap;width:1%}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.ctr{text-align:center}
+.tw table tr td:first-child{font-weight:500}
+.tw table.plain tr td:first-child{font-weight:400}
+
+/* ---------- Pills & badges ---------- */
+.pill{
+  display:inline-block;font-size:11px;font-family:var(--mono);font-weight:500;
+  padding:2px 8px;border-radius:999px;border:1px solid currentColor;
+  white-space:nowrap;line-height:1.5;
+}
+.p-s1{color:var(--s1)} .p-s2{color:var(--s2)} .p-s3{color:var(--s3)} .p-s4{color:var(--s4)}
+.p-rose{color:var(--rose)} .p-verd{color:var(--verd)} .p-brass{color:var(--brass)}
+.p-mute{color:var(--muted)}
+.solid{color:#fff;border-color:transparent}
+.solid.p-s1{background:var(--s1)} .solid.p-s2{background:var(--s2)}
+.solid.p-s3{background:var(--s3)} .solid.p-s4{background:var(--s4)}
+.solid.p-rose{background:var(--rose)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+.tag{
+  display:inline-block;font-size:10.5px;font-family:var(--mono);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);border:1px solid var(--line);
+  padding:1px 7px;border-radius:3px;background:#FAFBFA;
+}
+
+/* ---------- Callouts ---------- */
+.note{
+  border-left:2px solid var(--brass);background:#FBFAF6;
+  padding:14px 18px;margin:18px 0;font-size:14px;color:var(--ink2);
+}
+.note strong{color:var(--ink)}
+.note.q{border-left-color:var(--rose);background:#FCF6F5}
+.note.ok{border-left-color:var(--verd);background:#F4F9F7}
+
+/* ---------- Wireframe chrome ---------- */
+.wf{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  overflow:hidden;box-shadow:var(--shadow);margin:16px 0 26px;
+}
+.wf-bar{
+  display:flex;align-items:center;gap:9px;padding:9px 14px;
+  background:#F6F7F5;border-bottom:1px solid var(--line);
+}
+.wf-bar .dots{display:flex;gap:5px}
+.wf-bar .dots i{width:9px;height:9px;border-radius:50%;background:#D6DAD6;display:block}
+.wf-bar .url{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:3px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.wf-bar .who{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--faint);white-space:nowrap}
+.wf-body{padding:18px}
+.wf-body.pad0{padding:0}
+.wf-caption{
+  font-size:12.5px;color:var(--muted);margin:-18px 0 26px;padding-left:2px;
+  border-left:2px solid var(--line);padding:6px 0 6px 12px;
+}
+
+/* app chrome inside wireframes */
+.app{display:grid;grid-template-columns:186px 1fr;min-height:340px}
+@media(max-width:760px){.app{grid-template-columns:1fr}.app-side{display:none}}
+.app-side{background:#F8F9F7;border-right:1px solid var(--line);padding:16px 0}
+.app-side .brand{
+  font-family:var(--display);font-size:14px;font-weight:600;padding:0 16px 14px;
+  border-bottom:1px solid var(--line2);margin-bottom:10px;
+}
+.app-side a{
+  display:block;padding:7px 16px;font-size:13px;color:var(--ink2);text-decoration:none;
+}
+.app-side a.on{background:#EAEEEA;color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--brass)}
+.app-side .grp{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);padding:14px 16px 4px;
+}
+.app-main{padding:18px 20px;min-width:0}
+.app-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.app-h h5{font-family:var(--display);font-size:19px;font-weight:600}
+.app-h .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{
+  display:inline-block;font-size:12.5px;font-weight:500;padding:6px 13px;
+  border-radius:var(--r);border:1px solid var(--line);background:#fff;color:var(--ink2);
+  white-space:nowrap;
+}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.brass{background:var(--brass);border-color:var(--brass);color:#fff}
+.btn.sm{font-size:11.5px;padding:4px 10px}
+
+.field{
+  border:1px solid var(--line);border-radius:var(--r);background:#fff;
+  padding:8px 11px;font-size:13px;color:var(--faint);
+}
+.field.lbl{display:block}
+.flabel{
+  font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);display:block;margin-bottom:5px;
+}
+
+/* KPI tiles */
+.kpi{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;background:#fff;min-width:0}
+.kpi .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--display);font-size:27px;font-weight:600;line-height:1.15;margin-top:3px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:11.5px;color:var(--faint);margin-top:2px}
+.kpi.alert{border-color:#E8CFCD;background:#FDF8F7}
+.kpi.alert .v{color:var(--rose)}
+
+/* ---------- Rose window gauge (signature) ---------- */
+.rose-wrap{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.rose-legend{font-size:12.5px;min-width:180px;flex:1}
+.rose-legend div{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid var(--line2)}
+.rose-legend span:last-child{font-family:var(--mono)}
+
+/* ---------- Gantt (timeblock pattern) ---------- */
+.gantt{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
+.gantt-scroll{overflow-x:auto}
+.gantt-inner{min-width:660px;position:relative}
+.gm{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid var(--line);background:#FAFBFA}
+.gm .gl{border-right:1px solid var(--line)}
+.gm .mrow{display:grid;grid-template-columns:repeat(3,1fr)}
+.gm .mh{
+  text-align:center;padding:7px 4px;
+  font-family:var(--mono);font-size:11px;color:var(--ink2);
+  border-left:1px solid var(--line2);
+}
+.grow{
+  display:grid;grid-template-columns:170px 1fr;
+  border-bottom:1px solid var(--line2);position:relative;
+}
+.grow:last-child{border-bottom:none}
+.grow .gl{
+  padding:9px 12px;font-size:12.5px;overflow:hidden;
+  border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;
+}
+.grow .gl b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grow .gl small{color:var(--faint);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{
+  position:relative;display:grid;grid-template-columns:repeat(12,1fr);
+  align-items:center;min-height:40px;
+  background-image:linear-gradient(to right,var(--line2) 0 1px,transparent 1px 100%);
+  background-size:calc(100%/12) 100%;
+}
+.grow.head .track{min-height:16px}
+.bar{
+  grid-row:1;align-self:center;z-index:2;
+  height:26px;border-radius:999px;margin:0 3px;
+  background:var(--gantt-fill);border:1px solid var(--gantt-edge);
+  display:flex;align-items:center;padding:0 11px;gap:7px;
+  font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;
+}
+.bar.v2{background:var(--gantt-fill2);border-color:var(--gantt-edge2)}
+.bar.v3{background:#F3EFE4;border-color:var(--brass)}
+.bar i{width:7px;height:7px;border-radius:50%;background:var(--gantt-edge);flex:none}
+.bar.v2 i{background:var(--gantt-edge2)}
+.bar.v3 i{background:var(--brass)}
+.line{
+  grid-row:1;align-self:center;z-index:2;position:relative;
+  height:2px;background:var(--gantt-edge);border-radius:2px;margin:0 3px;
+}
+.line.v2{background:var(--gantt-edge2)}
+.line::before,.line::after{
+  content:'';position:absolute;width:2px;height:12px;background:inherit;top:-5px;border-radius:1px;
+}
+.line::before{left:0}.line::after{right:0}
+.today{
+  position:absolute;top:0;bottom:0;width:1.5px;background:var(--rose);opacity:.7;z-index:5;
+  pointer-events:none;
+}
+.today-pill{
+  position:absolute;z-index:6;transform:translateX(-50%);
+  background:#F7E3E1;color:var(--rose);border-radius:999px;
+  font-family:var(--mono);font-size:10px;padding:2px 9px;white-space:nowrap;top:3px;
+  pointer-events:none;
+}
+.milestone{
+  grid-row:1;align-self:center;z-index:3;justify-self:center;
+  width:11px;height:11px;background:var(--brass);transform:rotate(45deg);border-radius:2px;
+}
+
+/* ---------- Conversation log ---------- */
+.log{border:1px solid var(--line);border-radius:var(--r);background:#fff;overflow:hidden}
+.log-pin{background:#FBFAF6;border-bottom:1px solid var(--line);padding:12px 16px}
+.log-scroll{max-height:330px;overflow-y:auto;padding:4px 0}
+.entry{display:flex;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line2)}
+.entry:last-child{border-bottom:none}
+.av{
+  flex:none;width:28px;height:28px;border-radius:50%;background:#EAEEEA;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink2);font-weight:600;
+}
+.av.sys{background:#F1EFE7;color:var(--brass)}
+.entry .body{min-width:0;flex:1}
+.entry .meta{
+  font-size:11.5px;color:var(--faint);margin-bottom:2px;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+}
+.entry .meta b{color:var(--ink2);font-weight:600}
+.entry .txt{font-size:13.5px;overflow-wrap:anywhere}
+.entry.system .txt{color:var(--muted);font-size:12.5px}
+.entry .edited{font-size:11px;color:var(--faint);font-style:italic}
+
+/* ---------- Flow diagram ---------- */
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:18px 0}
+.step{
+  flex:1;min-width:150px;border:1px solid var(--line);background:#fff;
+  padding:13px 15px;position:relative;
+}
+.step + .step{border-left:none}
+@media(max-width:700px){.step{min-width:100%;border-left:1px solid var(--line)!important;border-top:none}
+ .step:first-child{border-top:1px solid var(--line)}}
+.step .n{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--brass);
+  text-transform:uppercase;margin-bottom:5px;
+}
+.step .t{font-weight:600;font-size:14px;margin-bottom:3px}
+.step .d{font-size:12px;color:var(--muted)}
+.step.gate{background:#FBFAF6}
+
+/* ---------- Decisions ---------- */
+.dec td:first-child{white-space:nowrap}
+.chk{
+  display:inline-block;width:13px;height:13px;border:1.5px solid var(--muted);
+  border-radius:2px;vertical-align:-2px;
+}
+.rec{color:var(--verd);font-weight:600}
+
+/* ---------- Misc ---------- */
+.divider{height:1px;background:var(--line);margin:56px 0 0}
+.mono-sm{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.scroll-hint{font-size:11.5px;color:var(--faint);font-style:italic;margin:-10px 0 14px}
+.footer{
+  margin-top:70px;padding-top:26px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+
+
+/* ---------- v1.2: confirmed P3 row + stepper + progress ---------- */
+.prow{grid-template-columns:minmax(0,1fr) 176px 96px 120px 30px !important}
+.prow > span:nth-child(5){text-align:right;color:var(--faint);font-size:11px}
+@media(max-width:820px){
+  .prow{grid-template-columns:minmax(0,1fr) 96px 30px !important;row-gap:6px}
+  .prow > .stage{grid-column:1/-1;order:4}
+  .prow > .prog{grid-column:1/-1;order:5}
+  .prow-head > span:nth-child(2),.prow-head > span:nth-child(4){display:none}
+}
+.stage small{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+.stage small.hot{color:var(--rose);font-weight:600}
+.amt2{font-family:var(--mono);font-size:13px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.amt2 small{display:block;font-size:10.5px;color:var(--faint)}
+.prog{display:flex;align-items:center;gap:8px;min-width:0}
+.pb{flex:1;max-width:72px;height:6px;border-radius:999px;background:#EAEDEA;overflow:hidden}
+.pb i{display:block;height:100%;background:var(--verd);border-radius:999px}
+.prog .pc{font-family:var(--mono);font-size:11.5px;color:var(--ink2);white-space:nowrap}
+.prog .na{font-size:11px;color:var(--faint);font-style:italic}
+.stepline{display:flex;align-items:center;flex-wrap:wrap;row-gap:8px;margin:2px 0 4px}
+.sl{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;white-space:nowrap;color:var(--ink2)}
+.sl b{font-weight:600}
+.sl small{color:var(--faint);font-size:10.5px}
+.sl.ok{border-color:#B9D2C9;color:var(--verd);background:#F5FAF8}
+.sl.wait{border-color:#E3C2BF;color:var(--rose);background:#FCF6F5}
+.sl.todo{border-style:dashed;color:var(--faint)}
+.conn{width:16px;height:1.5px;background:var(--line);flex:none}
+.conn.ok{background:#B9D2C9}
+.bar{position:relative}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;background:rgba(63,126,114,.22);border-radius:999px 0 0 999px}
+.bar .fill.full{border-radius:999px}
+.bar span{position:relative;z-index:1}
+.bar.plan{background:#F5F6F4;border-style:dashed;color:var(--muted)}
+.bar.plan i{background:var(--faint)}
+
+
+/* ---------- v1.5: confirmed application UI (P2 v3) ---------- */
+.appui{font-size:14px;color:var(--ink)}
+.appui .h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.appui .lab{font-size:12.5px;font-weight:600;color:var(--muted)}
+.appui .scope-btn{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px 11px;white-space:nowrap}
+.appui .scope-btn .chip{font-size:11px;font-weight:700;background:#EDF0EC;border-radius:999px;padding:0 8px;color:var(--ink2)}
+.appui .tabs2{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px 0 14px;overflow-x:auto}
+.appui .tabs2 span{padding:8px 12px;font-size:12.5px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+.appui .tabs2 .on{color:var(--ink);font-weight:600;border-bottom-color:var(--brass)}
+.appui .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:13px}
+@media(max-width:1000px){.appui .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.appui .kpis{grid-template-columns:minmax(0,1fr)}}
+.appui .kpi2{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:6px;padding:13px 15px;min-width:0}
+.appui .kpi2.alert{border-left-color:var(--rose)}
+.appui .kpi2 .k{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.appui .kpi2 .v{font-size:22px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.appui .kpi2.alert .v{color:var(--rose)}
+.appui .kpi2 .d{font-size:12px;color:var(--muted);margin-top:4px}
+.appui .duo2{display:grid;grid-template-columns:1.15fr 1fr;gap:13px;margin-bottom:13px;align-items:stretch}
+@media(max-width:900px){.appui .duo2{grid-template-columns:minmax(0,1fr)}}
+.appui .acard{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px;min-width:0}
+.appui .acard h6{font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:12px}
+.appui .acard h6 .more{float:right;color:var(--glass);font-size:12px}
+.appui .bbar{position:relative;height:24px;border-radius:6px;overflow:hidden;background:#EFF1EE;display:flex;margin-top:24px}
+.appui .bbar .seg{height:100%}
+.appui .cmark{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink);border-radius:2px}
+.appui .clbl{position:absolute;top:-22px;transform:translateX(-50%);font-size:11px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.appui .bover{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(163,66,62,.16) 0 5px,rgba(163,66,62,.32) 5px 10px)}
+.appui .lrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.appui .lrow.total{border-bottom:none;font-weight:700;padding-top:9px}
+.appui .lrow .lbl{flex:1;min-width:0}
+.appui .lrow .amt{font-variant-numeric:tabular-nums;text-align:right;min-width:88px}
+.appui .lrow .pct{font-variant-numeric:tabular-nums;text-align:right;min-width:48px;color:var(--muted);font-size:12px}
+.appui .arow{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line2)}
+.appui .arow:last-child{border-bottom:none}
+.appui .tagpill{flex:none;width:58px;text-align:center;font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;padding:2px 6px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink2);background:#fff;margin-top:1px}
+.appui .tagpill.rose{border-color:#E5C6C4;color:var(--rose);background:#FBF4F3}
+.appui .tagpill.brass{border-color:#E2D3B4;color:var(--brass);background:#FBF8F1}
+.appui .arow b{display:block;font-size:13px;font-weight:600;line-height:1.35}
+.appui .arow span{display:block;font-size:12px;color:var(--muted)}
+.appui table.tbl2{width:100%;border-collapse:collapse;font-size:12.5px}
+.appui .tbl2 th{font-size:11.5px;font-weight:600;color:var(--muted);text-align:left;padding:0 10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.appui .tbl2 th.r,.appui .tbl2 td.r{text-align:right}
+.appui .tbl2 td{padding:10px;border-bottom:1px solid var(--line2)}
+.appui .tbl2 tr:last-child td{border-bottom:none}
+.appui .tbl2 td:first-child{font-weight:600}
+.appui .tbl2 td.r{font-variant-numeric:tabular-nums;white-space:nowrap}
+.appui .covcell{display:inline-grid;grid-template-columns:52px 44px;align-items:center;gap:7px}
+.appui .covbar{width:52px;height:5px;border-radius:999px;background:#EFF1EE;overflow:hidden}
+.appui .covbar i{display:block;height:100%;background:var(--verd);border-radius:999px}
+.appui .covbar.warn i{background:var(--brass)}
+.appui .covbar.over i{background:var(--rose)}
+.appui .covcell .cv{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- Responsive helpers ---------- */
+summary{list-style:none;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary::marker{content:''}
+
+.cols3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px}
+@media(max-width:900px){
+  .cols3{grid-template-columns:minmax(0,1fr);gap:14px}
+  .cols3 > div:nth-child(2){order:3}
+  .cols3 > div:nth-child(3){order:2}
+  .cols2{grid-template-columns:minmax(0,1fr)}
+}
+
+/* projects register row */
+.prow{
+  display:grid;grid-template-columns:minmax(0,1fr) 110px 96px 78px 62px;
+  gap:10px;align-items:center;
+}
+.prow > span:nth-child(5){text-align:right;color:var(--faint);font-size:11px}
+@media(max-width:820px){
+  .prow{grid-template-columns:minmax(0,1fr) 96px;row-gap:6px}
+  .prow > span:nth-child(3),.prow > span:nth-child(4){text-align:left;font-size:12px}
+  .prow > span:nth-child(5){display:none}
+  .prow-head > span:nth-child(3),.prow-head > span:nth-child(4){display:none}
+}
+
+@media print{
+  .topbar{display:none}
+  body{background:#fff;font-size:11pt}
+  .card,.wf,.tw,.gantt{box-shadow:none;break-inside:avoid}
+  section{break-before:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="mark">Church Budget Platform <small>Blueprint v1.5 · confirmed</small></div>
+    <nav class="navlinks">
+      <a href="#decisions">1 · Decisions</a>
+      <a href="#personas">2 · Personas</a>
+      <a href="#approval">3 · Approval</a>
+      <a href="#ia">4 · Sitemap</a>
+      <a href="#data">5 · Data</a>
+      <a href="#pages">6 · Pages</a>
+      <a href="#conversation">7 · Conversation</a>
+      <a href="#alerts">8 · Alerts</a>
+      <a href="#components">9 · Components</a>
+      <a href="#build">10 · Build plan</a>
+      <a href="#clickup">11 · ClickUp ref</a>
+      <a href="#h2h">12 · Head-to-head</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ COVER ============ -->
+<header class="cover">
+  <div class="eyebrow">Feature Blueprint v1.5 · P2 v3 merged · Regional Director lens</div>
+  <h1>Church Budget<br>Management <em>Platform</em></h1>
+  <p class="lede">
+    A single place for 22 country teams to register humanitarian projects, move them through
+    budget approval, and see where every dollar sits — replacing 22 Excel tabs, a Dynamics 365
+    lookup, and a mailbox full of status chasing.
+  </p>
+  <p class="lede" style="font-size:15px;color:var(--muted);margin-top:14px">
+    This document is a blueprint, not code. Version 1.1 applies all fifteen confirmed decisions of
+    27 August: the approval engine now runs in-platform from status 4 to 3 only, the church&rsquo;s
+    formal approval is tracked as an external gate through &ldquo;Decision Point&rdquo; and CHaS, and
+    the Regional Manager closes 3&thinsp;→&thinsp;2 manually. Four remarks remain open — they are
+    listed at the end of Section 1 and none of them blocks the build.
+  </p>
+  <dl class="cover-meta">
+    <div><dt>Prepared for</dt><dd>Asia Area — Humanitarian Projects</dd></div>
+    <div><dt>Prepared by</dt><dd>Adeptio</dd></div>
+    <div><dt>Date</dt><dd>27 August 2026</dd></div>
+    <div><dt>Next step</dt><dd>Demo build — approved</dd></div>
+    <div><dt>Scope</dt><dd>22 countries · in-platform 4→3 · external gate 3→2</dd></div>
+  </dl>
+</header>
+
+<!-- ============ 1. DECISIONS ============ -->
+<section id="decisions">
+  <div class="sec-head"><div class="arch">1</div><h2>Confirmed decisions</h2></div>
+  <p class="sec-sub">
+    All fifteen questions answered on 27 August 2026. The table records the confirmed answer and
+    where in this document it has been applied. Nothing here is open — the four residual remarks
+    below the table are refinements, not blockers.
+  </p>
+
+  <div class="tw">
+    <table class="dec">
+      <thead>
+        <tr>
+          <th class="id">#</th>
+          <th style="min-width:170px">Question</th>
+          <th style="min-width:260px">Confirmed answer</th>
+          <th style="min-width:130px">Applied in</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">D-01</td><td>Status ladder &amp; who moves it</td>
+          <td>In-platform approval runs <b>4&thinsp;→&thinsp;3 only</b>. The request then goes out through
+          <b>&ldquo;Decision Point&rdquo;</b> and <b>CHaS</b> for the church&rsquo;s formal approval;
+          <b>M1 Regional Manager moves 3&thinsp;→&thinsp;2 manually</b> once those systems confirm.
+          Between 3 and 2, each external system is tracked with two click-done actions —
+          <em>Request submitted</em> and <em>Request approved</em> — plus a remark.</td>
+          <td>§3 flow · §6 approval strip &amp; gate tracker · §8 alerts</td></tr>
+        <tr><td class="id">D-02</td><td>Personas &amp; approval roles</td>
+          <td><b>M2 Area Manager</b> completes Process&nbsp;4 with <em>Request submitted</em> and raises to
+          <b>M1 Regional Manager</b>, who runs Process&nbsp;3: <em>Request approved</em> or
+          <em>Return to Review</em>. No M4 tier — the fourth step is the external gate.</td>
+          <td>§2 personas &amp; matrix · §3 · §6</td></tr>
+        <tr><td class="id">D-03</td><td>Routing by amount</td>
+          <td><b>Amount-threshold routing, configured in Admin.</b> Demo default: every project passes
+          the external gate; thresholds can exempt small amounts (see remark R-1).</td>
+          <td>§6 P9 Admin · remark R-1</td></tr>
+        <tr><td class="id">D-04</td><td>Return vs reject</td>
+          <td><b>Both.</b> <em>Return to Review</em> → back to status 4 with mandatory reason;
+          <em>Reject</em> → Declined, leaves the queue.</td>
+          <td>§3 branch table</td></tr>
+        <tr><td class="id">D-05</td><td>M1 data scope</td>
+          <td><b>Assigned countries only</b>, with a read-only global roll-up on the dashboard.</td>
+          <td>§2 matrix · §6 P2</td></tr>
+        <tr><td class="id">D-06</td><td>Gantt edit rights</td>
+          <td><b>View for all; edit for the project owner, M1 and above.</b> M2 edits only projects
+          they own.</td>
+          <td>§2 matrix · §6 P5</td></tr>
+        <tr><td class="id">D-07</td><td>Gantt integration</td>
+          <td><b>Mini block in-page; &ldquo;Open full editor&rdquo; deep-links to Timeblock.</b></td>
+          <td>§6 P3, P4, P5</td></tr>
+        <tr><td class="id">D-08</td><td>Currency</td>
+          <td><b>USD only for v1.</b></td>
+          <td>§5 data model</td></tr>
+        <tr><td class="id">D-09</td><td>CHaS direction</td>
+          <td><b>Read-only pull, one direction.</b> Write-back via API sits on the roadmap.</td>
+          <td>§10 out of scope</td></tr>
+        <tr><td class="id">D-10</td><td>Authentication</td>
+          <td><b>Standalone for demo, SSO-ready</b> — the sign-in UI is pre-built with the
+          Microsoft&nbsp;365 button present but stubbed.</td>
+          <td>§6 P1 · §10</td></tr>
+        <tr><td class="id">D-11</td><td>Day counting</td>
+          <td><b>Per-stage clocks.</b> A counter starts at every status change and runs until the next
+          stage; the 3&thinsp;→&thinsp;2 sub-actions (submitted / approved, per external system) each
+          carry their own count.</td>
+          <td>§3 clock model · §5 derived values · §6</td></tr>
+        <tr><td class="id">D-12</td><td>Note editing</td>
+          <td><b>Edit yes</b>, with a visible <em>edited by / at</em> stamp; <b>delete no.</b></td>
+          <td>§7 rules</td></tr>
+        <tr><td class="id">D-13</td><td>&ldquo;Decision Point&rdquo; identity</td>
+          <td><b>Out of scope until identified</b> as an integration — but it now appears as a
+          <em>manually tracked</em> gate in the approval flow per D-01.</td>
+          <td>§3 · §6 P9 integrations</td></tr>
+        <tr><td class="id">D-14</td><td>Ownership</td>
+          <td><b>One accountable owner + optional backup.</b> Owner name renders on the Gantt.</td>
+          <td>§6 owner modal · P5</td></tr>
+        <tr><td class="id">D-15</td><td>Language</td>
+          <td><b>English only</b>, UI strings externalised.</td>
+          <td>§10</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="scroll-hint">Table scrolls horizontally on narrow screens.</p>
+
+  <h3>Residual remarks before dev</h3>
+  <div class="tw narrow">
+    <table>
+      <thead><tr><th class="id">#</th><th style="min-width:230px">Remark</th><th style="min-width:220px">Working assumption in this blueprint</th></tr></thead>
+      <tbody>
+        <tr><td class="id">R-1</td>
+          <td>D-03 threshold semantics: with only one in-platform approval step, what does the amount
+          threshold route?</td>
+          <td>Threshold decides whether the external gate is required. Above threshold → Decision Point
+          + CHaS mandatory; below → M1 may mark Approved directly after review. Demo default:
+          gate required for all.</td></tr>
+        <tr><td class="id">R-2</td>
+          <td>Who clicks the external-gate buttons — M1 only, or can M2 record them?</td>
+          <td>M1 only, matching D-01 (&ldquo;performed manually by Regional Manager&rdquo;). M2 sees the
+          gate read-only. One permission flag to change.</td></tr>
+        <tr><td class="id">R-3</td>
+          <td>Can a Declined project be revived, or must it be re-created?</td>
+          <td>Re-created with a new ID; the declined record stays for the audit trail.</td></tr>
+        <tr><td class="id">R-4</td>
+          <td>Reference formats for the gate — is there a Decision Point reference number, and what
+          does a CHaS minute number look like?</td>
+          <td>Free-text reference fields on both <em>approved</em> clicks; format validation added once
+          samples are provided.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <strong>Change log v1.0 → v1.1.</strong> Approval engine rebuilt around the external gate (§3);
+    M4 HQ tier removed and M2 renamed Area Manager (§2); single Days-in-Queue clock replaced by
+    per-stage clocks with sub-action counters (§3, §5); approval strip, project detail, inbox and
+    admin screens redrawn (§6); alert catalogue re-cut to the new flow (§8); external-gate tracker
+    added to the component inventory (§9).
+    <br><br><strong>Change log v1.1 → v1.2.</strong> Confirmed P3 row design merged into §6 — four
+    key-status columns, one-line stage stepper and implementation-progress bars, with the two UI
+    semantics locked (progress = implementation phases only; gate compressed to two pills in the row
+    view). ClickUp competitive reference added as §11, splitting adopted basics from roadmap items.
+    <br><br><strong>Change log v1.2 → v1.3.</strong> Three roadmap items promoted into v1 with refined
+    specs: RM-3 viewer profiles (built-in read-only accounts with selective view scope), RM-4
+    multi-dashboards from a widget library with four pre-populated demo dashboards, RM-7 mobile quick
+    view (device-detected; approvals + updates only, with a period filter). Remaining roadmap items
+    are now selectable checkboxes in §11. New mocks: dashboard tabs on P2, P10 mobile quick view.
+    Components C-18 and C-19 added; build plan extended to eleven items.
+    <br><br><strong>Change log v1.3 → v1.4.</strong> §12 added: feature-by-feature comparison of this
+    platform (v1 + roadmap) against ClickUp and monday.com, re-verified against current reviews.
+    Typography audited against community legibility feedback: body face moved to Source Sans 3 at
+    15.5px/1.66, bold softened to 600 throughout, secondary greys darkened for small-text contrast,
+    tabular numerals on all money and day counts, and an optional Atkinson Hyperlegible comfort-font
+    setting added to the platform spec.
+    <br><br><strong>Change log v1.4 → v1.5.</strong> Confirmed P2 v3 merged into §6: uniform KPI
+    anatomy, budget bar vs ceiling replacing the rose-window gauge, aligned coverage cells, and the
+    live country-scope engine specified as a rule for every dashboard. Application type system locked
+    to a single family (Source Sans 3) in §9, separate from the document type. §11 gains the
+    Regional Director lens: five oversight features added to v1 (RD-1…RD-5) and four new selectable
+    roadmap items (RM-9…RM-12). Component C-20 scope selector added.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 2. PERSONAS ============ -->
+<section id="personas">
+  <div class="sec-head"><div class="arch">2</div><h2>Personas &amp; permission matrix</h2></div>
+  <p class="sec-sub">
+    Four roles, confirmed under D-02. Three sit on a single vertical ladder — a team member maintains
+    the work, an area manager prepares and submits it, a regional manager reviews and carries it
+    through the external gate — and the fourth, Administrator, stands outside the ladder and never
+    approves money.
+  </p>
+
+  <div class="grid g4">
+    <div class="card card-tight">
+      <div class="tag">Administrator</div>
+      <h3 style="margin:8px 0 6px;font-size:17px">System steward</h3>
+      <p style="font-size:13px;color:var(--ink2);margin:0">
+        Configures users, roles, thresholds, alert rules, master data and integrations.
+        Sees all 22 countries. <strong>Cannot approve budget</strong> — separation of duty.
+      </p>
+    </div>
+    <div class="card card-tight">
+      <div class="tag">M1 · Regional Manager</div>
+      <h3 style="margin:8px 0 6px;font-size:17px">Reviewer &amp; gatekeeper</h3>
+      <p style="font-size:13px;color:var(--ink2);margin:0">
+        Runs Process 3 — <em>Request approved</em> or <em>Return to Review</em> — then tracks the
+        request through Decision Point and CHaS and <strong>manually marks 3&thinsp;→&thinsp;2</strong>
+        when both confirm. Scope: assigned countries only.
+      </p>
+    </div>
+    <div class="card card-tight">
+      <div class="tag">M2 · Area Manager</div>
+      <h3 style="margin:8px 0 6px;font-size:17px">Preparer</h3>
+      <p style="font-size:13px;color:var(--ink2);margin:0">
+        Owns Process 4: completes the request and raises it with <em>Request submitted</em>, moving
+        the project to status 3. The stage clock on M1&rsquo;s desk starts at that click.
+      </p>
+    </div>
+    <div class="card card-tight">
+      <div class="tag">M3 · Team Member</div>
+      <h3 style="margin:8px 0 6px;font-size:17px">Project officer</h3>
+      <p style="font-size:13px;color:var(--ink2);margin:0">
+        Registers projects, maintains the timeline, posts notes. Drafts feed M2&rsquo;s submission.
+        Sees only their own country. The heaviest daily user.
+      </p>
+    </div>
+  </div>
+
+  <div class="note ok">
+    <strong>Viewer profiles — promoted from RM-3, now v1.</strong> A built-in read-only profile mapped
+    to a normal login. On the user record the Administrator assigns a <em>view scope</em> — whole
+    area, selected countries, or named projects — and the account sees the register, dashboards and
+    timelines inside that scope with every action hidden: no posting, no editing, no approval
+    controls, no gate. Built for HQ observers, auditors and church leadership who need sight without
+    touch.
+  </div>
+
+  <div class="note">
+    <strong>Where the fourth step went.</strong> v1.0 assumed an M4 HQ tier. D-01 and D-02 replace it:
+    the fourth step is not a person in this platform but the church&rsquo;s own systems —
+    &ldquo;Decision Point&rdquo; and CHaS — tracked here as an external gate that M1 updates manually.
+  </div>
+
+  <h3>Permission matrix</h3>
+  <div class="tw">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width:230px">Capability</th>
+          <th class="ctr">Admin</th>
+          <th class="ctr">M1 Regional</th>
+          <th class="ctr">M2 Area</th>
+          <th class="ctr">M3 Team</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Create / edit project record</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td></tr>
+        <tr><td>Delete project</td><td class="ctr">✓</td><td class="ctr">—</td><td class="ctr">—</td><td class="ctr">—</td></tr>
+        <tr><td>Edit budget amount</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">Draft only</td></tr>
+        <tr><td>Process 4 — <em>Request submitted</em> (4→3)</td><td class="ctr">—</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">—</td></tr>
+        <tr><td>Process 3 — <em>Request approved</em> / <em>Return to Review</em></td><td class="ctr">—</td><td class="ctr">✓</td><td class="ctr">—</td><td class="ctr">—</td></tr>
+        <tr><td>External gate — record submitted / approved for Decision Point &amp; CHaS</td><td class="ctr">—</td><td class="ctr">✓</td><td class="ctr">Read-only (R-2)</td><td class="ctr">Read-only</td></tr>
+        <tr><td>Mark Approved — manual 3→2</td><td class="ctr">—</td><td class="ctr">✓</td><td class="ctr">—</td><td class="ctr">—</td></tr>
+        <tr><td>View Gantt</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td></tr>
+        <tr><td>Edit Gantt (D-06)</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">Own projects</td><td class="ctr">Own projects</td></tr>
+        <tr><td>Post note / question / decision</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td></tr>
+        <tr><td>Pin a decision to the project header</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">—</td></tr>
+        <tr><td>Set country budget ceiling</td><td class="ctr">✓</td><td class="ctr">✓</td><td class="ctr">—</td><td class="ctr">—</td></tr>
+        <tr><td>Data scope</td><td class="ctr">All 22</td><td class="ctr">Assigned countries</td><td class="ctr">Own country / area</td><td class="ctr">Own country</td></tr>
+        <tr><td>Manage users, thresholds &amp; alert templates</td><td class="ctr">✓</td><td class="ctr">—</td><td class="ctr">—</td><td class="ctr">—</td></tr>
+        <tr><td>Import / export &amp; API config</td><td class="ctr">✓</td><td class="ctr">Export only</td><td class="ctr">Export only</td><td class="ctr">—</td></tr>
+        <tr><td>View audit log</td><td class="ctr">✓</td><td class="ctr">Own region</td><td class="ctr">Own country</td><td class="ctr">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Viewer profile — capability summary</h4>
+  <div class="tw narrow">
+    <table class="plain">
+      <thead><tr><th style="min-width:190px">Capability</th><th>Viewer (read-only)</th></tr></thead>
+      <tbody>
+        <tr><td>See register, project detail, dashboards, timeline</td><td>✓ — within assigned scope only</td></tr>
+        <tr><td>View scope options</td><td>Whole area · selected countries · named projects (set by Admin)</td></tr>
+        <tr><td>Post notes / questions / decisions</td><td>— composer hidden</td></tr>
+        <tr><td>Any approval, gate or edit action</td><td>—</td></tr>
+        <tr><td>Watch a project (B-1) &amp; receive its alerts</td><td>✓</td></tr>
+        <tr><td>Export</td><td>✓ — scoped data only</td></tr>
+        <tr><td>Personal dashboards (C-18)</td><td>✓ — widgets respect scope</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 3. APPROVAL ============ -->
+<section id="approval">
+  <div class="sec-head"><div class="arch">3</div><h2>Budget approval flow</h2></div>
+  <p class="sec-sub">
+    Confirmed shape: the platform approves from 4 to 3 only. The church&rsquo;s formal approval
+    happens outside — in &ldquo;Decision Point&rdquo; and CHaS — and the platform tracks that passage
+    as an external gate with two click-done actions per system. When both confirm, M1 closes
+    3&thinsp;→&thinsp;2 by hand.
+  </p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="n">Status 4</div>
+      <div class="t">In Development</div>
+      <div class="d">M3 drafts; M2 completes the request. Stage clock: time in status 4.</div>
+    </div>
+    <div class="step gate">
+      <div class="n">Process 4 · M2</div>
+      <div class="t">Request submitted</div>
+      <div class="d">One click by the Area Manager. Status → 3. Stage-3 clock starts; email to M1.</div>
+    </div>
+    <div class="step">
+      <div class="n">Process 3 · M1</div>
+      <div class="t">Request approved / Return to Review</div>
+      <div class="d">Regional Manager reviews. Return → back to 4 with reason. Approve → external gate opens.</div>
+    </div>
+    <div class="step gate">
+      <div class="n">External gate</div>
+      <div class="t">Decision Point + CHaS</div>
+      <div class="d">Per system: <em>Request submitted</em> ✓ then <em>Request approved</em> ✓, each with a remark and its own day count. Recorded manually by M1.</div>
+    </div>
+    <div class="step">
+      <div class="n">Status 2 · manual</div>
+      <div class="t">Approved</div>
+      <div class="d">M1 marks 3&thinsp;→&thinsp;2 once both systems confirm; reference numbers required. Stage-3 clock stops.</div>
+    </div>
+    <div class="step">
+      <div class="n">Status 1</div>
+      <div class="t">Implementation</div>
+      <div class="d">Approved and ongoing. Timeline becomes the primary tracking view.</div>
+    </div>
+  </div>
+
+  <h4>Actions and outcomes</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="min-width:150px">Action · actor</th><th style="min-width:150px">Resulting state</th><th style="min-width:130px">Clocks</th><th style="min-width:140px">Required input</th><th>Notified</th></tr></thead>
+      <tbody>
+        <tr><td><em>Request submitted</em> · M2</td><td><span class="pill p-s3"><span class="dot" style="background:var(--s3)"></span>3 Submitted</span></td><td>Stage-4 clock stops, stage-3 starts</td><td>Optional remark</td><td>M1 + owner</td></tr>
+        <tr><td><em>Request approved</em> · M1</td><td>Status 3 · external gate opens</td><td>Review counter stops; gate counters begin</td><td>Optional remark</td><td>M2 + owner</td></tr>
+        <tr><td><em>Return to Review</em> · M1</td><td><span class="pill p-s4"><span class="dot" style="background:var(--s4)"></span>4 In Development</span></td><td>Stage-3 clock stops; stage-4 restarts</td><td>Reason — mandatory</td><td>M2 + owner</td></tr>
+        <tr><td><em>Reject</em> · M1</td><td><span class="pill p-rose">Declined</span></td><td>All clocks stop</td><td>Reason — mandatory</td><td>M2 + owner</td></tr>
+        <tr><td>Gate: <em>submitted</em> ✓ · M1</td><td>Per system — DP or CHaS marked submitted</td><td>That system&rsquo;s waiting counter starts</td><td>Remark; date defaults to today, editable</td><td>Owner</td></tr>
+        <tr><td>Gate: <em>approved</em> ✓ · M1</td><td>Per system — DP or CHaS confirmed</td><td>That system&rsquo;s counter stops</td><td>Reference no. + remark</td><td>Owner + M2</td></tr>
+        <tr><td><em>Mark Approved</em> · M1</td><td><span class="pill p-s2"><span class="dot" style="background:var(--s2)"></span>2 Approved</span></td><td>Stage-3 clock stops; stage-2 starts</td><td>Enabled only when both gates approved (R-1)</td><td>Owner + M2 + M3</td></tr>
+        <tr><td><em>Recall</em> · M2</td><td><span class="pill p-s4"><span class="dot" style="background:var(--s4)"></span>4 In Development</span></td><td>Stage-3 clock stops</td><td>Optional note</td><td>M1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Clock model — D-11</h4>
+  <p>
+    Every status change writes a timestamped <code>status_event</code>, and the platform derives
+    <em>days in current stage</em> from the latest one — a counter restarts at each transition and
+    waits for the next. Inside stage 3, the two external systems carry sub-counters of their own:
+    <em>days since submitted to Decision Point</em>, <em>days since submitted to CHaS</em>, each
+    stopping at its <em>approved</em> click.
+  </p>
+  <div class="tw narrow">
+    <table class="plain">
+      <thead><tr><th style="min-width:170px">Counter</th><th style="min-width:140px">Starts</th><th style="min-width:140px">Stops</th><th>Shown on</th></tr></thead>
+      <tbody>
+        <tr><td>Days in status 4</td><td>Project created / returned</td><td><em>Request submitted</em></td><td>Register, dashboard</td></tr>
+        <tr><td>Days in status 3 — review</td><td><em>Request submitted</em></td><td>M1 <em>Request approved</em> / return / reject</td><td>Inbox sort, aging widget</td></tr>
+        <tr><td>Gate · Decision Point</td><td>DP <em>submitted</em> ✓</td><td>DP <em>approved</em> ✓</td><td>Gate tracker, inbox</td></tr>
+        <tr><td>Gate · CHaS</td><td>CHaS <em>submitted</em> ✓</td><td>CHaS <em>approved</em> ✓</td><td>Gate tracker, inbox</td></tr>
+        <tr><td>Days in status 2</td><td><em>Mark Approved</em></td><td>Move to status 1</td><td>Register</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <strong>Why this design survives the real world.</strong> The slowest span in the sample data —
+    197 days — sits between the platform&rsquo;s own approval and the church&rsquo;s formal one.
+    v1.0 could only call that &ldquo;waiting on HQ&rdquo;; v1.1 names the system it is waiting in and
+    counts the days against it. When the delay alert fires, it now says <em>CHaS approval outstanding
+    for 196 days</em> — which is a sentence someone can act on.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 4. IA ============ -->
+<section id="ia">
+  <div class="sec-head"><div class="arch">4</div><h2>Sitemap</h2></div>
+  <p class="sec-sub">Nine pages. Everything a daily user needs is reachable in two clicks from the dashboard.</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">Page</th><th style="min-width:150px">Name</th><th style="min-width:250px">Job it does</th><th style="min-width:120px">Primary persona</th><th>Demo priority</th></tr></thead>
+      <tbody>
+        <tr><td class="id">P1</td><td>Sign in</td><td>Authenticate; route to scope; detect mobile browser → quick view (P10)</td><td>All</td><td><span class="pill p-mute">Stub</span></td></tr>
+        <tr><td class="id">P2</td><td>Dashboard</td><td>Multiple user-arranged dashboards from a widget library; global country scope on every dashboard; four pre-populated demo dashboards</td><td>M1, M2</td><td><span class="pill p-rose">Build first</span></td></tr>
+        <tr><td class="id">P3</td><td>Projects</td><td>The register. Expandable rows, each opening a mini-Gantt and approval strip</td><td>All</td><td><span class="pill p-rose">Build first</span></td></tr>
+        <tr><td class="id">P4</td><td>Project detail</td><td>Full record: timeline, notes log, approval history, documents</td><td>M2, M3</td><td><span class="pill p-rose">Build first</span></td></tr>
+        <tr><td class="id">P5</td><td>Timeline</td><td>Cross-project Gantt for a country or region</td><td>M1, M2</td><td><span class="pill p-brass">Second</span></td></tr>
+        <tr><td class="id">P6</td><td>Approvals</td><td>Reviews and open gates waiting on me, sorted by age</td><td>M1, M2</td><td><span class="pill p-rose">Build first</span></td></tr>
+        <tr><td class="id">P7</td><td>Budget</td><td>Country ceiling vs committed vs queued, by year</td><td>M1, M2</td><td><span class="pill p-brass">Second</span></td></tr>
+        <tr><td class="id">P8</td><td>Alerts</td><td>Template editor and send log</td><td>Admin</td><td><span class="pill p-brass">Second</span></td></tr>
+        <tr><td class="id">P9</td><td>Administration</td><td>Users, roles, approval tiers, master data, import/export, API</td><td>Admin</td><td><span class="pill p-mute">Third</span></td></tr>
+        <tr><td class="id">P10</td><td>Mobile quick view</td><td>Device-detected mode: approvals + updates only, period filter</td><td>M1, M2</td><td><span class="pill p-brass">Second</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 5. DATA ============ -->
+<section id="data">
+  <div class="sec-head"><div class="arch">5</div><h2>Data model</h2></div>
+  <p class="sec-sub">
+    Field names deliberately mirror the CHaS Dynamics 365 column set seen in the source screenshots,
+    so that if the API is ever opened the mapping is one-to-one rather than a translation exercise.
+  </p>
+
+  <h4>Project</h4>
+  <div class="tw">
+    <table class="plain">
+      <thead><tr><th style="min-width:150px">Field</th><th style="min-width:110px">Type</th><th style="min-width:200px">Notes</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td><code>project_id</code></td><td>String, unique</td><td>Pattern <code>WE26BGD0002</code> — WE + year + ISO3 country + sequence</td><td>CHaS</td></tr>
+        <tr><td><code>project_name</code></td><td>String</td><td>Free text</td><td>CHaS</td></tr>
+        <tr><td><code>church_area</code></td><td>Lookup</td><td>Asia Area, Global, …</td><td>CHaS</td></tr>
+        <tr><td><code>country</code></td><td>Lookup (22)</td><td>Drives row-level security</td><td>Both</td></tr>
+        <tr><td><code>city</code></td><td>String</td><td>Optional</td><td>CHaS</td></tr>
+        <tr><td><code>strategic_priority</code></td><td>Lookup</td><td>Health &amp; Disability, Emergency Response, Water &amp; Sanitation, MEAL…</td><td>CHaS</td></tr>
+        <tr><td><code>classification</code></td><td>Lookup</td><td>Area-Funded, Emergency Response, Global Priorities</td><td>CHaS</td></tr>
+        <tr><td><code>project_type</code></td><td>Lookup</td><td>Healthcare, Food Security, Hygiene, Shelter, Flooding…</td><td>CHaS</td></tr>
+        <tr><td><code>primary_implementer</code></td><td>String</td><td>UNICEF, WFP, CARE Bangladesh…</td><td>CHaS</td></tr>
+        <tr><td><code>owner_user_id</code></td><td>FK → User</td><td>Renders on the Gantt bar</td><td>New</td></tr>
+        <tr><td><code>backup_owner_id</code></td><td>FK → User, null</td><td>Receives alerts when owner is away</td><td>New</td></tr>
+        <tr><td><code>status</code></td><td>Enum 1–4 + Declined</td><td>See D-01 on ordering</td><td>Excel</td></tr>
+        <tr><td><code>budget_year</code></td><td>Integer</td><td>2026, 2027 — a project belongs to one year</td><td>Excel</td></tr>
+        <tr><td><code>amount_requested</code></td><td>Decimal, USD</td><td>Column C of the tracker</td><td>Excel</td></tr>
+        <tr><td><code>amount_approved</code></td><td>Decimal, USD, null</td><td>Set at final approval</td><td>New</td></tr>
+        <tr><td><code>first_submitted_at</code></td><td>Timestamp, null</td><td>First <em>Request submitted</em> click — kept for total-elapsed reporting</td><td>Excel (<em>Sub to CM</em>)</td></tr>
+        <tr><td><code>approved_at</code></td><td>Timestamp, null</td><td>Set when M1 marks 3&thinsp;→&thinsp;2</td><td>New</td></tr>
+        <tr><td><code>target_end_date</code></td><td>Date</td><td>Drives the delay alert</td><td>New</td></tr>
+        <tr><td><code>chas_sync_at</code></td><td>Timestamp, null</td><td>Null = manually keyed, not from CHaS</td><td>New</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Supporting entities</h4>
+  <div class="tw narrow">
+    <table class="plain">
+      <thead><tr><th style="min-width:140px">Entity</th><th style="min-width:250px">Key fields</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>country_budget</code></td><td>country, budget_year, ceiling_usd, set_by, set_at</td><td>The $1,000,000 per year per country ceiling</td></tr>
+        <tr><td><code>approval_step</code></td><td>project_id, process (4 | 3), actor_id, action, reason, acted_at</td><td>One row per in-platform action — submit, approve, return, reject, recall</td></tr>
+        <tr><td><code>gate_tracker</code></td><td>project_id, system (decision_point | chas), submitted_at/by, approved_at/by, reference_no, remark</td><td>The 3→2 external gate — two rows per project, updated by M1 (R-2)</td></tr>
+        <tr><td><code>status_event</code></td><td>project_id, from_status, to_status, actor_id, at</td><td>Feeds every per-stage clock (D-11)</td></tr>
+        <tr><td><code>log_entry</code></td><td>project_id, kind, author_id, body, assignee_id, resolved_at, resolved_by, pinned, edited_at, edited_by</td><td>The unified conversation stream — see §7</td></tr>
+        <tr><td><code>timeline_block</code></td><td>project_id, label, start_date, end_date, kind, pct_complete</td><td>Gantt bars; syncs with Timeblock</td></tr>
+        <tr><td><code>alert_rule</code></td><td>event, audience, template_id, threshold_days, active</td><td>Which event mails whom, and when</td></tr>
+        <tr><td><code>alert_send</code></td><td>rule_id, project_id, to_email, sent_at, status</td><td>Send log — proves an alert went out</td></tr>
+        <tr><td><code>user</code></td><td>name, email, role, countries[], region, view_scope (area | countries[] | projects[]), read_only, active, delegate_to, delegate_until</td><td>Role + scope; read_only + view_scope implement viewer profiles (RM-3)</td></tr>
+        <tr><td><code>dashboard</code></td><td>user_id, name, is_default, widgets[] (type, size, position, filters)</td><td>Multiple per user; the four demo dashboards ship as seed rows (RM-4)</td></tr>
+        <tr><td><code>audit_event</code></td><td>actor_id, entity, entity_id, field, old, new, at</td><td>Immutable field-level change record</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Derived, never stored</h4>
+  <p>
+    Computed at read time so they can never drift from the underlying facts — the failure mode the
+    current spreadsheet suffers from, where a stale formula produced the <code>(46,051)</code> day
+    count in the sample.
+  </p>
+  <ul>
+    <li><strong>Days in current stage</strong> — <code>now − latest status_event.at</code>, one counter per project, restarting at each transition (D-11)</li>
+    <li><strong>Gate waiting days</strong> — per external system, <code>(approved_at ?? now) − submitted_at</code></li>
+    <li><strong>Total elapsed</strong> — <code>(approved_at ?? now) − first_submitted_at</code>, for the turnaround report</li>
+    <li><strong>Budget coverage %</strong> — <code>Σ project amounts ÷ country ceiling</code></li>
+    <li><strong>Budget minus total</strong> — <code>ceiling − Σ project amounts</code>; negative renders in rose</li>
+    <li><strong>Spend by status</strong> — the four-way split and each one&rsquo;s share of ceiling</li>
+    <li><strong>Schedule variance</strong> — <code>today − target_end_date</code> for anything not yet at status 1</li>
+  </ul>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 6. PAGES ============ -->
+<section id="pages">
+  <div class="sec-head"><div class="arch">6</div><h2>Page blueprints</h2></div>
+  <p class="sec-sub">
+    Static mocks, rendered at real fidelity so layout decisions can be argued about now rather than
+    after the demo is coded. Every number shown is drawn from the sample tracker and the CHaS export
+    so the screens read as the client's own data, not lorem ipsum.
+  </p>
+
+  <!-- ---------- P2 DASHBOARD ---------- -->
+  <h3>P2 · Dashboard — confirmed design (v3)</h3>
+  <p>
+    Confirmed 28 Aug against the interactive sample. One type family, one card anatomy, alert
+    expressed only by a left rule and a red value, and the budget rendered as a bar against a marked
+    ceiling — the overage is visible as red hatching past the mark, not just a percentage. Every
+    dashboard carries the <strong>country scope selector</strong>; it is a page-level control, not a
+    widget setting.
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/dashboard</div>
+      <div class="who">M1 · Priya N. · Regional Manager</div>
+    </div>
+    <div class="wf-body appui">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="h1">Asia Area — 2026</div>
+        <span style="font-size:12px;color:var(--muted)">Updated 5 minutes ago</span>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="scope-btn">All countries <span class="chip">22</span> ▾</span>
+          <span class="scope-btn">Budget year 2026 ▾</span>
+          <span class="btn sm">+ Add widget</span>
+          <span class="btn sm">Export</span>
+        </div>
+      </div>
+      <div class="tabs2">
+        <span class="on">Overview</span><span>Approval Status</span><span>Budget Utilisation</span>
+        <span>Implementation</span><span>Chats &amp; Comments</span>
+        <span style="color:var(--brass)">+ New dashboard</span>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi2"><div class="k">Ceiling · 2026</div><div class="v">$1,000,000</div><div class="d">1 country selected</div></div>
+        <div class="kpi2 alert"><div class="k">Over ceiling</div><div class="v">−$310,801</div><div class="d">coverage 131% · 1 country over</div></div>
+        <div class="kpi2"><div class="k">Waiting beyond the platform</div><div class="v">$760,801</div><div class="d">1 at the external gate · 196 days</div></div>
+        <div class="kpi2 alert"><div class="k">Past target date</div><div class="v">2</div><div class="d">projects not yet in implementation</div></div>
+      </div>
+
+      <div class="duo2">
+        <div class="acard">
+          <h6>Budget by status — 2026 <span class="more">Open budget →</span></h6>
+          <div class="bbar">
+            <div class="seg" style="width:58.1%;background:var(--s3)"></div>
+            <div class="seg" style="width:41.9%;background:var(--s4)"></div>
+            <div class="bover" style="left:76.3%;right:0"></div>
+            <div class="cmark" style="left:76.3%"></div>
+            <div class="clbl" style="left:76.3%">ceiling $1,000,000</div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="lrow"><span class="dot" style="background:var(--s1)"></span><span class="lbl">1 · Implementation</span><span class="amt">$0</span><span class="pct">0%</span></div>
+            <div class="lrow"><span class="dot" style="background:var(--s2)"></span><span class="lbl">2 · Approved</span><span class="amt">$0</span><span class="pct">0%</span></div>
+            <div class="lrow"><span class="dot" style="background:var(--s3)"></span><span class="lbl">3 · Submitted</span><span class="amt">$760,801</span><span class="pct">76%</span></div>
+            <div class="lrow"><span class="dot" style="background:var(--s4)"></span><span class="lbl">4 · In Development</span><span class="amt">$550,000</span><span class="pct">55%</span></div>
+            <div class="lrow total"><span class="dot" style="background:transparent"></span><span class="lbl">Total committed</span><span class="amt">$1,310,801</span><span class="pct" style="color:var(--rose);font-weight:700">131%</span></div>
+          </div>
+        </div>
+
+        <div class="acard">
+          <h6>Needs attention <span class="more">View all →</span></h6>
+          <div class="arow"><span class="tagpill rose">196 d</span><div style="min-width:0"><b>WE26BGD0002 · CARE — WASH &amp; Nutrition</b><span>Bangladesh · CHaS gate — submitted 12 Feb, no approval yet</span></div></div>
+          <div class="arow"><span class="tagpill rose">131%</span><div style="min-width:0"><b>Bangladesh over ceiling</b><span>$310,801 above the 2026 allocation</span></div></div>
+          <div class="arow"><span class="tagpill brass">14 d</span><div style="min-width:0"><b>WE26NPL0010 · Days for Girls</b><span>Nepal · target date passed, still in status 3 review</span></div></div>
+          <div class="arow"><span class="tagpill">3</span><div style="min-width:0"><b>Projects without an owner</b><span>Alerts cannot route until an owner is set</span></div></div>
+        </div>
+      </div>
+
+      <div class="acard">
+        <h6>Countries over or near ceiling <span class="more">All 22 countries →</span></h6>
+        <div style="overflow-x:auto"><table class="tbl2" style="min-width:540px">
+          <thead><tr><th>Country</th><th class="r">Ceiling</th><th class="r">Committed</th><th class="r">Coverage</th><th>Queue</th><th class="r">Oldest waiting</th></tr></thead>
+          <tbody>
+            <tr><td>Bangladesh</td><td class="r">$1,000,000</td><td class="r">$1,310,801</td>
+              <td class="r"><span class="covcell"><span class="covbar over"><i style="width:100%"></i></span><span class="cv" style="color:var(--rose);font-weight:700">131%</span></span></td>
+              <td>3 projects</td><td class="r">210 days</td></tr>
+            <tr><td>Nepal</td><td class="r">$1,000,000</td><td class="r">$880,400</td>
+              <td class="r"><span class="covcell"><span class="covbar warn"><i style="width:88%"></i></span><span class="cv">88%</span></span></td>
+              <td>2 projects</td><td class="r">31 days</td></tr>
+            <tr><td>Cambodia</td><td class="r">$1,000,000</td><td class="r">$612,000</td>
+              <td class="r"><span class="covcell"><span class="covbar"><i style="width:61%"></i></span><span class="cv">61%</span></span></td>
+              <td>1 project</td><td class="r">9 days</td></tr>
+            <tr><td>Lao PDR</td><td class="r">$1,000,000</td><td class="r">$188,000</td>
+              <td class="r"><span class="covcell"><span class="covbar"><i style="width:19%"></i></span><span class="cv" style="color:var(--muted)">19%</span></span></td>
+              <td style="color:var(--muted)">—</td><td class="r" style="color:var(--muted)">—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <p class="wf-caption">
+    Interactive version with the live scope engine: <span class="mono-sm">P2_Dashboard_UI_Sample_v3.html</span>
+    — confirmed 28 Aug. The coverage cell is a fixed two-column grid (bar 52px + value 44px) so bars
+    and percentages align vertically in every row.
+  </p>
+
+  <div class="note ok">
+    <strong>Country scope — a rule for every dashboard, not a P2 feature.</strong>
+    The selector accepts one country, several, or all; every widget on the dashboard recomputes from
+    the selection — KPIs sum selected ceilings, the budget bar rescales its ceiling mark, attention
+    rows filter, tables filter and re-sort. Four constraints: scope is <em>global per dashboard tab</em>
+    (widgets cannot hold a private scope); it is <em>remembered per dashboard</em> between visits; it
+    can <em>never go empty</em> (deselecting the last country re-selects it); and it <em>only offers
+    countries inside the signed-in user&rsquo;s data scope</em>, including viewer profiles. The demo
+    implements this as one <code>render()</code> pass over a country array — the exact pattern each
+    widget uses against the real API.
+  </div>
+
+  <h4>Widget library — v1</h4>
+  <p style="font-size:13.5px">Any widget can be placed on any dashboard, resized, and filtered by country, status, year or owner. Widgets respect the signed-in user&rsquo;s data scope, including viewer profiles.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="min-width:170px">Widget</th><th style="min-width:230px">What it shows</th><th style="min-width:150px">Drill-down</th><th>Persona</th></tr></thead>
+      <tbody>
+        <tr><td>Ceiling / committed / variance</td><td>The tracker's top block, live</td><td>P7 Budget</td><td>All</td></tr>
+        <tr><td>Rose-window status split</td><td>Four-status share of ceiling, with coverage % at centre</td><td>P3 filtered by status</td><td>M1, M2</td></tr>
+        <tr><td>Needs attention</td><td>Ranked mix: oldest in queue, over ceiling, past target, unassigned</td><td>Straight to P4</td><td>M1, M2</td></tr>
+        <tr><td>Waiting on me</td><td>Review + gate actions waiting on the signed-in user</td><td>P6 Approvals</td><td>M1, M2</td></tr>
+        <tr><td>Country coverage table</td><td>All 22 rows, sortable, coverage colour-coded</td><td>P3 filtered by country</td><td>M1, Admin</td></tr>
+        <tr><td>Aging distribution</td><td>Histogram of days-in-stage buckets: 0–7, 8–30, 31–90, 90+ — split by stage vs gate</td><td>P6 sorted by age</td><td>M1</td></tr>
+        <tr><td>Unassigned &amp; missing data</td><td>Projects with no owner, no target date, or no budget</td><td>P3 filtered</td><td>M2, Admin</td></tr>
+        <tr><td>Next 30 days</td><td>Milestones and target dates falling due</td><td>P5 Timeline</td><td>M2, M3</td></tr>
+        <tr><td>Implementation progress</td><td>Status-1 projects with phase-weighted % bars (C-17)</td><td>P3 filtered to status 1</td><td>M1, M2</td></tr>
+        <tr><td>Active chats &amp; comments</td><td>Latest notes, open questions and pinned decisions across scope, newest first</td><td>Straight to the entry on P4</td><td>All</td></tr>
+        <tr><td>Approval funnel</td><td>Counts and value at each step: status 4 · review · gate (per system) · approved</td><td>P6 Approvals</td><td>M1, Admin</td></tr>
+        <tr><td>Country league table</td><td>All countries ranked on coverage, average review days, average gate days, delayed count (RD-1)</td><td>P3 filtered by country</td><td>M1, Viewer</td></tr>
+        <tr><td>Decisions &amp; questions roll-up</td><td>Every pinned decision and open question across scope, newest first (RD-4)</td><td>The entry on P4</td><td>M1</td></tr>
+        <tr><td>Delegation &amp; coverage</td><td>Who is away, active delegations, unowned projects (RD-5)</td><td>P9 users</td><td>M1, Admin</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ---------- P3 PROJECTS ---------- -->
+  <h3>P3 · Projects register — confirmed row design</h3>
+  <p>
+    UI confirmed against the full-page sample on 27 Aug. Each collapsed row carries the four key
+    statuses — phase/approval stage with a live sub-line, budget with its meaning, and implementation
+    progress — and expands to exactly two things: the one-line approval stage and the implementation
+    timeline. Two locked semantics: <strong>the progress bar means implementation phases only</strong>
+    (pre-approval rows show &ldquo;starts after approval&rdquo;, never 0%), and <strong>the row
+    stepper compresses the external gate to two pills</strong> (Decision Point, CHaS) with the
+    four-click detail living on P4.
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/projects?country=bangladesh</div>
+      <div class="who">M2 · Area Manager view</div>
+    </div>
+    <div class="wf-body">
+      <div class="app-h">
+        <h5>Projects — Bangladesh</h5>
+        <div class="sp">
+          <span class="field" style="font-size:12px">Status: all ▾</span>
+          <span class="field" style="font-size:12px">Owner: all ▾</span>
+          <span class="btn brass sm">+ New project</span>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+        <div class="prow prow-head" style="padding:9px 14px;background:#FAFBFA;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">
+          <span>Project</span><span>Phase / approval stage</span><span style="text-align:right">Budget</span><span>Implementation progress</span><span></span>
+        </div>
+
+        <!-- Row A · Implementation, open -->
+        <details open style="border-bottom:1px solid var(--line2)">
+          <summary class="prow" style="padding:12px 14px">
+            <span style="min-width:0"><span class="mono-sm" style="color:var(--brass);font-size:11px">WE25BGD0014</span><br>
+              <b style="font-weight:600">ER Flood Relief 2025 — Northern Districts</b><br>
+              <span style="color:var(--faint);font-size:11.5px">Owner: Nasrin A. · WFP · Emergency Response</span></span>
+            <span class="stage"><span class="pill p-s1"><span class="dot" style="background:var(--s1)"></span>1 Implementation</span>
+              <small>in stage 148d · on schedule</small></span>
+            <span class="amt2">$412,000<small>approved</small></span>
+            <span class="prog"><span class="pb"><i style="width:62%"></i></span><span class="pc">62%</span></span>
+            <span>▾</span>
+          </summary>
+          <div style="padding:4px 14px 18px;background:#FCFDFC;border-top:1px solid var(--line2)">
+            <h4 style="margin:14px 0 8px">Approval stage</h4>
+            <div class="stepline">
+              <span class="sl ok">✓ <b>Submitted</b> <small>M2 · 02 Mar</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>Approved</b> <small>M1 · 09 Mar</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>Decision Point</b> <small>17 Mar</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>CHaS</b> <small>M-2025-0311</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>Marked Approved</b> <small>M1 · 25 Mar</small></span>
+            </div>
+
+            <h4 style="margin:18px 0 8px">Implementation timeline
+              <span style="float:right;text-transform:none;letter-spacing:0;font-family:var(--body)">
+                <span class="btn sm">Configure</span>
+                <span class="btn sm">Open full editor ↗</span>
+              </span>
+            </h4>
+            <div class="gantt">
+              <div class="gantt-scroll"><div class="gantt-inner">
+                <div class="today" style="left:calc(170px + (100% - 170px) * 7.4 / 12)"></div>
+                <div class="today-pill" style="left:calc(170px + (100% - 170px) * 7.4 / 12)">today · 27 Aug 26</div>
+                <div class="gm">
+                  <div class="gl" style="padding:7px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Phase</div>
+                  <div class="mrow"><div class="mh">Apr–May</div><div class="mh">Jun–Aug</div><div class="mh">Sep–Nov</div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Site assessment</b><small>Nasrin A.</small></div>
+                  <div class="track"><div class="bar" style="grid-column:1/span 3"><div class="fill full" style="width:100%"></div><i></i><span>Assessment · 100%</span></div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Procurement</b><small>Rahim K.</small></div>
+                  <div class="track"><div class="bar" style="grid-column:3/span 4"><div class="fill full" style="width:100%"></div><i></i><span>Procurement · 100%</span></div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Distribution</b><small>Nasrin A.</small></div>
+                  <div class="track"><div class="bar v2" style="grid-column:6/span 5"><div class="fill" style="width:48%"></div><i></i><span>Distribution · 48%</span></div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>MEAL reporting</b><small>Anika S.</small></div>
+                  <div class="track"><div class="bar plan" style="grid-column:10/span 3"><i></i><span>Reporting · 0%</span></div></div>
+                </div>
+              </div></div>
+            </div>
+            <p style="font-size:11.5px;color:var(--faint);margin:7px 0 0">
+              Row progress (62%) is the weighted % complete of these phases. Dashed bars are planned, not
+              started. Owner names under each phase (D-14).
+            </p>
+          </div>
+        </details>
+
+        <!-- Row B · Gate, open -->
+        <details open style="border-bottom:1px solid var(--line2)">
+          <summary class="prow" style="padding:12px 14px">
+            <span style="min-width:0"><span class="mono-sm" style="color:var(--brass);font-size:11px">WE26BGD0002</span><br>
+              <b style="font-weight:600">CARE Bangladesh 2026 — WASH &amp; Nutrition</b><br>
+              <span style="color:var(--faint);font-size:11.5px">Owner: Rahim K. · UNICEF · Health &amp; Disability</span></span>
+            <span class="stage"><span class="pill p-s3"><span class="dot" style="background:var(--s3)"></span>3 Submitted</span>
+              <small class="hot">gate · CHaS waiting 196d</small></span>
+            <span class="amt2">$760,801<small>requested</small></span>
+            <span class="prog"><span class="na">starts after approval</span></span>
+            <span>▾</span>
+          </summary>
+          <div style="padding:4px 14px 18px;background:#FCFDFC;border-top:1px solid var(--line2)">
+            <h4 style="margin:14px 0 8px">Approval stage</h4>
+            <div class="stepline">
+              <span class="sl ok">✓ <b>Submitted</b> <small>M2 · 29 Jan</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>Approved</b> <small>M1 · 11 Feb</small></span><span class="conn ok"></span>
+              <span class="sl ok">✓ <b>Decision Point</b> <small>2026-114 · 03 Mar</small></span><span class="conn"></span>
+              <span class="sl wait">◷ <b>CHaS</b> <small>submitted 12 Feb · waiting 196d</small></span><span class="conn"></span>
+              <span class="sl todo">◻ <b>Mark Approved</b> <small>locked · M1</small></span>
+            </div>
+
+            <h4 style="margin:18px 0 8px">Planned implementation timeline</h4>
+            <div class="gantt">
+              <div class="gantt-scroll"><div class="gantt-inner">
+                <div class="gm">
+                  <div class="gl" style="padding:7px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Phase</div>
+                  <div class="mrow"><div class="mh">Oct</div><div class="mh">Nov–Dec</div><div class="mh">Jan &rsquo;27</div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Procurement</b><small>Rahim K.</small></div>
+                  <div class="track"><div class="bar plan" style="grid-column:1/span 5"><i></i><span>Procurement · planned</span></div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Distribution — WASH</b><small>Nasrin A.</small></div>
+                  <div class="track"><div class="bar plan" style="grid-column:4/span 6"><i></i><span>Distribution · planned</span></div></div>
+                </div>
+                <div class="grow">
+                  <div class="gl"><b>Nutrition programme</b><small style="color:var(--rose)">unassigned</small></div>
+                  <div class="track"><div class="bar plan" style="grid-column:7/span 6"><i></i><span>Nutrition · planned</span></div></div>
+                </div>
+              </div></div>
+            </div>
+            <p style="font-size:11.5px;color:var(--faint);margin:7px 0 0">
+              Whole timeline dashed until Marked Approved — dates shift automatically from the approval
+              date. &ldquo;Open full editor&rdquo; stays disabled at this stage.
+            </p>
+          </div>
+        </details>
+
+        <!-- Row C · collapsed draft -->
+        <details>
+          <summary class="prow" style="padding:12px 14px">
+            <span style="min-width:0"><span class="mono-sm" style="color:var(--brass);font-size:11px">WE26BGD0007</span><br>
+              <b style="font-weight:600">Bangladesh MEAL Contract 2026 — IBTCI</b><br>
+              <span style="color:var(--faint);font-size:11.5px">Owner: Anika S. · Monitoring &amp; Evaluation</span></span>
+            <span class="stage"><span class="pill p-s4"><span class="dot" style="background:var(--s4)"></span>4 In Development</span>
+              <small>drafting · 18d</small></span>
+            <span class="amt2">$300,000<small>draft</small></span>
+            <span class="prog"><span class="na">not submitted</span></span>
+            <span>▾</span>
+          </summary>
+          <div style="padding:16px 14px;background:#FCFDFC;border-top:1px solid var(--line2);font-size:13px;color:var(--ink2)">
+            Draft — stepper shows <em>In development ◷</em> with the remaining steps dashed, and the
+            panel offers <span class="btn sm" style="vertical-align:middle">Request submitted</span>
+            once budget and phases are entered.
+          </div>
+        </details>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;padding:11px 2px 0;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:8px">
+        <span>7 projects · $1,557,301 committed · ceiling $1,000,000</span>
+        <span style="color:var(--rose);font-weight:600">Budget minus total: −$557,301 · coverage 156%</span>
+      </div>
+    </div>
+  </div>
+  <p class="wf-caption">
+    Full seven-row interactive version with working status-filter chips: see the standalone file
+    <span class="mono-sm">P3_Projects_List_UI_Sample.html</span> — confirmed 27 Aug. Row totals repeat
+    the tracker&rsquo;s footer line so an Area Manager can reconcile against the spreadsheet during
+    parallel running.
+  </p>
+
+  <!-- ---------- P4 PROJECT DETAIL ---------- -->
+  <h3>P4 · Project detail</h3>
+  <p>
+    Where a single project lives. Three columns on desktop, stacking on narrow screens: the record on
+    the left, the conversation in the middle (the widest column, because it is where the work actually
+    happens), and approval plus owner on the right.
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/projects/WE26BGD0002</div>
+      <div class="who">M2 · Area Manager view</div>
+    </div>
+    <div class="wf-body">
+      <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+        <div style="min-width:0;flex:1">
+          <div class="mono-sm">WE26BGD0002 · Bangladesh · Asia Area</div>
+          <h5 style="font-family:var(--display);font-size:23px;font-weight:600;line-height:1.25;margin:3px 0 6px">
+            CARE Bangladesh 2026 — WASH &amp; Nutrition
+          </h5>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <span class="pill p-s3"><span class="dot" style="background:var(--s3)"></span>3 Submitted</span>
+            <span class="tag">Health &amp; Disability</span>
+            <span class="tag">Area-Funded</span>
+            <span class="tag">UNICEF</span>
+            <span class="pill p-rose">CHaS gate · waiting 196d</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <span class="btn sm">Edit</span>
+          <span class="btn sm">Owner settings</span>
+          <span class="btn pri sm">Update gate</span>
+        </div>
+      </div>
+
+      <!-- pinned decision -->
+      <div class="log-pin" style="border:1px solid var(--line);border-radius:var(--r);margin:16px 0">
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="pill p-brass" style="flex:none">📌 Pinned direction</span>
+          <div style="min-width:0;font-size:13.5px">
+            Holding at the CHaS gate until the March disbursement window — fund desk confirmed procedural, not a rejection.
+            <span style="color:var(--faint);font-size:11.5px;display:block;margin-top:2px">Pinned by Anika S. · 14 Aug 2026 · replaces 3 earlier pins</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cols3">
+        <!-- left: record -->
+        <div>
+          <div class="card card-tight" style="margin-bottom:14px">
+            <h4 style="margin:0 0 10px">Budget</h4>
+            <div style="font-size:13px">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line2)"><span>Requested</span><span class="mono-sm" style="color:var(--ink)">$760,801</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line2)"><span>Approved</span><span class="mono-sm">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line2)"><span>Budget year</span><span class="mono-sm" style="color:var(--ink)">2026</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0"><span>% of ceiling</span><span class="mono-sm" style="color:var(--s3)">76%</span></div>
+            </div>
+          </div>
+          <div class="card card-tight" style="margin:0">
+            <h4 style="margin:0 0 10px">Record</h4>
+            <div style="font-size:13px;color:var(--ink2)">
+              <div style="padding:4px 0;border-bottom:1px solid var(--line2)"><span class="flabel" style="margin:0">Implementer</span>CARE Bangladesh</div>
+              <div style="padding:4px 0;border-bottom:1px solid var(--line2)"><span class="flabel" style="margin:0">City</span>Cox&rsquo;s Bazar</div>
+              <div style="padding:4px 0;border-bottom:1px solid var(--line2)"><span class="flabel" style="margin:0">Target end</span>31 Dec 2026</div>
+              <div style="padding:4px 0"><span class="flabel" style="margin:0">CHaS sync</span>
+                <span class="pill p-mute">manual entry</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- middle: conversation -->
+        <div>
+          <div style="display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:0">
+            <span style="padding:7px 12px;font-size:12.5px;font-weight:600;border-bottom:2px solid var(--brass);margin-bottom:-1px">Activity</span>
+            <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Notes only</span>
+            <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Open questions <span class="pill p-rose" style="font-size:9.5px;padding:0 5px">2</span></span>
+            <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Files</span>
+          </div>
+          <div class="log" style="border-top:none;border-radius:0 0 var(--r) var(--r)">
+            <div class="log-scroll">
+              <div class="entry">
+                <div class="av">AS</div>
+                <div class="body">
+                  <div class="meta"><b>Anika S.</b><span>14 Aug, 09:12</span><span class="pill p-brass">Decision</span><span class="pill p-mute">pinned</span></div>
+                  <div class="txt">CHaS fund desk confirmed the delay is procedural, not a rejection. Holding at the gate until the March disbursement window.</div>
+                </div>
+              </div>
+              <div class="entry">
+                <div class="av">RK</div>
+                <div class="body">
+                  <div class="meta"><b>Rahim K.</b><span>12 Aug, 16:40</span><span class="pill p-rose">Question → Priya N.</span></div>
+                  <div class="txt">@Priya N. can we split this into two requests so the WASH half clears CHaS while nutrition waits?</div>
+                  <div style="margin-top:6px;padding-left:11px;border-left:2px solid var(--line)">
+                    <div class="meta"><b>Priya N.</b><span>13 Aug, 08:05</span></div>
+                    <div class="txt" style="font-size:13px">Splitting restarts the gate on both halves. Let me chase the CHaS fund desk once more first.</div>
+                  </div>
+                  <div style="margin-top:7px"><span class="btn sm">Mark resolved</span></div>
+                </div>
+              </div>
+              <div class="entry system">
+                <div class="av sys">⚙</div>
+                <div class="body">
+                  <div class="meta"><span>System</span><span>11 Aug, 06:00</span></div>
+                  <div class="txt">Gate alert sent to Anika S., Priya N. — CHaS approval outstanding 180 days, past the 90-day threshold.</div>
+                </div>
+              </div>
+              <div class="entry">
+                <div class="av">NA</div>
+                <div class="body">
+                  <div class="meta"><b>Nasrin A.</b><span>04 Aug, 11:22</span><span class="pill p-mute">Note</span>
+                    <span class="edited">edited by Nasrin A. · 04 Aug, 11:31</span></div>
+                  <div class="txt">Distribution partner confirmed warehouse capacity in Cox&rsquo;s Bazar through Q4. Attaching the signed letter.</div>
+                  <div style="margin-top:6px"><span class="tag">📎 warehouse-confirmation.pdf</span></div>
+                </div>
+              </div>
+              <div class="entry system">
+                <div class="av sys">⚙</div>
+                <div class="body">
+                  <div class="meta"><span>System</span><span>11 Feb, 14:03</span></div>
+                  <div class="txt">Priya N. clicked Request approved (Process 3). External gate opened — submitted to Decision Point and CHaS on 12 Feb.</div>
+                </div>
+              </div>
+              <div class="entry system">
+                <div class="av sys">⚙</div>
+                <div class="body">
+                  <div class="meta"><span>System</span><span>29 Jan, 10:47</span></div>
+                  <div class="txt">Anika S. (M2) clicked Request submitted — status 4 → 3. Stage-3 clock started.</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--line);padding:11px 14px;background:#FAFBFA">
+              <div class="field" style="color:var(--faint);margin-bottom:8px">Write a note, ask a question, or record a decision…</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <span class="pill p-mute">Note</span>
+                <span class="pill p-rose">Question</span>
+                <span class="pill p-brass">Decision</span>
+                <span style="margin-left:auto;display:flex;gap:6px">
+                  <span class="btn sm">@ Mention</span><span class="btn sm">📎</span><span class="btn pri sm">Post</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: approval + owner -->
+        <div>
+          <div class="card card-tight" style="margin-bottom:14px">
+            <h4 style="margin:0 0 10px">Approval status</h4>
+            <div style="font-size:12.5px">
+              <div style="display:flex;gap:9px;padding:6px 0;border-bottom:1px solid var(--line2)">
+                <span style="color:var(--verd);flex:none">✓</span>
+                <div><b>Request submitted — M2</b><br><span style="color:var(--faint)">Anika S. · 29 Jan</span></div>
+              </div>
+              <div style="display:flex;gap:9px;padding:6px 0;border-bottom:1px solid var(--line2)">
+                <span style="color:var(--verd);flex:none">✓</span>
+                <div><b>Request approved — M1</b><br><span style="color:var(--faint)">Priya N. · 11 Feb · review 13d</span></div>
+              </div>
+              <div style="padding:8px 0 4px;border-bottom:1px solid var(--line2)">
+                <div class="mono-sm" style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin-bottom:5px">External gate</div>
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0">
+                  <span>Decision Point</span><span class="pill p-verd" style="font-size:10px">approved ✓</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0 6px">
+                  <span>CHaS</span><span class="pill p-rose" style="font-size:10px">waiting 196d</span>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px">
+                  <span class="btn sm">Request submitted ✓</span>
+                  <span class="btn brass sm">Request approved</span>
+                </div>
+                <div style="font-size:11px;color:var(--faint);padding-bottom:2px">Each click asks for a remark; approved also asks for the reference no. M1 only (R-2).</div>
+              </div>
+              <div style="display:flex;gap:9px;padding:8px 0 2px">
+                <span style="color:var(--faint);flex:none">◻</span>
+                <div><b style="color:var(--faint)">Mark Approved · 3 → 2</b><br><span style="color:var(--faint)">Unlocks when both gates ✓</span></div>
+              </div>
+            </div>
+            <div style="margin-top:11px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="btn sm">Return to Review</span><span class="btn sm">Reject</span>
+            </div>
+          </div>
+
+          <div class="card card-tight" style="margin:0">
+            <h4 style="margin:0 0 10px">Owner</h4>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div class="av" style="width:34px;height:34px">RK</div>
+              <div style="min-width:0">
+                <div style="font-size:13.5px;font-weight:600">Rahim K.</div>
+                <div style="font-size:11.5px;color:var(--faint)">M3 · Team Member · Bangladesh</div>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:12.5px;color:var(--ink2)">
+              <div style="padding:4px 0;border-top:1px solid var(--line2)">Backup: <b>Nasrin A.</b></div>
+              <div style="padding:4px 0;border-top:1px solid var(--line2)">Alerts: <span class="pill p-verd">on</span></div>
+            </div>
+            <div style="margin-top:10px"><span class="btn sm">Owner settings ▾</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="wf-caption">
+    On screens under 900px the three columns stack: record, approval, conversation — conversation last
+    because it scrolls, and a scrolling region in the middle of a stacked page traps the reader.
+  </p>
+
+  <h4>Owner settings — modal</h4>
+  <p>
+    Opened from the project header or from the Gantt bar's context menu. Kept as a modal rather than a
+    page because it is a configuration action, not a destination.
+  </p>
+  <div class="wf" style="max-width:560px">
+    <div class="wf-bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">Modal · Owner settings</div></div>
+    <div class="wf-body">
+      <h5 style="font-family:var(--display);font-size:18px;font-weight:600;margin-bottom:3px">Owner settings</h5>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px">WE26BGD0002 · CARE Bangladesh 2026</p>
+      <div class="grid g2" style="gap:12px">
+        <div><span class="flabel">Accountable owner</span><div class="field">Rahim K. — M3, Bangladesh ▾</div></div>
+        <div><span class="flabel">Backup owner</span><div class="field">Nasrin A. — M3, Bangladesh ▾</div></div>
+        <div><span class="flabel">Show owner on Gantt</span><div class="field">Yes — under each bar ▾</div></div>
+        <div><span class="flabel">Alert recipient</span><div class="field">Owner + backup ▾</div></div>
+        <div><span class="flabel">Away until</span><div class="field" style="color:var(--faint)">not set</div></div>
+        <div><span class="flabel">Delegate approvals to</span><div class="field" style="color:var(--faint)">none</div></div>
+      </div>
+      <div class="note" style="margin:16px 0 0;font-size:12.5px">
+        Changing the owner writes a system entry to the activity log and re-points every future alert.
+        It does not retro-assign past entries.
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <span class="btn sm">Cancel</span><span class="btn pri sm">Save owner</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- P5 TIMELINE ---------- -->
+  <h3>P5 · Timeline — cross-project Gantt</h3>
+  <p>
+    The view that does not exist today at all. Same visual grammar as the in-row mini-Gantt so nobody
+    has to learn a second chart: pill bars, hairline week grid, one rose line for today.
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/timeline?region=south-asia</div>
+      <div class="who">M1 · Regional Manager view</div>
+    </div>
+    <div class="wf-body">
+      <div class="app-h">
+        <h5>Timeline — South Asia</h5>
+        <div class="sp">
+          <span class="field" style="font-size:12px">Group by: country ▾</span>
+          <span class="field" style="font-size:12px">Quarter ▾</span>
+          <span class="btn sm">Open in Timeblock ↗</span>
+        </div>
+      </div>
+      <div class="gantt">
+        <div class="gantt-scroll"><div class="gantt-inner">
+          <div class="today" style="left:calc(170px + (100% - 170px) * 7.6 / 12)"></div>
+          <div class="today-pill" style="left:calc(170px + (100% - 170px) * 7.6 / 12)">today · 27 Aug 26</div>
+          <div class="gm">
+            <div class="gl" style="padding:7px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Project</div>
+            <div class="mrow"><div class="mh">Jul &rsquo;26</div><div class="mh">Aug &rsquo;26</div><div class="mh">Sep &rsquo;26</div></div>
+          </div>
+
+          <div class="grow"><div class="gl" style="background:#FAFBFA"><b>Bangladesh</b><small>3 projects · $1,310,801</small></div><div class="track" style="background:#FAFBFA"></div></div>
+          <div class="grow">
+            <div class="gl"><b>WE26BGD0002 · WASH</b><small>Rahim K.</small></div>
+            <div class="track"><div class="bar" style="grid-column:2/span 9"><i></i>Procurement &amp; distribution</div></div>
+          </div>
+          <div class="grow">
+            <div class="gl"><b>WE26BGD0007 · MEAL</b><small>Anika S.</small></div>
+            <div class="track"><div class="line" style="grid-column:1/span 6"></div></div>
+          </div>
+          <div class="grow">
+            <div class="gl"><b>WE26BGD0011 · CARE</b><small style="color:var(--rose)">unassigned</small></div>
+            <div class="track"><div class="bar v3" style="grid-column:8/span 5"><i></i>Awaiting owner</div></div>
+          </div>
+
+          <div class="grow"><div class="gl" style="background:#FAFBFA"><b>Nepal</b><small>2 projects · $880,400</small></div><div class="track" style="background:#FAFBFA"></div></div>
+          <div class="grow">
+            <div class="gl"><b>WE26NPL0010 · Days for Girls</b><small>Sunita R.</small></div>
+            <div class="track"><div class="bar v2" style="grid-column:1/span 7"><i></i>Flow-her rollout</div></div>
+          </div>
+          <div class="grow">
+            <div class="gl"><b>WE26NPL0009 · Kangaroo Care</b><small>Sunita R.</small></div>
+            <div class="track"><div class="bar v2" style="grid-column:5/span 8"><i></i>Lumbini unit fit-out</div></div>
+          </div>
+        </div></div>
+      </div>
+      <div style="display:flex;gap:18px;padding-top:11px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)">
+        <span><span class="dot" style="background:var(--gantt-edge)"></span>Implementation</span>
+        <span><span class="dot" style="background:var(--gantt-edge2)"></span>Field delivery</span>
+        <span><span class="dot" style="background:var(--brass)"></span>Blocked / awaiting input</span>
+        <span><span class="dot" style="background:var(--rose)"></span>Today</span>
+      </div>
+    </div>
+  </div>
+  <p class="wf-caption">
+    Bars carry the owner's name in the label column, per D-14. Grouping switches between country,
+    strategic priority, implementer, and status without changing the chart geometry.
+  </p>
+
+  <!-- ---------- P6 APPROVALS ---------- -->
+  <h3>P6 · Approvals inbox</h3>
+  <p>
+    One list, sorted by age descending — the oldest thing waiting on you is always at the top. Reviews
+    (Process 3) and open external gates share the list, because to the Regional Manager they are the
+    same job: this is the screen that replaces &ldquo;Waiting for HQ to approve&rdquo; typed into a
+    spreadsheet Notes column.
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/approvals</div>
+      <div class="who">M1 · Priya N. · 3 reviews + 1 gate</div>
+    </div>
+    <div class="wf-body">
+      <div class="app-h">
+        <h5>Waiting on me</h5>
+        <div class="sp"><span class="field" style="font-size:12px">Show: reviews + gates ▾</span><span class="field" style="font-size:12px">Sort: oldest first ▾</span></div>
+      </div>
+      <div class="tw" style="margin:0">
+        <table>
+          <thead><tr><th style="min-width:210px">Project</th><th>Country</th><th class="num">Amount</th><th class="num">Waiting</th><th>Waiting at</th><th style="min-width:190px">Action</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>WE26BGD0002</b><br><span style="color:var(--faint);font-size:12px">CARE — WASH &amp; Nutrition</span></td>
+              <td>Bangladesh</td><td class="num">$760,801</td>
+              <td class="num" style="color:var(--rose);font-weight:600">196d</td>
+              <td><span class="pill p-rose">Gate · CHaS</span></td>
+              <td><span class="btn sm">Update gate</span> <span class="btn sm" style="opacity:.45">Mark Approved</span></td>
+            </tr>
+            <tr>
+              <td><b>WE26NPL0010</b><br><span style="color:var(--faint);font-size:12px">Days for Girls — Flow-her</span></td>
+              <td>Nepal</td><td class="num">$188,400</td>
+              <td class="num" style="color:var(--brass);font-weight:600">31d</td>
+              <td><span class="pill p-brass">Process 3 · review</span></td>
+              <td><span class="btn sm">Return to Review</span> <span class="btn brass sm">Request approved</span></td>
+            </tr>
+            <tr>
+              <td><b>WE26KHM0029</b><br><span style="color:var(--faint);font-size:12px">Khmer-Soviet Endoscopy Equipment</span></td>
+              <td>Cambodia</td><td class="num">$612,000</td>
+              <td class="num">9d</td>
+              <td><span class="pill p-brass">Process 3 · review</span></td>
+              <td><span class="btn sm">Return to Review</span> <span class="btn brass sm">Request approved</span></td>
+            </tr>
+            <tr>
+              <td><b>WE26IND0012</b><br><span style="color:var(--faint);font-size:12px">Little Drops Old Age Home</span></td>
+              <td>India</td><td class="num">$94,200</td>
+              <td class="num">2d</td>
+              <td><span class="pill p-brass">Process 3 · review</span></td>
+              <td><span class="btn sm">Return to Review</span> <span class="btn brass sm">Request approved</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:14px;font-size:13px">
+        <em>Request approved</em> opens a confirm panel with an optional remark and then flips the row into
+        a gate item. <em>Update gate</em> opens the two-system tracker; the CHaS <em>approved</em> click
+        asks for the minute number (R-4), so the platform record and the church&rsquo;s system of record
+        stay joined even before any API exists. <em>Mark Approved</em> stays dimmed until both gates are ✓.
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- P8 ALERTS ---------- -->
+  <h3>P8 · Alert templates</h3>
+  <p>
+    Administrator-only. Each rule pairs an event with an audience, a template, and a threshold. The
+    template body takes merge tokens so the email arrives already populated with project context —
+    the brief's "configurable message with populated project info".
+  </p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/admin/alerts/delay-warning</div>
+      <div class="who">Administrator</div>
+    </div>
+    <div class="wf-body">
+      <div class="cols2">
+        <div>
+          <h4 style="margin-top:0">Rule</h4>
+          <div style="display:grid;gap:11px">
+            <div><span class="flabel">Event</span><div class="field">External gate idle past threshold ▾</div></div>
+            <div><span class="flabel">Threshold</span><div class="field">90 days since gate submission</div></div>
+            <div><span class="flabel">Repeat</span><div class="field">Every 30 days until resolved ▾</div></div>
+            <div><span class="flabel">Send to</span><div class="field">Owner, backup, M2, M1 ▾</div></div>
+            <div><span class="flabel">Also copy</span><div class="field" style="color:var(--faint)">none</div></div>
+            <div><span class="flabel">Status</span><div class="field"><span class="pill p-verd">Active</span></div></div>
+          </div>
+          <h4>Available tokens</h4>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <span class="tag">{{project_id}}</span><span class="tag">{{project_name}}</span>
+            <span class="tag">{{country}}</span><span class="tag">{{amount}}</span>
+            <span class="tag">{{status}}</span><span class="tag">{{days_in_stage}}</span><span class="tag">{{gate_system}}</span><span class="tag">{{gate_days}}</span>
+            <span class="tag">{{owner}}</span>
+            <span class="tag">{{target_date}}</span><span class="tag">{{link}}</span>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin-top:0">Message</h4>
+          <div><span class="flabel">Subject</span>
+            <div class="field" style="color:var(--ink)">[Action needed] {{project_id}} — {{gate_system}} waiting {{gate_days}} days</div>
+          </div>
+          <div style="margin-top:11px"><span class="flabel">Body</span>
+            <div class="field" style="color:var(--ink);line-height:1.7;min-height:150px">
+              {{project_name}} in {{country}} has been at status {{status}} for {{days_in_stage}} days.
+              {{gate_system}} shows the request submitted but not yet approved after {{gate_days}} days.<br><br>
+              Amount: {{amount}}<br>
+              Owner: {{owner}}<br>
+              Target completion: {{target_date}}<br><br>
+              Open the project: {{link}}
+            </div>
+          </div>
+          <h4>Preview — as sent</h4>
+          <div class="card card-tight" style="margin:0;font-size:13px;background:#FAFBFA">
+            <div style="font-weight:600;margin-bottom:7px">[Action needed] WE26BGD0002 — CHaS waiting 196 days</div>
+            <div style="color:var(--ink2);line-height:1.7">
+              CARE Bangladesh 2026 — WASH &amp; Nutrition in Bangladesh has been at status 3 Submitted for
+              210 days. CHaS shows the request submitted but not yet approved after 196 days.<br><br>
+              Amount: $760,801<br>Owner: Rahim K.<br>Target completion: 31 Dec 2026<br><br>
+              <span style="color:var(--glass)">Open the project →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- P9 ADMIN ---------- -->
+  <h3>P9 · Administration</h3>
+  <p>Five tabs. Nothing here is used daily, so it is deliberately plain.</p>
+
+  <div class="wf">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org/admin/users</div>
+      <div class="who">Administrator</div>
+    </div>
+    <div class="wf-body">
+      <div style="display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap">
+        <span style="padding:7px 12px;font-size:12.5px;font-weight:600;border-bottom:2px solid var(--brass);margin-bottom:-1px">Users &amp; roles</span>
+        <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Approval process</span>
+        <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Master data</span>
+        <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Import &amp; export</span>
+        <span style="padding:7px 12px;font-size:12.5px;color:var(--muted)">Integrations</span>
+      </div>
+      <div class="tw" style="margin-bottom:18px">
+        <table>
+          <thead><tr><th>Name</th><th>Role</th><th>Scope</th><th>Approval rights</th><th>Status</th><th>Delegate</th></tr></thead>
+          <tbody>
+            <tr><td>Priya N.</td><td>M1 Regional Manager</td><td>South Asia — 6 countries</td><td>Process 3 · gate · mark 3→2</td><td><span class="pill p-verd">Active</span></td><td>—</td></tr>
+            <tr><td>Anika S.</td><td>M2 Area Manager</td><td>Bangladesh</td><td>Process 4 · Request submitted</td><td><span class="pill p-verd">Active</span></td><td>Rahim K. → 05 Sep</td></tr>
+            <tr><td>Rahim K.</td><td>M3 Team Member</td><td>Bangladesh</td><td>—</td><td><span class="pill p-verd">Active</span></td><td>—</td></tr>
+            <tr><td>Sunita R.</td><td>M3 Team Member</td><td>Nepal</td><td>—</td><td><span class="pill p-verd">Active</span></td><td>—</td></tr>
+            <tr><td>Bp. Santoso</td><td>Viewer (read-only)</td><td>View scope: Bangladesh, Nepal</td><td>— all actions hidden</td><td><span class="pill p-verd">Active</span></td><td>—</td></tr>
+            <tr><td>J. Meyer</td><td>Administrator</td><td>All 22 countries</td><td>None — separation of duty</td><td><span class="pill p-verd">Active</span></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid g3">
+        <div class="card card-tight" style="margin:0">
+          <h4 style="margin-top:0">Import &amp; export</h4>
+          <ul style="font-size:12.5px;margin:0 0 0 16px;color:var(--ink2)">
+            <li>Excel import — one tab per country, mapped on upload</li>
+            <li>Dry-run preview with row-level errors before commit</li>
+            <li>Full export: projects, approvals, log, audit</li>
+            <li>Scheduled nightly backup to storage</li>
+          </ul>
+        </div>
+        <div class="card card-tight" style="margin:0">
+          <h4 style="margin-top:0">Integrations</h4>
+          <div style="font-size:12.5px;color:var(--ink2)">
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line2)"><span>CHaS · Dynamics 365</span><span class="pill p-brass">Manual gate — read-only pull on roadmap</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line2)"><span>SMTP · outbound mail</span><span class="pill p-verd">Connected</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line2)"><span>Timeblock · Gantt</span><span class="pill p-verd">Connected</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 0"><span>&ldquo;Decision Point&rdquo;</span><span class="pill p-brass">Manual gate — API on roadmap</span></div>
+          </div>
+        </div>
+        <div class="card card-tight" style="margin:0">
+          <h4 style="margin-top:0">Approval process</h4>
+          <div style="font-size:12.5px;color:var(--ink2)">
+            <div style="padding:5px 0;border-bottom:1px solid var(--line2)">Process 4 — M2 · <em>Request submitted</em></div>
+            <div style="padding:5px 0;border-bottom:1px solid var(--line2)">Process 3 — M1 · approve / return / reject</div>
+            <div style="padding:5px 0;border-bottom:1px solid var(--line2)">Gate — Decision Point + CHaS, manual tracking</div>
+            <div style="padding:5px 0;border-bottom:1px solid var(--line2)">3 → 2 — M1 manual, refs required</div>
+            <div style="padding:5px 0">Gate required above <span class="pill p-brass">$0 — all (R-1)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- P10 MOBILE QUICK VIEW ---------- -->
+  <h3>P10 · Mobile quick view</h3>
+  <p>
+    Promoted from RM-7. When the login arrives from a mobile browser, the platform routes to this
+    trimmed mode instead of the desktop shell: only approvals waiting on the user and the update
+    stream — chats, comments, notes — inside a configurable period. Everything else is one tap away
+    behind &ldquo;Full site&rdquo;.
+  </p>
+
+  <div class="wf" style="max-width:390px">
+    <div class="wf-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">church-budget.org · mobile detected</div>
+    </div>
+    <div class="wf-body" style="padding:14px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+        <div style="font-family:var(--display);font-weight:600;font-size:16px">Quick view</div>
+        <span class="tag">M1 · Priya N.</span>
+        <span class="btn sm" style="margin-left:auto">Full site ↗</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <span class="pill p-mute" style="border-style:solid">Today</span>
+        <span class="pill p-brass">Last 7 days</span>
+        <span class="pill p-mute">30 days</span>
+        <span class="pill p-mute">Custom…</span>
+      </div>
+
+      <h4 style="margin:0 0 8px">Waiting on you · 2</h4>
+      <div class="card card-tight" style="margin-bottom:10px;padding:12px 14px">
+        <div class="mono-sm" style="font-size:10.5px;color:var(--brass)">WE26NPL0010 · Nepal</div>
+        <div style="font-weight:600;font-size:13.5px;margin:2px 0 4px">Days for Girls — Flow-her</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:9px">
+          <span class="pill p-brass" style="font-size:10px">Process 3 · review 31d</span>
+          <span class="mono-sm" style="font-size:12px">$188,400</span>
+        </div>
+        <div style="display:flex;gap:7px">
+          <span class="btn sm" style="flex:1;justify-content:center">Return</span>
+          <span class="btn brass sm" style="flex:1;justify-content:center">Request approved</span>
+        </div>
+      </div>
+      <div class="card card-tight" style="margin-bottom:16px;padding:12px 14px">
+        <div class="mono-sm" style="font-size:10.5px;color:var(--brass)">WE26BGD0002 · Bangladesh</div>
+        <div style="font-weight:600;font-size:13.5px;margin:2px 0 4px">CARE — WASH &amp; Nutrition</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:9px">
+          <span class="pill p-rose" style="font-size:10px">Gate · CHaS 196d</span>
+          <span class="mono-sm" style="font-size:12px">$760,801</span>
+        </div>
+        <div style="display:flex;gap:7px">
+          <span class="btn sm" style="flex:1;justify-content:center">Update gate</span>
+          <span class="btn sm dis" style="flex:1;justify-content:center;opacity:.45">Mark Approved</span>
+        </div>
+      </div>
+
+      <h4 style="margin:0 0 8px">Updates · last 7 days</h4>
+      <div class="log" style="border-radius:var(--r)">
+        <div class="log-scroll" style="max-height:230px">
+          <div class="entry">
+            <div class="av">AS</div>
+            <div class="body">
+              <div class="meta"><b>Anika S.</b><span>WE26BGD0002</span><span>14 Aug</span><span class="pill p-brass" style="font-size:9.5px">Decision · pinned</span></div>
+              <div class="txt" style="font-size:13px">Holding at the CHaS gate until the March disbursement window.</div>
+            </div>
+          </div>
+          <div class="entry">
+            <div class="av">RK</div>
+            <div class="body">
+              <div class="meta"><b>Rahim K.</b><span>WE26BGD0002</span><span>12 Aug</span><span class="pill p-rose" style="font-size:9.5px">Question → you</span></div>
+              <div class="txt" style="font-size:13px">Can we split into two requests so WASH clears while nutrition waits?</div>
+              <div style="margin-top:6px"><span class="btn sm">Reply</span> <span class="btn sm">Resolve</span></div>
+            </div>
+          </div>
+          <div class="entry">
+            <div class="av">SR</div>
+            <div class="body">
+              <div class="meta"><b>Sunita R.</b><span>WE26NPL0010</span><span>11 Aug</span><span class="pill p-mute" style="font-size:9.5px">Note</span></div>
+              <div class="txt" style="font-size:13px">District sign-off letters attached — ready for your review.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--faint);margin:10px 0 0">
+        Composer available for replies only; new projects, Gantt editing and admin stay on the full
+        site. Period default is configurable per user in settings.
+      </p>
+    </div>
+  </div>
+  <p class="wf-caption">
+    Device detection at login (user-agent + viewport), with a manual &ldquo;Full site&rdquo; escape
+    hatch remembered per device. The quick view reuses C-09 log entries and P6 action buttons — no
+    new data surface, only a narrower window on the same records.
+  </p>
+
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 7. CONVERSATION ============ -->
+<section id="conversation">
+  <div class="sec-head"><div class="arch">7</div><h2>Conversation design</h2></div>
+  <p class="sec-sub">
+    The requirement asked for a log, ticketing, notes, and a pinned direction — and for the pattern
+    with the best track record. What follows is a short review of how the major platforms handle this,
+    what users praise, what they complain about, and the specific model proposed here.
+  </p>
+
+  <h3>What the platforms do</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="min-width:110px">Platform</th><th style="min-width:220px">Model</th><th style="min-width:200px">Praised for</th><th style="min-width:200px">Criticised for</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>monday.com</b><br><span class="mono-sm">Updates</span></td>
+          <td>A social-feed style Updates section attached to each item, with @mentions notifying individuals or teams, rich text, files and reactions.</td>
+          <td>Communication happens <em>on</em> the work item rather than beside it; teams report replacing status emails with in-board discussion. Practitioners advise pinning key updates for visibility.</td>
+          <td>Updates stay locked to their original item and do not mirror across linked boards, creating silos. Users also misread the update-count bubble as an unread count.</td>
+        </tr>
+        <tr>
+          <td><b>ClickUp</b><br><span class="mono-sm">Activity tab</span></td>
+          <td>A single chronological running log per task where comments, system activity and email threads interleave. Threaded replies, quote-reply, thread followers.</td>
+          <td><strong>Assigned comments</strong> — a comment can be assigned to a person and carries a Resolve checkbox; the resolver's name is shown. Unresolved assignments surface as an icon in every view and in a dedicated page.</td>
+          <td>Density. A busy task's log mixes machine noise with human decisions and the important entry gets buried.</td>
+        </tr>
+        <tr>
+          <td><b>Decision-log practice</b><br><span class="mono-sm">method, not product</span></td>
+          <td>A structured record of what was chosen, why, who was involved, alternatives considered, expected outcome — kept concise and factual.</td>
+          <td>Future readers get the reasoning without re-reading long threads; doubles as an audit trail in regulated settings.</td>
+          <td>Maintained by discipline, not by the tool. Dies the moment it becomes a separate document.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mono-sm" style="margin-top:-6px">
+    Sources: monday.com support &amp; community documentation; ClickUp help centre (Intro to comments,
+    Assign comments, Task activity and comments); monday.com and Plane decision-log guidance;
+    Rocketlane on dashboards that show activity instead of decision signals.
+  </p>
+
+  <h3>The proposed model</h3>
+  <p>
+    Take ClickUp's single chronological stream — best reviewed for preserving context across a handoff
+    — add its assign-and-resolve mechanic, which is the most consistently praised collaboration feature
+    in either product, and layer on the decision-log discipline as a first-class entry type rather than
+    a separate document. Avoid monday's silo problem by making the stream the only place project
+    conversation lives, and avoid ClickUp's density problem with filter tabs and a pinned header.
+  </p>
+
+  <h4>Four entry types, one stream</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="min-width:110px">Type</th><th style="min-width:200px">Behaviour</th><th style="min-width:170px">Why it exists</th><th>Email?</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill p-mute">Note</span></td>
+          <td>Plain entry. Editable by the author with a visible <em>edited by / at</em> stamp. Never deletable.</td>
+          <td>The everyday record — what the Notes column in the spreadsheet holds today.</td>
+          <td>Only on @mention</td>
+        </tr>
+        <tr>
+          <td><span class="pill p-rose">Question</span></td>
+          <td>Must name an assignee. Stays open with a rose marker until someone marks it resolved; resolver's name and timestamp are recorded.</td>
+          <td>This is the ticketing behaviour, without a separate ticketing module. An open question is a visible obligation.</td>
+          <td>Yes — on raise, on reply, on resolve</td>
+        </tr>
+        <tr>
+          <td><span class="pill p-brass">Decision</span></td>
+          <td>Can be pinned to the project header. Only one pin at a time; pinning a new one archives the old with its date.</td>
+          <td>The "conclusion / direction pin" from the brief. Answers <em>where did we land</em> without reading 23 entries.</td>
+          <td>Yes — to owner, backup, approvers</td>
+        </tr>
+        <tr>
+          <td><span class="pill p-mute">System</span></td>
+          <td>Machine-written, immutable, visually recessive. Status changes, approvals, alerts sent, owner changes, budget edits.</td>
+          <td>Merges the audit trail into the same timeline so cause and comment sit next to each other.</td>
+          <td>Never directly</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Rules that keep the log usable</h4>
+  <ul>
+    <li><strong>Filter tabs, not separate pages.</strong> <em>Activity</em> (everything) · <em>Notes only</em> (human entries) · <em>Open questions</em> · <em>Files</em>. Default is Activity; a user who finds it noisy switches once and the choice persists.</li>
+    <li><strong>Nothing is deleted.</strong> Edits are allowed and stamped, per D-12. A budget approval record whose history can be quietly rewritten is worth less than the spreadsheet it replaced.</li>
+    <li><strong>Email is generated from the stream, never parallel to it.</strong> Every alert writes a System entry saying who it went to. This is what stops email drifting back into being the real channel.</li>
+    <li><strong>Replies are one level deep.</strong> Threading past that turns a project log into a forum.</li>
+    <li><strong>Scroll, don't paginate.</strong> The brief asked for scrolling history; newest at top, older loading as you scroll, with a jump-to-date control for long-running projects.</li>
+    <li><strong>@mention is the only notification trigger for Notes.</strong> Silence by default; deliberate noise on request.</li>
+  </ul>
+
+  <div class="note ok">
+    <strong>What this replaces.</strong> Today a decision lives in one person's inbox and a status lives
+    in a spreadsheet cell, and neither can be found six months later. After this change, the answer to
+    "why did we hold this project" is at the top of the project page as a pinned decision, and the
+    answer to "who is sitting on it" is a resolvable open question with a name on it.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 8. ALERTS ============ -->
+<section id="alerts">
+  <div class="sec-head"><div class="arch">8</div><h2>Email alert catalogue</h2></div>
+  <p class="sec-sub">
+    Fourteen rules cover every trigger in the confirmed flow, including the external gate. Each is
+    individually switchable by the Administrator, and each writes a System entry to the project log
+    when it fires.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">#</th><th style="min-width:190px">Trigger</th><th style="min-width:200px">Recipients</th><th style="min-width:140px">Timing</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td class="id">A-01</td><td><em>Request submitted</em> (4→3) by M2</td><td>M1, owner</td><td>Immediate</td><td>Approval stage alert</td></tr>
+        <tr><td class="id">A-02</td><td><em>Request approved</em> by M1 — gate opens</td><td>M2, owner — with a prompt to lodge in Decision Point &amp; CHaS</td><td>Immediate</td><td>Approval stage alert</td></tr>
+        <tr><td class="id">A-03</td><td><em>Return to Review</em></td><td>M2, owner</td><td>Immediate</td><td>Approval stage alert</td></tr>
+        <tr><td class="id">A-04</td><td><em>Reject</em> — Declined</td><td>M2, owner, M1 copy</td><td>Immediate</td><td>Approval stage alert</td></tr>
+        <tr><td class="id">A-05</td><td>Gate updated — DP or CHaS marked submitted / approved</td><td>Owner, M2</td><td>Immediate</td><td>Approval stage alert</td></tr>
+        <tr><td class="id">A-06</td><td>Gate idle — submitted to a system, no approval recorded</td><td>M1, M2, owner</td><td>At 90d, repeating every 30d</td><td>Delay alert</td></tr>
+        <tr><td class="id">A-07</td><td>Both gates ✓ but status still 3</td><td>M1 — prompt to <em>Mark Approved</em></td><td>Next morning, then weekly</td><td>Follow-up alert</td></tr>
+        <tr><td class="id">A-08</td><td>Stage threshold exceeded — any status</td><td>Owner, backup, M1</td><td>Per-stage threshold (Admin), repeating 30d</td><td>Delay alert (D-11)</td></tr>
+        <tr><td class="id">A-09</td><td>Target date approaching</td><td>Owner, backup</td><td>14d and 3d before</td><td>Targeted date alert</td></tr>
+        <tr><td class="id">A-10</td><td>Target date passed, not at status 1</td><td>Owner, backup, M2</td><td>Day after, then weekly</td><td>Delay alert</td></tr>
+        <tr><td class="id">A-11</td><td>Project closed / completed</td><td>Owner, M1, M2</td><td>Immediate</td><td>Project closed alert</td></tr>
+        <tr><td class="id">A-12</td><td>Question assigned to you</td><td>Assignee</td><td>Immediate</td><td>Task alert</td></tr>
+        <tr><td class="id">A-13</td><td>Country coverage crosses 100%</td><td>M2, M1, Admin</td><td>Immediate, once per year per country</td><td>Budget visibility</td></tr>
+        <tr><td class="id">A-14</td><td>Weekly digest</td><td>Per user preference</td><td>Monday 07:00 local</td><td>Reduces per-event volume</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>One guard rail.</strong> A-06, A-08 and A-10 can all fire on the same stuck project and will double up.
+    The send layer collapses any two alerts to the same recipient about the same project within 24
+    hours into a single message. Without that, the delay alert trains people to filter the sender.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 9. COMPONENTS ============ -->
+<section id="components">
+  <div class="sec-head"><div class="arch">9</div><h2>Component inventory</h2></div>
+  <p class="sec-sub">
+    Everything drawn above, reduced to the parts that must actually be built. Twenty components cover the ten pages.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">#</th><th style="min-width:160px">Component</th><th style="min-width:230px">Notes</th><th>Used on</th></tr></thead>
+      <tbody>
+        <tr><td class="id">C-01</td><td>App shell + sidebar</td><td>Collapses under 760px; approval badge count</td><td>All</td></tr>
+        <tr><td class="id">C-02</td><td>KPI tile</td><td>Uniform anatomy — label / value / sub-line; alert = 3px left rule + red value only (confirmed 28 Aug). Neutral and alert variants</td><td>P2, P7</td></tr>
+        <tr><td class="id">C-03</td><td>Budget bar vs ceiling</td><td>Segmented horizontal bar, ceiling mark, red-hatch overflow — replaces the rose-window gauge (confirmed 28 Aug)</td><td>P2, P7</td></tr>
+        <tr><td class="id">C-04</td><td>Data table</td><td>Fluid width, wraps at any character, horizontal scroll below 620px, sortable headers</td><td>P2, P3, P6, P9</td></tr>
+        <tr><td class="id">C-05</td><td>Expandable row</td><td>Native <code>&lt;details&gt;</code>; no JS needed for open/close</td><td>P3</td></tr>
+        <tr><td class="id">C-06</td><td>Gantt block</td><td>Label column + 12-cell track, pill bars, milestone diamond, today line. Shared by mini and full views</td><td>P3, P4, P5</td></tr>
+        <tr><td class="id">C-07</td><td>Approval strip</td><td>Four-segment stepper: Process 4 · Process 3 · external gate · Mark Approved; wraps to stacked below 700px</td><td>P3, P4</td></tr>
+        <tr><td class="id">C-08</td><td>Approval side panel</td><td>Vertical variant of C-07 with return / reject and the gate controls inline</td><td>P4</td></tr>
+        <tr><td class="id">C-09</td><td>Activity log</td><td>Scrolling stream, four entry types, one-level replies, edited stamp</td><td>P4</td></tr>
+        <tr><td class="id">C-10</td><td>Pinned decision banner</td><td>Single active pin, archives the previous</td><td>P3, P4</td></tr>
+        <tr><td class="id">C-11</td><td>Composer</td><td>Type selector, @mention, attachment, post</td><td>P4</td></tr>
+        <tr><td class="id">C-12</td><td>Modal</td><td>Owner settings, approve confirm, import preview</td><td>P3, P4, P6, P9</td></tr>
+        <tr><td class="id">C-13</td><td>Status pill</td><td>Four statuses + Declined; dot + label; carries the client&rsquo;s original number (D-01)</td><td>All</td></tr>
+        <tr><td class="id">C-14</td><td>Template editor</td><td>Token palette, subject, body, live preview</td><td>P8</td></tr>
+        <tr><td class="id">C-15</td><td>External gate tracker</td><td>Two systems × two click-done actions (submitted / approved), remark + reference per click, per-system day counter, M1-only write (R-2)</td><td>P3, P4, P6</td></tr>
+        <tr><td class="id">C-16</td><td>One-line stage stepper</td><td>Compact pill chain: Submitted → Approved → Decision Point → CHaS → Mark Approved; ✓ / ◷ / dashed states, date and reference in the sub-label</td><td>P3 expanded rows</td></tr>
+        <tr><td class="id">C-17</td><td>Progress bar</td><td>Implementation-phase % only; pre-approval renders &ldquo;starts after approval&rdquo; instead of 0% (confirmed semantics)</td><td>P3, P2</td></tr>
+        <tr><td class="id">C-18</td><td>Dashboard builder</td><td>Widget library, add / resize / filter, multiple named dashboards per user, four seeded demo dashboards (RM-4)</td><td>P2</td></tr>
+        <tr><td class="id">C-19</td><td>Mobile quick view shell</td><td>Device-detected route: period chips, approval cards with P6 actions, update feed reusing C-09; &ldquo;Full site&rdquo; escape (RM-7)</td><td>P10</td></tr>
+        <tr><td class="id">C-20</td><td>Country scope selector</td><td>Page-level multi-select; global per dashboard, remembered, never empty, honours user data scope (confirmed 28 Aug)</td><td>P2, all dashboards</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Visual language</h3>
+  <div class="grid g3">
+    <div class="card card-tight" style="margin:0">
+      <h4 style="margin-top:0">Palette</h4>
+      <div style="font-size:12px;font-family:var(--mono)">
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#1F2A33"></span>Ink</span><span>#1F2A33</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#F2F3F1;outline:1px solid #DEE2DF"></span>Limestone</span><span>#F2F3F1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#A07A33"></span>Brass</span><span>#A07A33</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#3F7E72"></span>Patina</span><span>#3F7E72</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#3C63A0"></span>Glass blue</span><span>#3C63A0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span><span class="dot" style="background:#A6413C"></span>Glass red</span><span>#A6413C</span></div>
+      </div>
+      <p style="font-size:11.5px;color:var(--muted);margin:9px 0 0">
+        Drawn from a northern European church interior: pale stone, slate, brass fittings, oxidised
+        copper, and the two colours that dominate leaded glass.
+      </p>
+    </div>
+    <div class="card card-tight" style="margin:0">
+      <h4 style="margin-top:0">Type</h4>
+      <div style="font-family:var(--display);font-size:24px;font-weight:600;line-height:1.2">Spectral</div>
+      <p style="font-size:11.5px;color:var(--muted);margin:2px 0 12px">Display — headings, page titles, large figures</p>
+      <div style="font-size:17px;font-weight:500">Source Sans 3</div>
+      <p style="font-size:11.5px;color:var(--muted);margin:2px 0 12px">Body — 15.5px / 1.66, chosen for long-session comfort (see type audit)</p>
+      <div style="font-family:var(--mono);font-size:15px">IBM Plex Mono</div>
+      <p style="font-size:11.5px;color:var(--muted);margin:2px 0 0">Data — amounts, IDs, day counts, labels</p>
+    </div>
+    <div class="card card-tight" style="margin:0">
+      <h4 style="margin-top:0">Rules</h4>
+      <ul style="font-size:12.5px;margin:0 0 0 16px;color:var(--ink2)">
+        <li>4px radius everywhere except pills and Gantt bars</li>
+        <li>Money and dates always in mono, right-aligned</li>
+        <li>Colour never carries meaning alone — status pills always show the number</li>
+        <li>One accent per screen; rose is reserved for genuine alarm</li>
+        <li>Tables wrap rather than truncate; no ellipsis on data</li>
+        <li>The arch motif appears once per section, in the numeral badge — nowhere else</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Application type system — confirmed 28 Aug</h3>
+  <p>
+    The dashboard redesign locked a second, stricter system for the product itself, separate from
+    this document&rsquo;s type:
+  </p>
+  <ul>
+    <li><strong>One family in-app: Source Sans 3 for everything.</strong> Hierarchy comes from weight
+      (400 / 600 / 700) and size only. No serif, no mono on application screens — Spectral and
+      IBM&nbsp;Plex&nbsp;Mono remain document faces.</li>
+    <li><strong>Numbers are the same family with tabular figures</strong> (<code>font-variant-numeric:
+      tabular-nums</code>) — columns align without a typeface switch.</li>
+    <li><strong>Labels are sentence case</strong>, 12–12.5px, weight 600, slate — never tracked
+      uppercase mono. Alert state is carried by a 3px left rule and a red value only; no tinted card
+      backgrounds.</li>
+    <li><strong>Aligned micro-layouts are componentised:</strong> the coverage cell (fixed bar +
+      fixed value columns), the attention pill (fixed 58–60px capsule), and the legend row (fixed
+      amount + percent columns) — so alignment survives any data width.</li>
+    <li><strong>Mocks in this document for P3–P10 predate this pass</strong> — they remain
+      layout-authoritative; the app type system above wins on styling at build time.</li>
+  </ul>
+
+  <h3>Type audit — 28 Aug</h3>
+  <p>
+    Audited against community (non-paid) legibility feedback rather than vendor marketing. Three
+    consistent findings, three changes made, one platform setting added:
+  </p>
+  <ul>
+    <li><strong>Finding — comfortable long-reading sans.</strong> Practitioner round-ups and community
+      posts converge on Inter, Source Sans 3 and IBM Plex Sans as the safe screen defaults, with
+      Source Sans 3 singled out as the middle ground that stays comfortable over longer reading.
+      <em>Change:</em> body face moves from Public Sans to Source Sans 3 at 15.5px / 1.66, measure
+      tightened to 76ch.</li>
+    <li><strong>Finding — heavy bold and thin weights fatigue.</strong> Long-focus reading feedback
+      favours a narrow weight range: 400 body, 600 emphasis, nothing lighter than 400 at text sizes.
+      <em>Change:</em> 300-weight cuts dropped from the font load; all bold mapped to 600; display
+      stays Spectral 400/600.</li>
+    <li><strong>Finding — grey text is where documents lose readers.</strong> Secondary text at
+      12px needs ≥ 4.5:1 contrast. <em>Change:</em> muted grey darkened #7C8892 → #6F7B85 and faint
+      #9AA4AC → #8F99A1; tabular numerals enabled on every money figure and day count so columns
+      stop shimmering.</li>
+    <li><strong>Platform setting (v1):</strong> a per-user <em>Comfort font</em> toggle switching the
+      app body to <strong>Atkinson Hyperlegible</strong> — the Braille Institute face, SIL-licensed,
+      repeatedly recommended in accessibility communities and university style guides for low-vision
+      and long-session reading. One CSS variable; no layout change.</li>
+  </ul>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ 10. BUILD ============ -->
+<section id="build">
+  <div class="sec-head"><div class="arch">10</div><h2>Demo build plan</h2></div>
+  <p class="sec-sub">
+    Ordered so that the first three items alone make a demo worth showing. Everything is static or
+    fixture-backed — no schema, no auth, no integration.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">Order</th><th style="min-width:180px">Item</th><th style="min-width:220px">Scope for the demo</th><th style="min-width:120px">Deliberately excluded</th></tr></thead>
+      <tbody>
+        <tr><td class="id">1</td><td>Design tokens + shell</td><td>Palette, type, sidebar, responsive grid</td><td>—</td></tr>
+        <tr><td class="id">2</td><td>P3 Projects + expandable row</td><td>Confirmed row design: 4 key-status columns, one-line stepper, progress bars, dashed planned timelines — port directly from the approved sample file</td><td>Create / edit forms</td></tr>
+        <tr><td class="id">3</td><td>P4 Project detail + activity log</td><td>Four entry types render; composer posts to local state; gate tracker clickable with remark prompt</td><td>Persistence, attachments</td></tr>
+        <tr><td class="id">4</td><td>P2 Dashboard</td><td>Confirmed v3 design + live scope engine ported from the sample (render() over the country array); four seeded demo dashboards behind tabs</td><td>Drag-rearrange (click-to-place only)</td></tr>
+        <tr><td class="id">5</td><td>P6 Approvals inbox</td><td>Reviews + gate items in one list; approve/return confirm, gate update modal, Mark Approved lock</td><td>Bulk approve</td></tr>
+        <tr><td class="id">6</td><td>P5 Timeline</td><td>Cross-project Gantt, group-by switch</td><td>Drag to reschedule</td></tr>
+        <tr><td class="id">7</td><td>P8 Alerts</td><td>One rule fully editable with live preview</td><td>Actual sending</td></tr>
+        <tr><td class="id">8</td><td>P9 Admin</td><td>Users table + approval process config, read-only</td><td>Import runner, API config</td></tr>
+        <tr><td class="id">9</td><td>P1 Sign in</td><td>Role picker (Admin / M1 / M2 / M3 / Viewer) switching the whole demo; SSO button stubbed (D-10); mobile detection toggle</td><td>Real auth</td></tr>
+        <tr><td class="id">10</td><td>Viewer profile</td><td>One seeded viewer account scoped to Bangladesh + Nepal; all actions hidden, exports scoped</td><td>Scope editor UI (seeded only)</td></tr>
+        <tr><td class="id">11</td><td>P10 Mobile quick view</td><td>Period chips, two approval cards, update feed; reachable from the sign-in mobile toggle</td><td>Real device detection</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note q">
+    <strong>Demo-day suggestion.</strong> Add a persona switcher in the top bar. Walk one project live: M2 clicks <em>Request submitted</em>,
+    switch to M1, click <em>Request approved</em>, tick the two gates with remarks, watch
+    <em>Mark Approved</em> unlock, and close 3&thinsp;→&thinsp;2 — the whole confirmed flow in ninety
+    seconds, with the strip and the log filling in as you go.
+  </div>
+
+  <h3>Out of scope for v1</h3>
+  <ul>
+    <li>CHaS / Dynamics 365 API pull — roadmap; the gate is tracked manually in v1 (D-09)</li>
+    <li>Write-back to any church system</li>
+    <li>Multi-currency and FX</li>
+    <li>Mobile applications — responsive web only</li>
+    <li>Document version control beyond simple attachments</li>
+    <li>&ldquo;Decision Point&rdquo; as an API integration — it appears in v1 only as the manually tracked gate (D-13)</li>
+  </ul>
+</section>
+
+
+<div class="divider"></div>
+
+<!-- ============ 11. CLICKUP REFERENCE ============ -->
+<section id="clickup">
+  <div class="sec-head"><div class="arch">11</div><h2>Competitive reference — ClickUp</h2></div>
+  <p class="sec-sub">
+    ClickUp is the closest general-purpose platform to what this system does, and the one the client
+    is most likely to be compared against. This section splits its feature set three ways: what we
+    adopt as v1 basics, what goes on the roadmap for parity, and what we deliberately do not copy —
+    with the reasoning for each.
+  </p>
+
+  <h3>Where this platform already wins</h3>
+  <p>
+    ClickUp models approvals by convention — custom statuses, an approver custom field, watchers, and
+    a filtered &ldquo;Approvals Needed&rdquo; view that teams assemble themselves. Nothing enforces
+    the chain, nothing understands a budget ceiling, and nothing represents an approval that happens
+    in another system. Our four advantages are structural, not cosmetic:
+  </p>
+  <ul>
+    <li><strong>An enforced approval engine</strong> — Process 4 → Process 3 → external gate → Mark
+      Approved is a state machine with permissions, not a naming convention.</li>
+    <li><strong>Budget as a first-class object</strong> — ceilings, coverage %, budget-minus-total and
+      the four-status split are computed, not typed into a custom field.</li>
+    <li><strong>The external gate</strong> — Decision Point and CHaS as tracked, clocked steps. No
+      general-purpose tool represents &ldquo;approved somewhere else&rdquo; natively.</li>
+    <li><strong>Per-stage clocks out of the box</strong> — ClickUp needs a dashboard built to show
+      time-in-status; here it is the spine of the inbox, alerts and aging widget.</li>
+  </ul>
+
+  <h3>Adopt as v1 basics</h3>
+  <p>
+    Six ClickUp mechanics earn their place because they serve this exact workflow and cost little.
+    The first two close the biggest gap: today our design notifies by email only, where ClickUp pairs
+    watchers with an in-app inbox so people stop living in their mail client.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">#</th><th style="min-width:170px">Feature</th><th style="min-width:250px">Shape in our platform</th><th style="min-width:130px">Why basic, not roadmap</th></tr></thead>
+      <tbody>
+        <tr><td class="id">B-1</td><td>Watchers</td><td>Any user can follow a project; watchers receive the project&rsquo;s alert set without being owner or approver. One field on the project + a bell toggle.</td><td>M1s and Admins need to track hot projects they hold no role on</td></tr>
+        <tr><td class="id">B-2</td><td>In-app notification inbox</td><td>Bell icon in the shell; every email alert (§8) also lands here with read/unread state. Email becomes the copy, not the system of record.</td><td>Cuts alert fatigue; the alert-log entry already exists in the data model</td></tr>
+        <tr><td class="id">B-3</td><td>Saved views</td><td>Register filter combinations (status, owner, country, year) saveable per user, with one as personal default.</td><td>22 countries × 4 roles — everyone re-applies the same filters daily</td></tr>
+        <tr><td class="id">B-4</td><td>Board view</td><td>The register rendered as four status columns (kanban). Read-only cards in v1 — drag-to-change-status would bypass the approval engine.</td><td>Same data as P3; a second renderer, not a second feature</td></tr>
+        <tr><td class="id">B-5</td><td>Project templates</td><td>New-project form pre-filled by project type: phases, default fields, alert set (e.g. Emergency Response = 3 phases, tighter thresholds).</td><td>The 5,000-record CHaS corpus shows heavy type repetition</td></tr>
+        <tr><td class="id">B-6</td><td>Bulk actions</td><td>Multi-select register rows: assign owner, add watcher, export selection. No bulk status changes — approvals stay one-by-one.</td><td>Fixes the &ldquo;3 projects unassigned&rdquo; dashboard item in one motion</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Promoted into v1 — 28 Aug</h3>
+  <p>Three items moved out of the roadmap on client instruction, with refined specifications:</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="id">#</th><th style="min-width:160px">Feature</th><th style="min-width:280px">v1 specification as confirmed</th><th style="min-width:120px">Blueprint impact</th></tr></thead>
+      <tbody>
+        <tr><td class="id">RM-3<br><span class="pill p-verd" style="font-size:9.5px">now v1</span></td>
+          <td>Viewer profiles</td>
+          <td>Built-in user profiles mapped to a normal login, assignable as <b>read-only with a selective view scope</b> — whole area, chosen countries, or named projects. No guest links; every viewer is an account the Administrator created.</td>
+          <td>§2 viewer capability table · §5 <code>user.view_scope</code> · §6 P9</td></tr>
+        <tr><td class="id">RM-4<br><span class="pill p-verd" style="font-size:9.5px">now v1</span></td>
+          <td>Multi-dashboards + widget library</td>
+          <td>User-arranged dashboards from the widget library; <b>multiple dashboards per user</b>. Demo ships four pre-populated dashboards seeded with fixture data: <em>Approval Status</em>, <em>Budget Utilisation</em> (proposed / pending / utilised), <em>Project Implementation Status</em>, <em>Active Chats &amp; Comments</em>.</td>
+          <td>§6 P2 tabs + widget library · §5 <code>dashboard</code> entity</td></tr>
+        <tr><td class="id">RM-7<br><span class="pill p-verd" style="font-size:9.5px">now v1</span></td>
+          <td>Mobile quick view</td>
+          <td>Mobile browser detected after login → trimmed menu showing <b>only approvals and updates</b> (chats / comments / notes) within a <b>configurable time period</b>; &ldquo;Full site&rdquo; escape hatch. Responsive web, not a native app.</td>
+          <td>§6 P10 mock · §4 sitemap · build plan item 11</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The Regional Director lens — running 22 countries by exception</h3>
+  <p>
+    Researched separately from the ClickUp pass: what does the person above M1 — a director whose
+    span is the whole area — actually need? The portfolio-management literature is blunt about it.
+    <strong>A dashboard is a signal layer, not a status report</strong>: its job is to compress
+    operational complexity into a small set of signals a decision-maker can read quickly, and the
+    productive pattern is to circulate that live view <em>before</em> the review so the meeting
+    itself is spent on decisions — accelerate, de-scope, cancel — not narration. Visibility is more
+    than reporting: the failure mode is information that arrives too late, at the wrong altitude, or
+    stripped of the context a decision needs. Mature portfolio tools converge on a short list —
+    roll-ups of risks, actions, issues and decisions; cross-project timelines; capacity; budget
+    against ceiling; exception flags. And NGO regional-director job descriptions add two duties
+    software can carry: administrative approvals across country offices, and supervision of the
+    people running them.
+  </p>
+  <p>Mapped to this platform — five things become v1 basics because the machinery already exists:</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:60px">Ref</th><th style="width:190px">v1 basic</th><th>What it is</th><th style="width:180px">Built on</th></tr></thead>
+      <tbody>
+        <tr><td class="id">RD-1</td><td>Country league table</td><td>All 22 countries ranked on coverage, average review days, average gate days and delayed-project count — the benchmarking view that makes outliers visible without opening a single project.</td><td>Countries table + per-stage clocks</td></tr>
+        <tr><td class="id">RD-2</td><td>Director exception digest</td><td>A weekly email containing <em>only</em> exceptions across the director&rsquo;s scope — over-ceiling countries, gate items past threshold, overdue reviews, unowned projects. Empty sections are omitted; a quiet week is a short email.</td><td>Alert engine (extends A-14)</td></tr>
+        <tr><td class="id">RD-3</td><td>Meeting pack export</td><td>One click turns any dashboard + scope into a dated one-page PDF — the pre-read circulated before area reviews so the meeting starts at the decisions.</td><td>Dashboard export + C-20 scope</td></tr>
+        <tr><td class="id">RD-4</td><td>Decisions &amp; questions roll-up</td><td>Every pinned decision and open question across the scope in one dated list — the platform&rsquo;s native RAID view, built from the typed activity stream.</td><td>§7 entry types</td></tr>
+        <tr><td class="id">RD-5</td><td>Delegation &amp; coverage view</td><td>Who is away, which delegations are active, which projects have no owner — the supervision surface for someone responsible for staffing 22 country queues.</td><td>Owner + backup model (D-14)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Four heavier capabilities go to the selectable roadmap below as RM-9 to RM-12 — risk register,
+    capacity view, forecast &amp; burn, and multi-year trends — each with the trigger moment the
+    director will recognise when it arrives.
+  </p>
+
+  <h3>Roadmap — tick to include in the next phase</h3>
+  <p>
+    The remaining items are selectable. Ticking here is a scoping signal, not a commitment — each
+    ticked item gets sized after the demo. Selections live in this file only; print or screenshot to
+    send.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:56px">Select</th><th class="id">#</th><th style="min-width:160px">Feature</th><th style="min-width:230px">Shape when it comes</th><th>Trigger to build</th></tr></thead>
+      <tbody>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm1"></td><td class="id">RM-1</td><td>Automation builder</td><td>Trigger → action rules beyond the fixed §8 catalogue (when status = X and country = Y → email Z, set field), with a run-history audit.</td><td>Admin asks for a third custom alert rule</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm2"></td><td class="id">RM-2</td><td>Intake form</td><td>Shareable form that creates a status-4 project — how field partners raise requests without accounts.</td><td>Implementer partners want to submit directly</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm5"></td><td class="id">RM-5</td><td>API + webhooks</td><td>Public read API and outbound webhooks — the surface the CHaS pull and any Decision Point integration will use (D-09, D-13).</td><td>Either external system opens an interface</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm6"></td><td class="id">RM-6</td><td>AI summaries</td><td>Summarise a long project log or draft the weekly digest from the activity stream.</td><td>Logs regularly exceed ~50 entries</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm8"></td><td class="id">RM-8</td><td>2FA</td><td>Arrives with SSO hardening (D-10); standalone accounts get TOTP.</td><td>Production go-live security review</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm9"></td><td class="id">RM-9</td><td>Risk register</td><td>Per-project risks with likelihood / impact and a portfolio roll-up widget — the full RAID picture next to decisions and questions.</td><td>Directors ask &ldquo;what could go wrong&rdquo; per country</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm10"></td><td class="id">RM-10</td><td>Capacity view</td><td>Projects per owner across countries; flags owners carrying too many concurrent reviews.</td><td>Approval turnaround slows and nobody can say why</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm11"></td><td class="id">RM-11</td><td>Forecast &amp; burn</td><td>Commitment trajectory vs ceiling by month — will a country hit its ceiling in March or July?</td><td>Planning meetings move from &ldquo;where are we&rdquo; to &ldquo;where will we be&rdquo;</td></tr>
+        <tr><td class="ctr"><input type="checkbox" class="rmsel" id="rm12"></td><td class="id">RM-12</td><td>Multi-year trends</td><td>2026 vs 2027 side by side, matching the Excel workbook&rsquo;s year tabs; carry-over analysis.</td><td>Second budget year opens in the platform</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mono-sm" id="rmcount" style="margin-top:-8px">0 of 5 selected for the next phase</p>
+
+  <h3>Deliberately not copied</h3>
+  <p>
+    The most consistent criticism of ClickUp in 2026 reviews is that its flexibility is its cost:
+    teams describe it as overwhelming, and structured onboarding of two to four weeks to settle
+    naming, status schemas and automation rules before it is productive. This platform takes the
+    opposite bet for the opposite user — 22 country teams who open it a few times a week and must
+    never need training:
+  </p>
+  <ul>
+    <li><strong>No custom statuses.</strong> The four-status ladder is the client&rsquo;s own, encoded
+      once. A configurable ladder would let one country quietly diverge from the other 21.</li>
+    <li><strong>No 15-view switcher.</strong> List, Board and Gantt cover this workflow; each extra
+      view is a place a number can look different.</li>
+    <li><strong>No five-level hierarchy.</strong> Country → project → phase is the whole tree.</li>
+    <li><strong>No built-in docs/wiki, chat or time tracking.</strong> The activity log (§7) is the
+      record; the church already has M365 for documents and messaging.</li>
+  </ul>
+
+  <div class="note ok">
+    <strong>Positioning sentence for the client.</strong> ClickUp is a toolbox that a skilled team can
+    build an approval tracker with; this platform <em>is</em> the approval tracker — it knows what a
+    ceiling is, what CHaS is, and how long 196 days is.
+  </div>
+</section>
+
+
+<div class="divider"></div>
+
+<!-- ============ 12. HEAD-TO-HEAD ============ -->
+<section id="h2h">
+  <div class="sec-head"><div class="arch">12</div><h2>Head-to-head — this platform vs ClickUp vs monday.com</h2></div>
+  <p class="sec-sub">
+    Feature-by-feature, re-verified against current reviews and vendor documentation. The honest
+    reading: the two platforms win on breadth and ecosystem; this platform wins wherever the church&rsquo;s
+    actual process — enforced approval, external gate, budget ceilings, stage clocks — has to be a
+    built-in fact rather than a configuration project. Roadmap items are marked so the client sees
+    exactly what parity costs and when it arrives.
+  </p>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:12.5px;color:var(--ink2)">
+    <span><b style="color:var(--verd)">●</b> Built-in</span>
+    <span><b style="color:var(--brass)">◐</b> Assemble / configure yourself</span>
+    <span><span class="pill p-glass" style="color:var(--glass);font-size:10px">RM-x</span> On our selectable roadmap (§11)</span>
+    <span><b style="color:var(--faint)">—</b> Not offered / deliberately excluded</span>
+    <span class="mono-sm">tier notes in brackets</span>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th style="min-width:210px">Capability</th>
+        <th style="min-width:150px">This platform<br><span style="font-weight:400;text-transform:none;letter-spacing:0">v1 + roadmap</span></th>
+        <th style="min-width:160px">ClickUp</th>
+        <th style="min-width:160px">monday.com</th>
+      </tr></thead>
+      <tbody>
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Approval &amp; governance</td></tr>
+        <tr><td>Enforced multi-step budget approval (roles, order, permissions)</td>
+          <td><b style="color:var(--verd)">●</b> v1 core — Process 4 → 3 as a state machine</td>
+          <td><b style="color:var(--brass)">◐</b> convention: custom statuses + approver fields + views</td>
+          <td><b style="color:var(--brass)">◐</b> status columns + automation recipes as approval gates</td></tr>
+        <tr><td>External approval gate — &ldquo;approved in another system&rdquo;, tracked and clocked</td>
+          <td><b style="color:var(--verd)">●</b> v1 unique — Decision Point + CHaS, two click-done steps + remark</td>
+          <td><b style="color:var(--faint)">—</b></td>
+          <td><b style="color:var(--faint)">—</b></td></tr>
+        <tr><td>Mandatory reference numbers on final approval</td>
+          <td><b style="color:var(--verd)">●</b> v1 — Mark Approved requires refs</td>
+          <td><b style="color:var(--brass)">◐</b> custom field, unenforced</td>
+          <td><b style="color:var(--brass)">◐</b> column, unenforced</td></tr>
+        <tr><td>Field-level audit trail</td>
+          <td><b style="color:var(--verd)">●</b> v1 — immutable <code>audit_event</code></td>
+          <td><b style="color:var(--verd)">●</b> workspace audit logs [Enterprise]</td>
+          <td><b style="color:var(--verd)">●</b> audit logs [Enterprise]</td></tr>
+
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Budget</td></tr>
+        <tr><td>Budget ceilings, coverage %, budget-minus-total as computed facts</td>
+          <td><b style="color:var(--verd)">●</b> v1 core — per country per year</td>
+          <td><b style="color:var(--brass)">◐</b> formula custom fields, self-built</td>
+          <td><b style="color:var(--brass)">◐</b> formula columns [Pro]</td></tr>
+        <tr><td>Four-status spend split mirroring the client&rsquo;s tracker</td>
+          <td><b style="color:var(--verd)">●</b> v1 — same numbers as the Excel footer</td>
+          <td><b style="color:var(--brass)">◐</b> dashboard assembly</td>
+          <td><b style="color:var(--brass)">◐</b> dashboard assembly</td></tr>
+
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Visibility</td></tr>
+        <tr><td>Per-stage day clocks + external-gate sub-counters</td>
+          <td><b style="color:var(--verd)">●</b> v1 — spine of inbox, alerts, aging</td>
+          <td><b style="color:var(--brass)">◐</b> time-in-status via views/dashboards</td>
+          <td><b style="color:var(--brass)">◐</b> apps / dashboard widgets</td></tr>
+        <tr><td>Multiple user-arranged dashboards + widget library</td>
+          <td><b style="color:var(--verd)">●</b> v1 (RM-4 promoted) — 4 seeded demo boards</td>
+          <td><b style="color:var(--verd)">●</b> custom dashboards + widgets</td>
+          <td><b style="color:var(--verd)">●</b> widgets [50+ on Pro; 50-board dashboards Enterprise]</td></tr>
+        <tr><td>Gantt / timeline</td>
+          <td><b style="color:var(--verd)">●</b> v1 — Timeblock pattern, mini + full</td>
+          <td><b style="color:var(--verd)">●</b> among 15+ views</td>
+          <td><b style="color:var(--verd)">●</b> [Standard+]</td></tr>
+        <tr><td>Board (kanban) view</td>
+          <td><b style="color:var(--verd)">●</b> v1 — read-only by design (B-4)</td>
+          <td><b style="color:var(--verd)">●</b></td>
+          <td><b style="color:var(--verd)">●</b></td></tr>
+        <tr><td>Saved personal views / filters</td>
+          <td><b style="color:var(--verd)">●</b> v1 (B-3)</td>
+          <td><b style="color:var(--verd)">●</b></td>
+          <td><b style="color:var(--verd)">●</b></td></tr>
+
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Collaboration</td></tr>
+        <tr><td>Single activity stream typed Note / Question / Decision / System</td>
+          <td><b style="color:var(--verd)">●</b> v1 — §7 model</td>
+          <td><b style="color:var(--brass)">◐</b> comments + activity, untyped</td>
+          <td><b style="color:var(--brass)">◐</b> Updates feed, untyped</td></tr>
+        <tr><td>Assignable, resolvable questions (ticketing behaviour)</td>
+          <td><b style="color:var(--verd)">●</b> v1</td>
+          <td><b style="color:var(--verd)">●</b> assigned comments + resolve</td>
+          <td><b style="color:var(--faint)">—</b> no native resolve</td></tr>
+        <tr><td>Pinned direction on the project header</td>
+          <td><b style="color:var(--verd)">●</b> v1 — single pin, archived history</td>
+          <td><b style="color:var(--brass)">◐</b> pin a comment</td>
+          <td><b style="color:var(--brass)">◐</b> pin an update</td></tr>
+        <tr><td>Watchers + in-app notification inbox</td>
+          <td><b style="color:var(--verd)">●</b> v1 (B-1 / B-2)</td>
+          <td><b style="color:var(--verd)">●</b> watchers + Inbox</td>
+          <td><b style="color:var(--verd)">●</b> subscribers + inbox</td></tr>
+        <tr><td>Templated email alerts with merge tokens</td>
+          <td><b style="color:var(--verd)">●</b> v1 — 14-rule catalogue + editor</td>
+          <td><b style="color:var(--brass)">◐</b> email automations [quota by plan]</td>
+          <td><b style="color:var(--brass)">◐</b> automations [250/mo Standard, 25k Pro]</td></tr>
+
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Access &amp; devices</td></tr>
+        <tr><td>Read-only profiles with selective view scope</td>
+          <td><b style="color:var(--verd)">●</b> v1 (RM-3 promoted) — area / countries / projects</td>
+          <td><b style="color:var(--verd)">●</b> read-only guests, scoped</td>
+          <td><b style="color:var(--verd)">●</b> free viewer seats</td></tr>
+        <tr><td>External partner accounts / intake without seats</td>
+          <td><span class="pill" style="color:var(--glass);font-size:10px">RM-2</span> intake form</td>
+          <td><b style="color:var(--verd)">●</b> unlimited scoped guests</td>
+          <td><b style="color:var(--verd)">●</b> guests [Standard+]</td></tr>
+        <tr><td>Mobile</td>
+          <td><b style="color:var(--verd)">●</b> v1 quick view (RM-7): approvals + updates, period filter; native apps later</td>
+          <td><b style="color:var(--verd)">●</b> native apps</td>
+          <td><b style="color:var(--verd)">●</b> native apps</td></tr>
+        <tr><td>SSO (Microsoft 365)</td>
+          <td><b style="color:var(--verd)">●</b> v1 SSO-ready UI, wired at production (D-10)</td>
+          <td><b style="color:var(--verd)">●</b> [paid tiers]</td>
+          <td><b style="color:var(--verd)">●</b> SAML [Enterprise]</td></tr>
+        <tr><td>2FA</td>
+          <td><span class="pill" style="color:var(--glass);font-size:10px">RM-8</span></td>
+          <td><b style="color:var(--verd)">●</b></td>
+          <td><b style="color:var(--verd)">●</b> [Pro+]</td></tr>
+
+        <tr><td colspan="4" style="background:#F6F7F5;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Platform &amp; extensibility</td></tr>
+        <tr><td>No-code automation builder with run history</td>
+          <td><span class="pill" style="color:var(--glass);font-size:10px">RM-1</span></td>
+          <td><b style="color:var(--verd)">●</b> [quota by plan]</td>
+          <td><b style="color:var(--verd)">●</b> 200+ recipes [quota by plan]</td></tr>
+        <tr><td>Public API + webhooks</td>
+          <td><span class="pill" style="color:var(--glass);font-size:10px">RM-5</span> — same surface as CHaS pull</td>
+          <td><b style="color:var(--verd)">●</b></td>
+          <td><b style="color:var(--verd)">●</b></td></tr>
+        <tr><td>AI summaries / drafting</td>
+          <td><span class="pill" style="color:var(--glass);font-size:10px">RM-6</span></td>
+          <td><b style="color:var(--verd)">●</b> Brain [paid add-on]</td>
+          <td><b style="color:var(--verd)">●</b> Monday AI [Pro+]</td></tr>
+        <tr><td>Docs / wiki, chat, time tracking</td>
+          <td><b style="color:var(--faint)">—</b> deliberately excluded — M365 covers it</td>
+          <td><b style="color:var(--verd)">●</b></td>
+          <td><b style="color:var(--verd)">●</b> [time tracking Pro]</td></tr>
+        <tr><td>Ready to use without training</td>
+          <td><b style="color:var(--verd)">●</b> by design — one workflow, encoded once</td>
+          <td><b style="color:var(--brass)">◐</b> ~2–4 weeks structured onboarding reported</td>
+          <td><b style="color:var(--brass)">◐</b> fast start; advanced builds take real setup</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="scroll-hint">Table scrolls horizontally on narrow screens; tier notes reflect early-2026 published plans and may change.</p>
+
+  <div class="note ok">
+    <strong>How to read this in front of the client.</strong> Twelve of the twenty-five rows are green
+    for everyone — those are table stakes, and v1 has them. Five rows are green only for us: the
+    approval engine, the external gate, mandatory references, computed budget facts, and the typed
+    activity stream. Those five are the reason this is a build and not a subscription. The five RM
+    rows are the honest gaps — each already scoped, selectable in §11, and none blocks the workflow
+    the church runs today.
+  </div>
+</section>
+
+<div class="footer">
+  <span>Church Budget Management Platform — Feature Blueprint v1.5 · 28 August 2026 · dashboard confirmed · RD lens</span>
+  <span>Adeptio · confirmed blueprint — build reference for the demo site</span>
+</div>
+
+</div>
+<script>
+(function(){
+  var boxes=document.querySelectorAll('.rmsel'),out=document.getElementById('rmcount');
+  if(!out)return;
+  function upd(){
+    var picked=[].filter.call(boxes,function(b){return b.checked}).map(function(b){return b.id.toUpperCase().replace('RM','RM-')});
+    out.textContent=picked.length+' of '+boxes.length+' selected for the next phase'+(picked.length?' — '+picked.join(', '):'');
+  }
+  boxes.forEach(function(b){b.addEventListener('change',upd)});
+})();
+</script>
+</body>
+</html>

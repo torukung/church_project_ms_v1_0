@@ -422,7 +422,7 @@
     var integrations = [
       ['CHaS · Dynamics 365', 'Manual gate — read-only pull on the roadmap (D-09 · RM-5)', 'brass'],
       ['“Decision Point”', 'Manual gate — API on the roadmap', 'brass'],
-      ['TimeBlock · Gantt (add-on)', 'Deep link only, no data round-trip (D-07)', 'verd'],
+      ['TimeBlock · Gantt (Required Licenses)', 'Deep link only, no data round-trip (D-07)', 'verd'],
       ['SMTP · outbound mail', 'Demo sends render to the in-app outbox', 'verd']
     ].map(function (r) {
       return '<div class="p9-int"><span>' + e(r[0]) + '</span>' + pill(r[1], r[2]) + '</div>';

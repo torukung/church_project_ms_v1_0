@@ -20,11 +20,19 @@
 /* ====================================================== pinned projects === */
 
 .p11-pins{display:flex;flex-wrap:wrap;gap:var(--gap);min-width:0}
+/* v1.0.3 — the pin's 3px left rule is its project country's flag accent (C-21),
+   replacing the v1.0.1 brass "has unread" rule; the unread signal is now the
+   rose dot the row list already uses, so it survives the change. */
 .p11-pin{flex:1 1 236px;min-width:0;display:flex;flex-direction:column;
-  border:1px solid var(--line);border-left:3px solid var(--line);
+  border:1px solid var(--line);
+  border-left:3px solid var(--ccx,var(--cc-x-line));
   border-radius:var(--r);padding:13px 15px;background:#fff}
-.p11-pin.has{border-left-color:var(--brass)}
 .p11-pintop{display:flex;align-items:center;gap:8px;min-width:0}
+.p11-pintop .p11-dot{align-self:center}
+/* unread now shows as the dot plus a bolder name, the same grammar the message
+   rows use — the left rule belongs to the country */
+.p11-pin.has .p11-pinname{font-weight:700}
+.p11-pinmeta .ccflag{margin-right:5px;vertical-align:-1px}
 .p11-pinid{font-size:11.5px;font-weight:600;color:var(--brass);min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .p11-x{margin-left:auto;flex:none;font-size:12px;line-height:1;color:var(--muted);
@@ -57,25 +65,34 @@
 .p11-list{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
   min-width:0}
 
-/* country section header — the P3 register's group band, same grammar */
+/* country section header — the P3 register's country band, same grammar and the
+   same C-21 palette: flag glyph, pastel BOLD background, 3px rule in the flag
+   accent. Labels step from --muted to --slate because --muted does not clear
+   4.5:1 on the pastels (--slate clears 5.5:1 on all seven). */
 .p11-ghd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:9px 14px;background:#F6F8F5;border-bottom:1px solid var(--line);
-  border-top:1px solid var(--line)}
+  padding:9px 14px;background:var(--ccb,var(--cc-x-bold));
+  border-bottom:1px solid var(--line);border-top:1px solid var(--line);
+  border-left:3px solid var(--ccx,var(--cc-x-line))}
 .p11-list > .p11-ghd:first-child{border-top:none}
-.p11-ghd b{font-size:13.5px;font-weight:700}
-.p11-ghd .cnt{font-size:12.5px;color:var(--muted)}
-.p11-ghd .rt{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:600}
+.p11-ghd b{font-size:13.5px;font-weight:700;color:var(--ink)}
+.p11-ghd .cnt{font-size:12.5px;color:var(--slate)}
+.p11-ghd .rt{margin-left:auto;font-size:12.5px;color:var(--slate);font-weight:600}
 .p11-ghd .rt.hot{color:var(--rose);font-weight:700}
 
+/* every row carries its project country's 3px rule; the row body itself stays
+   white, so the list still reads as a list and not as six coloured blocks */
 .p11-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;
-  border-bottom:1px solid var(--line2);min-width:0}
+  border-bottom:1px solid var(--line2);min-width:0;
+  box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line))}
 .p11-row:last-child{border-bottom:none}
 .p11-row.open{background:#FCFDFC}
-/* a flagged row keeps the 3px rule and nothing else — no tinted background */
-.p11-row.pri{box-shadow:inset 3px 0 0 var(--brass)}
+/* a flagged row stacks the brass priority rule INSIDE the country rule — both
+   signals survive, and neither becomes a tinted card */
+.p11-row.pri{box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line)),
+  inset 6px 0 0 var(--brass)}
 
 .p11-main{display:flex;gap:12px;align-items:flex-start;text-align:left;
-  padding:11px 4px 11px 14px;min-width:0}
+  padding:11px 4px 11px 17px;min-width:0}
 .p11-main:hover{background:#FBFCFA}
 .p11-row.open .p11-main:hover{background:transparent}
 
@@ -92,8 +109,14 @@
 .p11-top b{font-size:14px;font-weight:600;line-height:1.35;min-width:0;
   overflow-wrap:break-word}
 .p11-row.unread .p11-top b{font-weight:700}
-.p11-cc{font-size:11.5px;font-weight:600;color:var(--slate);background:#EDF0EC;
-  border-radius:999px;padding:1px 9px;white-space:nowrap;flex:none}
+/* the country chip: the same pastel BOLD tone the section header uses, so a row
+   is identifiable by country whether or not grouping is switched on */
+.p11-cc{font-size:11.5px;font-weight:600;color:var(--ink);
+  background:var(--ccb,var(--cc-x-bold));
+  border-radius:999px;padding:1px 9px;white-space:nowrap;flex:none;
+  display:inline-flex;align-items:center;gap:5px}
+.p11-cc .ccflag{font-size:12px}
+.p11-ghd .ccflag{align-self:center}
 .p11-pid{font-size:11.5px;font-weight:600;color:var(--brass);flex:none}
 .p11-flag{flex:none;color:var(--brass);font-size:12.5px;font-weight:700}
 .p11-dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--rose);
@@ -158,8 +181,8 @@
 
 @media(max-width:760px){
   .p11-row{grid-template-columns:minmax(0,1fr)}
-  .p11-main{padding:11px 14px 8px}
-  .p11-acts{grid-column:1/-1;justify-content:flex-start;padding:0 14px 11px}
+  .p11-main{padding:11px 14px 8px 17px}
+  .p11-acts{grid-column:1/-1;justify-content:flex-start;padding:0 14px 11px 17px}
   .p11-chev{margin-left:auto}
 }
 @media(max-width:520px){
@@ -168,7 +191,7 @@
   .p11-pin{flex:1 1 100%}
   .p11-panel{padding-left:12px;padding-right:12px}
   .p11-ghd{padding:9px 12px}
-  .p11-main{padding:11px 12px 8px}
-  .p11-acts{padding:0 12px 11px}
+  .p11-main{padding:11px 12px 8px 15px}
+  .p11-acts{padding:0 12px 11px 15px}
   .p11-acts .btn.sm{flex:0 1 auto}
 }

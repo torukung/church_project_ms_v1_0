@@ -247,22 +247,28 @@
         : '<span class="p8-state ' + (on ? 'ison' : 'isoff') + '">' +
           (on ? 'On' : 'Off') + '</span>';
 
-      return '<tr><td class="p8-id num">' + e(r.id) + '</td>' +
-        '<td>' + e(r.trigger) +
+      /* p8-nw is what keeps "A-01" on one line — the id is a capsule of text in
+         a fixed-width column, never a wrapping phrase (v1.0.3 defect fix) */
+      return '<tr><td class="p8-id num p8-nw">' + e(r.id) + '</td>' +
+        '<td class="p8-trig">' + e(r.trigger) +
         (r.editable ? ' <span class="p8-tag">template editable</span>' : '') + '</td>' +
-        '<td>' + e(r.to) + '</td>' +
-        '<td>' + e(r.timing) + '</td>' +
-        '<td>' + e(r.kind) + '</td>' +
-        '<td class="r">' + toggle + '</td></tr>';
+        '<td class="p8-to">' + e(r.to) + '</td>' +
+        '<td class="p8-when">' + e(r.timing) + '</td>' +
+        '<td class="p8-kind">' + e(r.kind) + '</td>' +
+        '<td class="r p8-stat">' + toggle + '</td></tr>';
     }).join('');
 
     var offs = RULES.filter(function (r) { return s.on[r.id] === false; }).length;
 
+    /* built here rather than through U.table: the heads carry the same width
+       classes as their cells, which is what pins the column balance */
+    var head = '<tr><th class="p8-nw">#</th><th class="p8-trig">Trigger</th>' +
+      '<th class="p8-to">Recipients</th><th class="p8-when">Timing</th>' +
+      '<th class="p8-kind">Type</th><th class="r p8-stat">Status</th></tr>';
+
     return U.card('Alert rules — A-01 to A-14',
-      U.table([
-        { label: '#' }, { label: 'Trigger' }, { label: 'Recipients' },
-        { label: 'Timing' }, { label: 'Type' }, { label: 'Status', right: true }
-      ], [body]) +
+      '<div class="tblwrap"><table class="tbl"><thead>' + head +
+      '</thead><tbody>' + body + '</tbody></table></div>' +
       '<p class="p8-note">' +
       (admin ? 'Switching a rule off stops it firing for this demo session. '
              : 'Only Admin can switch a rule on or off (docs/01 permission matrix). ') +

@@ -13,6 +13,18 @@
    is reachable without a pointer. Viewers and out-of-scope personas get plain
    divs: no handles, no selection, no cursor change.
 
+   v1.0.3: a phase balloon also RESIZES. Its last ~9px at either end are a grip
+   (.p5-h, ew-resize) that moves only that date; the middle keeps the whole-bar
+   move. Left drags the start, right drags the end, both day-snapped against the
+   same MODEL frame and clamped so the phase keeps at least one day and stays
+   inside the drawn window. While the pointer is down nothing re-renders — the
+   balloon's left/width, its title and the selection tray's date remark are
+   written straight to the DOM — and the drop lands on the one commit() path a
+   nudge uses, so there is still exactly one way a timeline date reaches the
+   store. A cancelled or zero-day gesture puts everything back and writes
+   nothing. The tray gained per-end ± pairs, which is the same feature without
+   a pointer. The target diamond is a single date and keeps v1.0.2 behaviour.
+
    Local pure helpers (iso, monthsBetween, spansFor, model) live here rather
    than in derive.js because derive.js is not this round's to edit; they are
    side-effect free and can move up later. */
@@ -182,7 +194,10 @@
 
     var html = '<div class="crumb">TimeBlock · ' + e(scopeName) +
       ' · Budget year ' + e(CBP.CONFIG.BUDGET_YEAR) + '</div>' +
-      '<div class="pagehead"><h1>TimeBlock<span class="p5-addon" title="Optional add-on module (D-07)">Add-on module</span></h1>' +
+      /* v1.0.3 — the client's wording for the page-header badge. The class and
+         the licensing note stay; only the label changes. */
+      '<div class="pagehead"><h1>TimeBlock<span class="p5-addon" ' +
+      'title="Licensed add-on module (D-07)">Required Licenses</span></h1>' +
       '<span class="sub">' + scoped.length + ' project' + (scoped.length === 1 ? '' : 's') +
       ' in scope · ' + e(D.fmtDateY(iso(m.from))) + ' – ' + e(D.fmtDateY(iso(D.addDays(m.to, -1)))) +
       '</span><div class="sp">' +
@@ -210,9 +225,12 @@
     }
 
     if (movable) {
-      html += '<p class="p5-lead">Drag a phase balloon or the target diamond along its row to ' +
-        'reschedule — it snaps to whole days and the drop is written to the record with a log ' +
-        'line. Prefer the keyboard? Click a balloon to select it, then nudge a day at a time.</p>';
+      html += '<p class="p5-lead">Drag the middle of a phase balloon (or the target diamond) ' +
+        'along its row to reschedule the whole thing; drag either <b>end</b> of a balloon to ' +
+        'move just that date and change how long the phase runs. Everything snaps to whole ' +
+        'days and the drop is written to the record with a log line. Prefer the keyboard? ' +
+        'Click a balloon to select it, then nudge the start, the end or the whole phase a day ' +
+        'at a time.</p>';
     }
 
     /* -------------------------------------------------------- the chart */
@@ -366,12 +384,21 @@
           ' aria-pressed="' + (on ? 'true' : 'false') + '"'
         : '';
 
+      /* v1.0.3 — the two resize grips. They are inert <u> elements inside the
+         balloon, so nothing interactive nests and a persona who may not move
+         the record never gets them (or the ew-resize cursor) at all. The
+         pointerdown handler reads which one the gesture started on. */
+      var grips = live
+        ? '<u class="p5-h l" data-p5end="start" aria-hidden="true"></u>' +
+          '<u class="p5-h r" data-p5end="end" aria-hidden="true"></u>'
+        : '';
+
       return balloon(live ? 'button' : 'div', cls,
         'left:' + pct(a) + ';width:' + pct(w),
         e(s.label + ' · ' + D.fmtDateY(s.start) + ' – ' + D.fmtDateY(s.end) + ' · ' + owner +
-          (live ? ' · drag or click to reschedule' : '')),
+          (live ? ' · drag the middle to move, an end to change that date' : '')),
         attrs,
-        '<i></i>' + (roomy ? '<span>' + e(text) + '</span>' : ''));
+        '<i></i>' + (roomy ? '<span>' + e(text) + '</span>' : '') + grips);
     }).join('');
 
     var mile = '';
@@ -440,25 +467,41 @@
     };
   }
 
+  /* one ± pair. `mode` is what the commit path does with the day: move the whole
+     balloon, or only one of its ends. */
+  function nudgePair(label, mode, what) {
+    return '<span class="p5-nudge"><span class="p5-nlab">' + e(label) + '</span>' +
+      '<button type="button" class="btn sm" data-act="p5nudge" data-mode="' + e(mode) +
+        '" data-dir="-1" aria-label="' + e(what + ' one day earlier') + '">−1 d</button>' +
+      '<button type="button" class="btn sm" data-act="p5nudge" data-mode="' + e(mode) +
+        '" data-dir="1" aria-label="' + e(what + ' one day later') + '">+1 d</button>' +
+      '</span>';
+  }
+
   function trayHtml(state, r, sel) {
     var what = selDates(r.project, sel);
     if (!what) return '';
     var err = (state.ui.err && state.ui.err.key === 'edit')
       ? '<span class="p5-editerr">' + e(state.ui.err.msg) + '</span>' : '';
 
+    /* v1.0.3 — a phase can be nudged whole, or one end at a time, which is the
+       keyboard half of the bar-end resize. The target diamond is a single date,
+       so it keeps the v1.0.2 move-only pair. The date remark above recomputes
+       from the record on every render, and tracks a drag live. */
+    var nudges = (sel.kind === 'target')
+      ? nudgePair('Move', 'move', 'Move the target date')
+      : nudgePair('Whole phase', 'move', 'Move the phase') +
+        nudgePair('Start', 'start', 'Move the start date') +
+        nudgePair('End', 'end', 'Move the end date');
+
     return '<div class="p5-edit">' +
       '<span class="p5-editlab">Moving <b>' + e(what.name) + '</b> ' +
         '<span class="num">' + e(what.when) + '</span></span>' +
-      '<span class="p5-nudge">' +
-        '<button type="button" class="btn sm" data-act="p5nudge" data-dir="-1" ' +
-          'aria-label="Move one day earlier">← 1 day</button>' +
-        '<button type="button" class="btn sm" data-act="p5nudge" data-dir="1" ' +
-          'aria-label="Move one day later">1 day →</button>' +
-      '</span>' +
+      nudges +
       '<button type="button" class="btn sm" data-act="p5done">Done</button>' +
       err +
-      '<span class="p5-editnote">Each move is saved to the record with its own activity line.' +
-      '</span></div>';
+      '<span class="p5-editnote">Each change is saved to the record with its own activity ' +
+      'line; a phase always keeps at least one day between its ends.</span></div>';
   }
 
   /* ===================================================== interaction ====== */
@@ -505,19 +548,81 @@
 
   /* --------------------------------------------------------- the maths --- */
 
-  /* how far this balloon may travel before it leaves the drawn window */
-  function clampDays(d, days) {
-    var s = D.parse(d.start), en = D.parse(d.end);
-    var lo = Math.ceil((MODEL.fromMs - (+s)) / DAY);
-    var hi = Math.floor((MODEL.toMs - DAY - (+en)) / DAY);
+  var MIN_SPAN_DAYS = 1;   /* a phase always keeps at least one day of width */
+
+  /* How far this gesture may travel. Three shapes, one function, so a drag and
+     a tray nudge can never clamp differently:
+
+       move   both ends stay inside the drawn window
+       start  the start may not pass the window's left edge, nor reach the end
+       end    the end may not pass the window's right edge, nor reach the start
+
+     The window is the same MODEL frame the chart is drawn on, and every bound
+     is in whole days, so the result is day-snapped by construction. A phase
+     that already sits on the frame's edge therefore cannot be dragged past it
+     — the tray's ±1 day nudge is the way out, and the next render redraws the
+     frame around the new date. */
+  function clampDays(d, days, mode) {
+    var s = +D.parse(d.start), en = +D.parse(d.end);
+    var lo, hi;
+
+    if (mode === 'start') {
+      lo = Math.ceil((MODEL.fromMs - s) / DAY);
+      hi = Math.floor((en - MIN_SPAN_DAYS * DAY - s) / DAY);
+    } else if (mode === 'end') {
+      lo = Math.ceil((s + MIN_SPAN_DAYS * DAY - en) / DAY);
+      hi = Math.floor((MODEL.toMs - DAY - en) / DAY);
+    } else {
+      lo = Math.ceil((MODEL.fromMs - s) / DAY);
+      hi = Math.floor((MODEL.toMs - DAY - en) / DAY);
+    }
+
+    if (lo > hi) return 0;                 /* nowhere legal to go */
     if (days < lo) days = lo;
     if (days > hi) days = hi;
     return days;
   }
 
-  function dragLabel(d, days) {
-    if (d.kind === 'target') return 'Target ' + D.fmtDateY(plus(d.start, days));
-    return D.fmtDateY(plus(d.start, days)) + ' – ' + D.fmtDateY(plus(d.end, days));
+  /* where this gesture puts the balloon's two dates */
+  function dragDates(d, days, mode) {
+    if (d.kind === 'target') return { start: plus(d.start, days), end: plus(d.start, days) };
+    if (mode === 'start')    return { start: plus(d.start, days), end: d.end };
+    if (mode === 'end')      return { start: d.start, end: plus(d.end, days) };
+    return { start: plus(d.start, days), end: plus(d.end, days) };
+  }
+
+  /* the date remark, in the exact words selDates() renders at rest — so the
+     line the tray shows mid-drag is the line it will show after the commit */
+  function dragLabel(d, dates) {
+    if (d.kind === 'target') return D.fmtDateY(dates.start);
+    return D.fmtDateY(dates.start) + ' – ' + D.fmtDateY(dates.end) +
+           ' · ' + D.days(D.daysBetween(dates.start, dates.end));
+  }
+
+  /* Mid-drag, write straight to the DOM: no render pass fires until the drop,
+     so the balloon, its title, and the tray's date remark are all moved by
+     hand. Everything here is undone by putting the balloon back on a cancel. */
+  function paint(d, dates) {
+    var a = MODEL.pos(dates.start), b = MODEL.pos(dates.end);
+    d.el.style.left = pct(a);
+    if (d.kind !== 'target') d.el.style.width = pct(Math.max(1.4, b - a));
+
+    var text = dragLabel(d, dates);
+    try {
+      d.el.setAttribute('title', d.name + ' · ' + text);
+      if (d.kind === 'target') {
+        d.el.setAttribute('data-date', dates.start);
+      } else {
+        d.el.setAttribute('data-start', dates.start);
+        d.el.setAttribute('data-end', dates.end);
+      }
+    } catch (err) { /* older engines */ }
+
+    /* the tray belongs to the selection; only touch it when it is this balloon */
+    var sel = CBP.state.ui.p5Sel;
+    if (!sel || sel.pid !== d.pid || sel.kind !== d.kind || sel.idx !== d.idx) return;
+    var node = document.querySelector('.p5-edit .p5-editlab .num');
+    if (node) node.textContent = text;
   }
 
   /* ------------------------------------------------------------- commit -- */
@@ -526,7 +631,8 @@
      one way a timeline date reaches the store. A phases-only save deliberately
      leaves ui.returnTo alone (CORE contract), so no "Back to projects" bar
      jumps over the chart. */
-  function commit(kind, pid, idx, days) {
+  function commit(kind, pid, idx, days, mode) {
+    mode = mode || 'move';
     var p = CBP.projectById(pid);
     if (!p || !days) { CBP.render(); return; }
     if (!mayMove(CBP.state.user, p)) { CBP.render(); return; }
@@ -543,10 +649,17 @@
       var sorted = D.phases(p);
       var moved = sorted[idx];
       if (!moved) { CBP.render(); return; }
+
+      /* the last guard before the store: whatever the pointer or the tray asked
+         for, a phase leaves here with start strictly before end */
+      var ns = (mode === 'end') ? moved.start : plus(moved.start, days);
+      var ne = (mode === 'start') ? moved.end : plus(moved.end, days);
+      if (D.daysBetween(ns, ne) < MIN_SPAN_DAYS) { CBP.render(); return; }
+
       var out = (p.phases || []).map(function (x) {
         var o = {}, k;
         for (k in x) { if (Object.prototype.hasOwnProperty.call(x, k)) o[k] = x[k]; }
-        if (x === moved) { o.start = plus(x.start, days); o.end = plus(x.end, days); }
+        if (x === moved) { o.start = ns; o.end = ne; }
         return o;
       });
       res = A.projectUpdate(pid, { phases: out });
@@ -571,16 +684,31 @@
     if (!rect || !rect.width) return;
 
     var isTarget = t.getAttribute('data-p5drag') === 'target';
+
+    /* v1.0.3 — which part of the balloon the gesture started on. The grips are
+       ~9px of the bar at each end (see .p5-h in p5p9.css), so the middle keeps
+       the whole-bar move it has always had and the ends change one date each.
+       A diamond is a single date and has no ends. */
+    var grip = isTarget ? null : closest(ev.target, '[data-p5end]');
+    var mode = grip ? grip.getAttribute('data-p5end') : 'move';
+
+    var idx = parseInt(t.getAttribute('data-idx'), 10) || 0;
+    var ph = isTarget ? null : D.phases(p)[idx];
+
     DRAG = {
       el: t,
       kind: isTarget ? 'target' : 'phase',
+      mode: mode,
       pid: pid,
-      idx: parseInt(t.getAttribute('data-idx'), 10) || 0,
+      idx: idx,
+      name: isTarget ? 'Target date' : ((ph && ph.phase) || 'Phase'),
       start: isTarget ? t.getAttribute('data-date') : t.getAttribute('data-start'),
       end: isTarget ? t.getAttribute('data-date') : t.getAttribute('data-end'),
       x0: ev.clientX,
       w: rect.width,
-      left0: parseFloat(t.style.left) || 0,
+      left0: t.style.left,
+      width0: t.style.width,
+      title0: t.getAttribute('title'),
       days: 0,
       moved: false
     };
@@ -593,11 +721,32 @@
     var dx = ev.clientX - DRAG.x0;
     if (Math.abs(dx) > 3) DRAG.moved = true;
 
-    var days = clampDays(DRAG, Math.round(dx / DRAG.w * MODEL.totalDays));
+    var days = clampDays(DRAG, Math.round(dx / DRAG.w * MODEL.totalDays), DRAG.mode);
     DRAG.days = days;
-    DRAG.el.style.left = (DRAG.left0 + (days / MODEL.totalDays * 100)) + '%';
-    showTip(ev, dragLabel(DRAG, days));
+    var dates = dragDates(DRAG, days, DRAG.mode);
+    paint(DRAG, dates);
+    showTip(ev, DRAG.name + ' · ' + dragLabel(DRAG, dates));
   });
+
+  /* put a balloon back exactly as it was drawn — a cancelled or zero-day
+     gesture must leave no trace at all, in the DOM or in the store */
+  function restore(d) {
+    d.el.style.left = d.left0;
+    if (d.kind !== 'target') d.el.style.width = d.width0;
+    try {
+      if (d.title0 !== null && d.title0 !== undefined) d.el.setAttribute('title', d.title0);
+      if (d.kind === 'target') {
+        d.el.setAttribute('data-date', d.start);
+      } else {
+        d.el.setAttribute('data-start', d.start);
+        d.el.setAttribute('data-end', d.end);
+      }
+    } catch (err) { /* older engines */ }
+    var sel = CBP.state.ui.p5Sel;
+    if (!sel || sel.pid !== d.pid || sel.kind !== d.kind || sel.idx !== d.idx) return;
+    var node = document.querySelector('.p5-edit .p5-editlab .num');
+    if (node) node.textContent = dragLabel(d, { start: d.start, end: d.end });
+  }
 
   function endDrag(ev) {
     if (!DRAG) return;
@@ -609,12 +758,12 @@
     if (!d.moved || !d.days) {
       /* a tap, or a wobble smaller than a day — put the balloon back and let the
          click handler turn it into a selection */
-      d.el.style.left = d.left0 + '%';
+      restore(d);
       return;
     }
     SUPPRESS = 1;
     CBP.state.ui.p5Sel = { pid: d.pid, kind: d.kind, idx: d.idx };
-    commit(d.kind, d.pid, d.idx, d.days);
+    commit(d.kind, d.pid, d.idx, d.days, d.mode);
   }
 
   document.addEventListener('pointerup', endDrag);
@@ -626,7 +775,7 @@
     var d = DRAG;
     DRAG = null;
     hideTip();
-    d.el.style.left = d.left0 + '%';
+    restore(d);
   });
 
   /* click = the keyboard-and-mouse fallback path: select, nudge, dismiss */
@@ -663,14 +812,22 @@
       return;
     }
 
-    /* p5nudge — ±1 day on whatever is selected */
+    /* p5nudge — ±1 day on whatever is selected, whole balloon or one end.
+       Same commit path as the drag, so the same guard and the same log line. */
     var sel = CBP.state.ui.p5Sel;
     if (!sel) return;
     var dir = parseInt(t.getAttribute('data-dir'), 10);
-    commit(sel.kind, sel.pid, sel.idx, dir === -1 ? -1 : 1);
+    var mode = t.getAttribute('data-mode') || 'move';
+    if (sel.kind === 'target') mode = 'move';
+    commit(sel.kind, sel.pid, sel.idx, dir === -1 ? -1 : 1, mode);
   });
 
   /* exposed for the build harness: the same commit path the UI uses */
-  CBP.p5 = { commit: commit, spansFor: spansFor, model: model };
+  /* exposed for the build harness: the same commit path the UI uses, plus the
+     frame the pointer handlers are currently measuring against */
+  CBP.p5 = {
+    commit: commit, spansFor: spansFor, model: model, clampDays: clampDays,
+    frame: function () { return MODEL; }
+  };
 
 })();

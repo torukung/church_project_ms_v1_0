@@ -420,10 +420,63 @@ details.prj[open] .chev{transform:rotate(180deg)}
   .bico .glint{opacity:.5}
 }
 
-/* Add-on module chip beside a nav label (TimeBlock, D-07) */
-.side a .addon{font-size:10px;font-weight:600;color:var(--brass);
+/* Add-on module chip beside a nav label (TimeBlock, D-07).
+   v1.0.3 · the chip now reads "Required Licenses", so the nav label has to be
+   allowed to shrink and the chip to wrap under it at narrow sidebar widths. */
+.side a > span{min-width:0;overflow-wrap:break-word}
+.side a .addon{display:inline-block;font-size:10px;font-weight:600;color:var(--brass);
   border:1px solid #E2D3B4;border-radius:999px;padding:0 6px;margin-left:7px;
-  vertical-align:1px;background:#FDFBF6;letter-spacing:0}
+  vertical-align:1px;background:#FDFBF6;letter-spacing:0;white-space:nowrap}
 .p5-addon{font-size:11px;font-weight:600;color:var(--brass);
   border:1px solid #E2D3B4;border-radius:999px;padding:1px 8px;margin-left:8px;
   vertical-align:3px;background:#FDFBF6}
+
+/* ============================================================================
+   v1.0.3 · C-21 country identity palette
+   ----------------------------------------------------------------------------
+   Client-approved deviation from design rule 4 ("no tinted cards"): the six
+   seeded countries carry a flag-derived pastel identity so a country band on P3
+   and a country section on P11 read as the same object. Three tones per country,
+   defined ONCE here and nowhere else:
+
+     --cc-<code>-bold   pastel, header/band background (BOLD tone)
+     --cc-<code>-light  pastel, row-area / section background (LIGHT tone)
+     --cc-<code>-line   saturated flag accent, for 3px rules and borders only
+
+   Contrast, measured against the tokens actually printed on them:
+     ink  #22303B on every -bold  ≥ 10.1:1     (AA/AAA normal text)
+     slate#4A5761 on every -bold  ≥  5.5:1     (AA normal text)
+     rose #A3423E on every -bold  ≥  4.6:1     (AA — the over/alert value)
+     -line vs its own -bold       ≥  4.0:1     (AA non-text, 3px rules)
+   The two flag-yellow lines (IND saffron, MMR golden) are darkened from the
+   literal flag hex so a 3px rule clears 3:1 on both the pastel and white.
+
+   Nothing else in the app may inherit these: the ONLY consumers are the .cc-*
+   utility classes below, and the only elements that carry a .cc-* class are the
+   P3 country band / body / chip and the P11 country header / row / pin. */
+:root{
+  --cc-bgd-bold:#D2E7DE; --cc-bgd-light:#F1F8F4; --cc-bgd-line:#2E6B54;
+  --cc-npl-bold:#F4D8DE; --cc-npl-light:#FBF2F4; --cc-npl-line:#A63446;
+  --cc-khm-bold:#D6E0F3; --cc-khm-light:#F1F4FA; --cc-khm-line:#33518F;
+  --cc-ind-bold:#FCE3C3; --cc-ind-light:#FDF6EC; --cc-ind-line:#9C6318;
+  --cc-mmr-bold:#F6EBB8; --cc-mmr-light:#FCF9EA; --cc-mmr-line:#7F6F1A;
+  --cc-lao-bold:#F5DBD5; --cc-lao-light:#FBF3F1; --cc-lao-line:#2C4E8A;
+  /* neutral fallback for any country the palette does not know */
+  --cc-x-bold:#E4E7E3;   --cc-x-light:#F7F8F6;   --cc-x-line:#69747E;
+}
+
+/* The utility classes expose the trio under three generic names, so every page
+   stylesheet writes var(--ccb) / var(--ccl) / var(--ccx) and stays completely
+   palette-agnostic — a seventh country is one line here and nothing else. */
+.cc-x  {--ccb:var(--cc-x-bold);  --ccl:var(--cc-x-light);  --ccx:var(--cc-x-line)}
+.cc-bgd{--ccb:var(--cc-bgd-bold);--ccl:var(--cc-bgd-light);--ccx:var(--cc-bgd-line)}
+.cc-npl{--ccb:var(--cc-npl-bold);--ccl:var(--cc-npl-light);--ccx:var(--cc-npl-line)}
+.cc-khm{--ccb:var(--cc-khm-bold);--ccl:var(--cc-khm-light);--ccx:var(--cc-khm-line)}
+.cc-ind{--ccb:var(--cc-ind-bold);--ccl:var(--cc-ind-light);--ccx:var(--cc-ind-line)}
+.cc-mmr{--ccb:var(--cc-mmr-bold);--ccl:var(--cc-mmr-light);--ccx:var(--cc-mmr-line)}
+.cc-lao{--ccb:var(--cc-lao-bold);--ccl:var(--cc-lao-light);--ccx:var(--cc-lao-line)}
+
+/* the flag glyph: colour emoji, so it must never inherit a text colour or a
+   tabular-numeral setting; sized to sit on the label baseline */
+.ccflag{font-style:normal;font-size:14px;line-height:1;flex:none;
+  font-variant-numeric:normal;letter-spacing:0}

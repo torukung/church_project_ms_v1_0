@@ -573,24 +573,105 @@
 
   /* ============================================ v1.0.1 · budget history ====
      2024 and 2025 are fixture history (data.js). 2026 is never stored — it is
-     summed from the live projects, so an edit in the demo moves it. */
+     summed from the live projects, so an edit in the demo moves it.
 
-  D.history = function (code, year) {
+     v1.0.3 — a history year's committed amount is now CONFIGURABLE: the store
+     seeds state.histEdit = { code: { year: committed } } from the fixture at
+     init and every read below prefers it, so the fixture stays the seed and
+     never the live number. Years added by the user (2023, 2022 …) exist only in
+     state.histEdit. The per-year ceiling is fixed demo furniture — the fixture
+     carries 1,000,000 for every seeded year and an added year takes the same. */
+
+  D.HIST_CEILING = 1000000;
+
+  function histRow(code) {
     var rows = (window.CBP_DATA && CBP_DATA.budget_history) || [];
-    var row = rows.filter(function (r) { return r.code === code; })[0];
-    if (!row) return null;
-    if (year === undefined || year === null) return row;
-    return (row.years || {})[String(year)] || null;
+    return rows.filter(function (r) { return r.code === code; })[0] || null;
+  }
+
+  function histFixture(code, year) {
+    var row = histRow(code);
+    return row ? ((row.years || {})[String(year)] || null) : null;
+  }
+
+  /* the ceiling a history year is measured against — fixture first, then the
+     standing 1,000,000 an added year inherits */
+  D.histCeiling = function (code, year) {
+    var f = histFixture(code, year);
+    return (f && f.ceiling) ? f.ceiling : D.HIST_CEILING;
   };
 
+  /* state-backed: the committed figure comes from state.histEdit when it is
+     there, the fixture otherwise. Shape is unchanged — { ceiling, committed,
+     spent_q } — so widgets.js and anything else reading D.history(code, 2024)
+     keeps working. D.history(code) with no year still returns the fixture row
+     (that is where plan_2027 lives). */
+  D.history = function (code, year) {
+    if (year === undefined || year === null) return histRow(code);
+    var f = histFixture(code, year);
+    var st = S();
+    var ed = (st && st.histEdit && st.histEdit[code])
+      ? st.histEdit[code][String(year)] : undefined;
+    if (ed === undefined || ed === null) return f;
+    return {
+      ceiling: D.histCeiling(code, year),
+      committed: ed,
+      spent_q: f ? f.spent_q : []
+    };
+  };
+
+  /* every stored history year, ascending — fixture years plus anything the
+     Forecasting tab has added */
   D.historyYears = function () {
     var rows = (window.CBP_DATA && CBP_DATA.budget_history) || [];
     var seen = {}, out = [];
-    rows.forEach(function (r) {
-      Object.keys(r.years || {}).forEach(function (y) { if (!seen[y]) { seen[y] = 1; out.push(y); } });
-    });
-    return out.sort();
+    function take(y) { if (!seen[y]) { seen[y] = 1; out.push(String(y)); } }
+    rows.forEach(function (r) { Object.keys(r.years || {}).forEach(take); });
+    var st = S();
+    if (st && st.histEdit) {
+      Object.keys(st.histEdit).forEach(function (c) {
+        Object.keys(st.histEdit[c] || {}).forEach(take);
+      });
+    }
+    return out.sort(function (a, b) { return (+a) - (+b); });
   };
+
+  /* the years that carry an ACTUAL figure: every history year plus the live
+     budget year, ascending. The projection is the year after the last of them. */
+  D.actualYears = function () {
+    var out = D.historyYears().map(Number);
+    var live = +CBP.CONFIG.BUDGET_YEAR;
+    if (out.indexOf(live) === -1) out.push(live);
+    return out.sort(function (a, b) { return a - b; });
+  };
+
+  /* the committed amount for one country in one actual year: the live sum for
+     the budget year, the configured/fixture figure for anything earlier */
+  D.actualCommitted = function (code, year, projects) {
+    if (+year === +CBP.CONFIG.BUDGET_YEAR) {
+      var st = S();
+      var pool = projects || (st ? st.projects : []);
+      return D.committedTotal(pool.filter(function (p) { return p.country === code; }));
+    }
+    var h = D.history(code, year);
+    return h ? h.committed : null;
+  };
+
+  D.actualCeiling = function (code, year, countries) {
+    if (+year === +CBP.CONFIG.BUDGET_YEAR) {
+      var st = S();
+      var list = countries || (st ? st.countries : []);
+      var c = list.filter(function (x) { return x.code === code; })[0];
+      return c ? c.ceiling : null;
+    }
+    return D.histCeiling(code, year);
+  };
+
+  /* 2024–2027 are the demo's fixed columns; anything else was added and can be
+     removed again */
+  D.FIXED_YEARS = [2024, 2025, 2026, 2027];
+
+  D.isFixedYear = function (year) { return D.FIXED_YEARS.indexOf(+year) > -1; };
 
   /* spent across the four quarters of a stored year */
   D.spentTotal = function (code, year) {
@@ -606,76 +687,184 @@
     return committed / ceiling * 100;
   };
 
-  D.plan2027 = function (code) {
+  /* ------------------------------------------------------- plan years ---- */
+  /* v1.0.3 — the plan is no longer a single 2027 map. state.planYears keys a
+     { code: amount } map by year, and state.plan2027 IS state.planYears[2027]
+     (the same object, not a copy), so every v1.0.1 caller — D.plan2027,
+     A.planSet(code, value), the yearcompare widget — keeps reading and writing
+     exactly what it did. */
+
+  D.PLAN_BASE_YEAR = 2027;
+
+  D.planYears = function () {
     var st = S();
-    if (st && st.plan2027 && st.plan2027[code] !== undefined && st.plan2027[code] !== null) {
-      return st.plan2027[code];
+    var out = [];
+    if (st && st.planYears) {
+      Object.keys(st.planYears).forEach(function (y) { out.push(+y); });
     }
-    var row = D.history(code, null);
-    return row ? row.plan_2027 : null;
+    if (out.indexOf(D.PLAN_BASE_YEAR) === -1) out.push(D.PLAN_BASE_YEAR);
+    return out.sort(function (a, b) { return a - b; });
   };
 
-  /* One row per seeded country: three derived utilisation percentages plus the
-     2027 plan. 2026 comes from the live project set, so it moves with the demo. */
+  D.planMap = function (year) {
+    var st = S();
+    if (!st) return null;
+    if (st.planYears && st.planYears[String(year)]) return st.planYears[String(year)];
+    if (+year === D.PLAN_BASE_YEAR && st.plan2027) return st.plan2027;
+    return null;
+  };
+
+  D.planFor = function (code, year) {
+    year = (year === undefined || year === null) ? D.PLAN_BASE_YEAR : +year;
+    var map = D.planMap(year);
+    if (map && map[code] !== undefined && map[code] !== null) return map[code];
+    if (year === D.PLAN_BASE_YEAR) {
+      var row = histRow(code);
+      return row ? row.plan_2027 : null;
+    }
+    return null;
+  };
+
+  /* kept verbatim for every v1.0.1 caller (widgets.js, p7.js, actions.js) */
+  D.plan2027 = function (code) { return D.planFor(code, D.PLAN_BASE_YEAR); };
+
+  /* One row per seeded country. The three v1.0.1 percentages and the 2027 plan
+     stay on the row under their old names — widgets.js reads them — and the
+     v1.0.3 generalisation rides alongside as `years` (every actual year) and
+     `plans` (every plan year). 2026 comes from the live project set, so it
+     moves with the demo; the earlier years come from state.histEdit. */
   D.forecastRows = function (projects, countries) {
     var st = S();
     projects = projects || (st ? st.projects : []);
     countries = countries || (st ? st.countries : []);
 
-    return countries.map(function (c) {
-      var mine = projects.filter(function (p) { return p.country === c.code; });
-      var committed = D.committedTotal(mine);
-      var h24 = D.history(c.code, 2024), h25 = D.history(c.code, 2025);
-      var y24 = h24 ? D.utilisation(h24.committed, h24.ceiling) : null;
-      var y25 = h25 ? D.utilisation(h25.committed, h25.ceiling) : null;
-      var y26 = D.utilisation(committed, c.ceiling);
-      var plan = D.plan2027(c.code);
-      var planPct = D.utilisation(plan, c.ceiling);
+    var actual = D.actualYears();
+    var plans = D.planYears();
+    var live = +CBP.CONFIG.BUDGET_YEAR;
 
-      var proj = D.trend2027(y24, y25, y26);
+    return countries.map(function (c) {
+      var years = actual.map(function (y) {
+        var committed = D.actualCommitted(c.code, y, projects);
+        var ceiling = D.actualCeiling(c.code, y, countries);
+        return {
+          year: y,
+          committed: committed,
+          ceiling: ceiling,
+          pct: (committed === null || committed === undefined)
+            ? null : D.utilisation(committed, ceiling),
+          live: y === live,
+          added: !D.isFixedYear(y)
+        };
+      });
+
+      var pcts = years.map(function (x) { return x.pct; });
+      var proj = D.trendNext(pcts);
+      var projYear = actual[actual.length - 1] + 1;
+
+      var planRows = plans.map(function (y) {
+        var v = D.planFor(c.code, y);
+        return {
+          year: y, value: v,
+          pct: (v === null || v === undefined) ? null : D.utilisation(v, c.ceiling),
+          added: !D.isFixedYear(y)
+        };
+      });
+
+      function pctOf(y) {
+        var hit = years.filter(function (x) { return x.year === y; })[0];
+        return hit ? hit.pct : null;
+      }
+
+      var firstPlan = planRows[0] || { pct: null };
+      var committed26 = D.actualCommitted(c.code, live, projects);
 
       return {
         code: c.code, name: c.name, ceiling: c.ceiling,
-        committed2026: committed,
-        y2024pct: y24, y2025pct: y25, y2026pct: y26,
-        plan2027: plan, plan2027pct: planPct,
+        committed2026: committed26,
+        years: years, plans: planRows,
+        projYear: projYear,
+        /* v1.0.1 names — unchanged contract for widgets.js and P7 */
+        y2024pct: pctOf(2024), y2025pct: pctOf(2025), y2026pct: pctOf(live),
+        plan2027: D.planFor(c.code, D.PLAN_BASE_YEAR),
+        plan2027pct: D.utilisation(D.planFor(c.code, D.PLAN_BASE_YEAR), c.ceiling),
         proj2027pct: proj,
         proj2027: proj === null ? null : Math.round(proj / 100 * c.ceiling),
-        note: forecastNote(y24, y25, y26, planPct)
+        note: forecastNote(pcts, pctOf(live), firstPlan.pct)
       };
     });
   };
 
-  /* v1.0.2 — simulated 2027 projection: a least-squares line through the
-     utilisation points we actually hold (2024/2025/2026), extended one year.
-     Pure derivation from the history fixtures + live 2026 data — nothing
-     seeded — so editing a project re-simulates it. Clamped at 0. */
-  D.trend2027 = function (y24, y25, y26) {
+  /* v1.0.2 → v1.0.3 — the simulated projection: a least-squares line through
+     EVERY actual utilisation point we hold, in year order, extended one step
+     past the last of them. `vals` is that ordered list; nulls are the years a
+     country carries no figure for and simply drop out of the fit. Pure — no
+     seeded number anywhere — so an edited history year or an edited project
+     re-simulates it. Clamped at 0. */
+  D.trendNext = function (vals) {
     var pts = [];
-    if (y24 !== null && y24 !== undefined) pts.push([0, y24]);
-    if (y25 !== null && y25 !== undefined) pts.push([1, y25]);
-    if (y26 !== null && y26 !== undefined) pts.push([2, y26]);
+    (vals || []).forEach(function (v, i) {
+      if (v !== null && v !== undefined && isFinite(v)) pts.push([i, v]);
+    });
+    var next = (vals || []).length;
     if (pts.length < 2) return pts.length === 1 ? Math.round(pts[0][1]) : null;
     var n = pts.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
     pts.forEach(function (p) { sx += p[0]; sy += p[1]; sxx += p[0] * p[0]; sxy += p[0] * p[1]; });
-    var slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+    var den = (n * sxx - sx * sx);
+    if (!den) return Math.round(sy / n);
+    var slope = (n * sxy - sx * sy) / den;
     var icept = (sy - slope * sx) / n;
-    return Math.max(0, Math.round(icept + slope * 3));
+    return Math.max(0, Math.round(icept + slope * next));
   };
 
-  /* the variance sentence beside each forecast row — derived, never seeded */
-  function forecastNote(y24, y25, y26, planPct) {
-    if (y26 === null) return '';
-    var overYears = [y24, y25, y26].filter(function (v) { return v !== null && v > 100; }).length;
+  /* v1.0.1 signature kept so nothing that calls the three-argument form breaks */
+  D.trend2027 = function (y24, y25, y26) { return D.trendNext([y24, y25, y26]); };
+
+  /* A seeded amount for a year the user has just added — the same least-squares
+     line, fitted to the committed AMOUNTS of every actual year and read off at
+     the new year (so it back-casts as happily as it forecasts). Rounded to the
+     nearest $5,000 and clamped at zero, because a seeded figure is a starting
+     point to type over, not a derived number pretending to be data. */
+  D.SEED_ROUND = 5000;
+
+  D.trendAmount = function (code, year, projects, countries) {
+    var actual = D.actualYears();
+    var xs = [], ys = [];
+    actual.forEach(function (y) {
+      var v = D.actualCommitted(code, y, projects);
+      if (v !== null && v !== undefined && isFinite(v)) { xs.push(y); ys.push(v); }
+    });
+    if (!xs.length) return 0;
+    var out;
+    if (xs.length === 1) {
+      out = ys[0];
+    } else {
+      var n = xs.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+      for (var i = 0; i < n; i++) {
+        sx += xs[i]; sy += ys[i]; sxx += xs[i] * xs[i]; sxy += xs[i] * ys[i];
+      }
+      var den = (n * sxx - sx * sx);
+      out = den ? (((sy - ((n * sxy - sx * sy) / den) * sx) / n) +
+                   ((n * sxy - sx * sy) / den) * (+year)) : (sy / n);
+    }
+    if (!isFinite(out) || out < 0) out = 0;
+    return Math.max(0, Math.round(out / D.SEED_ROUND) * D.SEED_ROUND);
+  };
+
+  /* the variance sentence beside each forecast row — derived, never seeded.
+     Keyed to the live budget year against the FIRST plan year, exactly as in
+     v1.0.1; the "years running" counters now span every actual year held. */
+  function forecastNote(pcts, live, planPct) {
+    if (live === null || live === undefined) return '';
+    var held = (pcts || []).filter(function (v) { return v !== null && v !== undefined; });
+    var overYears = held.filter(function (v) { return v > 100; }).length;
     if (overYears >= 2) return 'Over ceiling for ' + overYears + ' years running — plan needs a decision';
-    if (y26 > 100) return 'First year over ceiling';
-    var low = [y24, y25, y26].filter(function (v) { return v !== null && v < 40; }).length;
+    if (live > 100) return 'First year over ceiling';
+    var low = held.filter(function (v) { return v < 40; }).length;
     if (low >= 2) return 'Persistently under-using the allocation';
-    var move = (y25 === null) ? null : Math.round(y26 - y25);
-    if (planPct !== null && move !== null) {
-      var lift = Math.round(planPct - y26);
-      if (lift > 0) return 'Plan lifts ' + lift + ' pts on 2026';
-      if (lift < 0) return 'Plan trims ' + (-lift) + ' pts on 2026';
+    if (planPct !== null && planPct !== undefined && held.length > 1) {
+      var lift = Math.round(planPct - live);
+      if (lift > 0) return 'Plan lifts ' + lift + ' pts on ' + CBP.CONFIG.BUDGET_YEAR;
+      if (lift < 0) return 'Plan trims ' + (-lift) + ' pts on ' + CBP.CONFIG.BUDGET_YEAR;
     }
     return 'Tracking flat against the ceiling';
   }

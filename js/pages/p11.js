@@ -54,6 +54,27 @@
     return c ? c.name : code;
   }
 
+  /* ------------------------------------------------- v1.0.3 · country identity
+     Same grammar as the P3 register, so the two pages read as one system: the
+     flag glyph plus the .cc-<code> palette class from css/app.css (C-21). Both
+     resolve from the CODE alone; an unseeded code falls back to the neutral
+     .cc-x swatch and no glyph, so a project in a country the palette has never
+     heard of still renders a complete, legible row. */
+  var FLAG = {
+    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦'
+  };
+
+  function ccOf(code) {
+    var k = String(code || '').toUpperCase();
+    return FLAG[k] ? 'cc-' + k.toLowerCase() : 'cc-x';
+  }
+
+  /* aria-hidden: the country name is always printed beside the glyph */
+  function flagMark(code) {
+    var f = FLAG[String(code || '').toUpperCase()];
+    return f ? '<span class="ccflag" aria-hidden="true">' + f + '</span>' : '';
+  }
+
   function projectOf(c) { return CBP.projectById(c.project_id); }
 
   function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
@@ -199,8 +220,14 @@
       var last = feed.length ? feed[feed.length - 1] : null;
       var un = D.unreadFor(user, pid);
 
-      return '<article class="p11-pin' + (un ? ' has' : '') + '">' +
+      /* v1.0.3 — the pin's left rule is now the project country's flag accent
+         rather than the v1.0.1 brass "has unread" rule. The unread signal moves
+         onto its own dot beside the id, so it stays visible on every card
+         instead of being carried by a border colour the country now owns. */
+      return '<article class="p11-pin ' + ccOf(p.country) + (un ? ' has' : '') + '">' +
         '<div class="p11-pintop">' +
+          (un ? '<span class="p11-dot" title="' + e(plural(un, 'unread message')) +
+                '" aria-label="' + e(plural(un, 'unread message')) + '"></span>' : '') +
           '<span class="p11-pinid num">' + e(p.id) + '</span>' +
           (mayWrite
             ? '<button class="p11-x" data-act="pin-project" data-id="' + e(p.id) +
@@ -209,7 +236,8 @@
             : '') +
         '</div>' +
         '<b class="p11-pinname">' + e(p.name) + '</b>' +
-        '<div class="p11-pinmeta">' + e(countryName(state, p.country)) +
+        '<div class="p11-pinmeta">' + flagMark(p.country) +
+          e(countryName(state, p.country)) +
           ' · <span class="num' + (un ? ' hot' : '') + '">' +
           (un ? plural(un, 'unread') : 'nothing unread') + '</span></div>' +
         (last
@@ -291,7 +319,8 @@
           return p && p.country === code && D.isUnread(user, c);
         }).length;
 
-        return '<div class="p11-ghd"><b>' + e(countryName(state, code)) + '</b>' +
+        return '<div class="p11-ghd ' + ccOf(code) + '">' + flagMark(code) +
+          '<b>' + e(countryName(state, code)) + '</b>' +
           '<span class="cnt num">' + e(plural(by[code].length, 'message')) + '</span>' +
           '<span class="rt num' + (un ? ' hot' : '') + '">' +
           (un ? plural(un, 'unread') : 'nothing unread') + '</span></div>' +
@@ -345,8 +374,12 @@
     var unread = D.isUnread(user, c);
     var open = ui.msgOpen === c.id;
 
-    var cls = 'p11-row' + (unread ? ' unread' : '') + (open ? ' open' : '') +
-              (c.priority ? ' pri' : '');
+    /* v1.0.3 — the row carries its project's country palette class: a 3px left
+       rule in that country's flag accent, and the country chip in its pastel
+       bold. A priority flag still adds its own brass rule beside it, so the two
+       signals stack instead of one overwriting the other. */
+    var cls = 'p11-row ' + ccOf(p.country) + (unread ? ' unread' : '') +
+              (open ? ' open' : '') + (c.priority ? ' pri' : '');
 
     var main = '<button class="p11-main" data-act="p11-open" data-id="' + e(c.id) +
       '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
@@ -355,7 +388,8 @@
         '<span class="p11-top">' +
           (c.priority ? '<span class="p11-flag" title="Priority">⚑</span>' : '') +
           '<b>' + e(p.name) + '</b>' +
-          '<span class="p11-cc">' + e(countryName(state, p.country)) + '</span>' +
+          '<span class="p11-cc">' + flagMark(p.country) +
+            e(countryName(state, p.country)) + '</span>' +
           '<span class="p11-pid num">' + e(p.id) + '</span>' +
           (unread ? '<span class="p11-dot" title="Unread"></span>' : '') +
         '</span>' +

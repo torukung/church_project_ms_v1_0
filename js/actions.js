@@ -939,30 +939,156 @@
     return done({ id: id, dashboard: board });
   };
 
-  /* ============================================ v1.0.1 · 2027 planning =====*/
+  /* ============================================ v1.0.1 · 2027 planning =====
+     v1.0.3 — the plan is keyed by year and the history years are configurable
+     too. Every write below lands through the same three guards the rest of this
+     file uses (viewer lock via D.can, permission 'plan', digit-free input
+     refused inline) and ends in done(), so one render pass rebuilds the table,
+     the projection and the comparison block together. */
 
-  A.planSet = function (code, value) {
+  /* a typed money cell → whole USD, or null when the entry carries no digit at
+     all (which must never fall through to zero and wipe a figure) */
+  function money(raw) {
+    var s = String(raw === undefined || raw === null ? '' : raw);
+    if (!/\d/.test(s)) return null;
+    var v = Math.round(Number(s.replace(/[^0-9.\-]/g, '')));
+    if (!isFinite(v) || v < 0) return null;
+    return v;
+  }
+
+  A.planSet = function (code, value, year) {
     var u = me();
     if (!D.can(u, 'plan')) return fail('plan', 'Planning figures are set by M1, M2 or the area office.');
     var c = S().countries.filter(function (x) { return x.code === code; })[0];
     if (!c) return fail('plan', 'Unknown country.');
     if (!inScope(u, code)) return fail('plan', 'That country is outside your data scope.');
 
-    /* a plan cell is typed by hand, so an entry with no digits in it must not
-       fall through to zero — that would silently wipe a country's plan */
-    var raw = String(value === undefined || value === null ? '' : value);
-    var v = Math.round(Number(raw.replace(/[^0-9.\-]/g, '')));
-    if (!/\d/.test(raw) || !isFinite(v) || v < 0) {
-      return fail('plan', 'Enter the 2027 plan in whole USD.');
-    }
+    year = (year === undefined || year === null) ? D.PLAN_BASE_YEAR : +year;
+    var map = D.planMap(year);
+    if (!map) return fail('plan', year + ' is not a plan year on this page.');
 
-    var was = S().plan2027[code];
+    var v = money(value);
+    if (v === null) return fail('plan', 'Enter the ' + year + ' plan in whole USD.');
+
+    var was = map[code];
     if (was === v) return fail('plan', 'Nothing changed.');
-    S().plan2027[code] = v;
-    CBP.notice('2027 plan for ' + c.name + ': ' + D.money(was) + ' → ' + D.money(v) +
+    map[code] = v;
+    CBP.notice(year + ' plan for ' + c.name + ': ' + D.money(was) + ' → ' + D.money(v) +
                ' (' + D.pct(D.utilisation(v, c.ceiling)) + ' of the ceiling). ' +
                'Nothing else is stored — the forecast recomputes from here.');
-    return done({ code: code, value: v, was: was });
+    return done({ code: code, value: v, was: was, year: year });
+  };
+
+  /* v1.0.3 — a history year's committed amount. The live budget year is summed
+     from the records and is never writable here; everything earlier is a
+     configured number sitting in state.histEdit. */
+  A.histSet = function (code, year, value) {
+    var u = me();
+    if (!D.can(u, 'plan')) return fail('hist', 'Budget history is set by M1, M2 or the area office.');
+    var c = S().countries.filter(function (x) { return x.code === code; })[0];
+    if (!c) return fail('hist', 'Unknown country.');
+    if (!inScope(u, code)) return fail('hist', 'That country is outside your data scope.');
+
+    year = +year;
+    if (year === +CBP.CONFIG.BUDGET_YEAR) {
+      return fail('hist', CBP.CONFIG.BUDGET_YEAR + ' is summed from the live records — ' +
+                  'edit a project amount to move it.');
+    }
+    if (D.historyYears().indexOf(String(year)) === -1) {
+      return fail('hist', year + ' is not a history year on this page.');
+    }
+
+    var v = money(value);
+    if (v === null) return fail('hist', 'Enter the ' + year + ' committed amount in whole USD.');
+
+    var st = S();
+    st.histEdit = st.histEdit || {};
+    var per = st.histEdit[code] = st.histEdit[code] || {};
+    var was = per[String(year)];
+    if (was === v) return fail('hist', 'Nothing changed.');
+    per[String(year)] = v;
+
+    CBP.notice(year + ' committed for ' + c.name + ': ' + D.money(was) + ' → ' + D.money(v) +
+               ' (' + D.pct(D.utilisation(v, D.histCeiling(code, year))) + ' of that year’s ' +
+               'ceiling). The projection and the comparison block re-derive from it.');
+    return done({ code: code, year: year, value: v, was: was });
+  };
+
+  /* ------------------------------------------- v1.0.3 · adding a year ----- */
+  /* Both directions are area-level furniture — a column exists for every
+     country at once — so these carry the 'plan' permission and the viewer lock
+     but no country scope check: there is no single country to check. */
+
+  A.histYearAdd = function () {
+    var u = me();
+    if (!D.can(u, 'plan')) return fail('hist', 'Budget years are added by M1, M2 or the area office.');
+    var years = D.historyYears().map(Number);
+    var year = (years.length ? Math.min.apply(null, years) : +CBP.CONFIG.BUDGET_YEAR) - 1;
+
+    var st = S();
+    st.histEdit = st.histEdit || {};
+    var lo = null, hi = null;
+    st.countries.forEach(function (c) {
+      var seed = D.trendAmount(c.code, year, st.projects, st.countries);
+      var per = st.histEdit[c.code] = st.histEdit[c.code] || {};
+      per[String(year)] = seed;
+      if (lo === null || seed < lo) lo = seed;
+      if (hi === null || seed > hi) hi = seed;
+    });
+
+    CBP.notice(year + ' added to the budget history for all ' + st.countries.length +
+               ' countries, back-cast from each country’s own trend and rounded to the nearest ' +
+               D.money(D.SEED_ROUND) + ' (' + D.money(lo) + ' – ' + D.money(hi) +
+               '). Every figure is editable, and the × in the column header removes the year again.');
+    return done({ year: year, kind: 'history' });
+  };
+
+  A.planYearAdd = function () {
+    var u = me();
+    if (!D.can(u, 'plan')) return fail('plan', 'Plan years are added by M1, M2 or the area office.');
+    var years = D.planYears();
+    var year = Math.max.apply(null, years) + 1;
+
+    var st = S();
+    st.planYears = st.planYears || {};
+    var map = st.planYears[String(year)] = st.planYears[String(year)] || {};
+    var lo = null, hi = null;
+    st.countries.forEach(function (c) {
+      var seed = D.trendAmount(c.code, year, st.projects, st.countries);
+      map[c.code] = seed;
+      if (lo === null || seed < lo) lo = seed;
+      if (hi === null || seed > hi) hi = seed;
+    });
+
+    CBP.notice(year + ' added as a plan year for all ' + st.countries.length +
+               ' countries, seeded from the same trend and rounded to the nearest ' +
+               D.money(D.SEED_ROUND) + ' (' + D.money(lo) + ' – ' + D.money(hi) +
+               '). Every figure is editable, and the × in the column header removes the year again.');
+    return done({ year: year, kind: 'plan' });
+  };
+
+  /* Only an ADDED year can go: 2024, 2025, 2026 and 2027 are the demo's fixed
+     columns and the × is never drawn on them. */
+  A.yearRemove = function (kind, year) {
+    var u = me();
+    var key = kind === 'plan' ? 'plan' : 'hist';
+    if (!D.can(u, 'plan')) return fail(key, 'Budget years are removed by M1, M2 or the area office.');
+    year = +year;
+    if (D.isFixedYear(year)) return fail(key, year + ' is a fixed column in this demo.');
+
+    var st = S(), hit = false;
+    if (kind === 'plan') {
+      if (st.planYears && st.planYears[String(year)]) { delete st.planYears[String(year)]; hit = true; }
+    } else {
+      Object.keys(st.histEdit || {}).forEach(function (c) {
+        if (st.histEdit[c][String(year)] !== undefined) { delete st.histEdit[c][String(year)]; hit = true; }
+      });
+    }
+    if (!hit) return fail(key, year + ' is not a column on this page.');
+
+    CBP.notice(year + ' removed. Nothing else moved — every remaining figure is still the ' +
+               'one it was, and the projection re-fits to the years that are left.');
+    return done({ year: year, kind: kind === 'plan' ? 'plan' : 'history' });
   };
 
   /* ========================================= v1.0.1 · dashboard sync =======

@@ -9,13 +9,23 @@
      Reports      a report builder: country chips, status chips, a column
                   picker, a live table that rebuilds from derive on every
                   change, print/export on the RD-3 path, save-as-default.
-     Forecasting  2024 / 2025 / 2026 utilisation per country (2024–25 from the
-                  history fixture, 2026 summed live) plus the editable 2027
-                  plan, and a grouped comparison block on the same shared scale
-                  with a distinct plan marker.
+     Forecasting  utilisation per country for every year the demo holds, the
+                  simulated projection and the plan years, plus a grouped
+                  comparison block on the same shared scale with one caret per
+                  plan year.
 
    Nothing is stored pre-computed: a ceiling edit or a plan edit mutates state
-   and one CBP.render() pass rebuilds every figure above and below it. */
+   and one CBP.render() pass rebuilds every figure above and below it.
+
+   v1.0.3 — the Forecasting tab's numbers are configurable, not fixtures. Every
+   history year is an editable committed amount in state.histEdit (seeded from
+   budget_history at init), the live budget year stays summed from the records
+   and is deliberately NOT editable, and the year set itself grows in both
+   directions: 'Add earlier year' prepends min(history)−1 back-cast from the
+   trend, 'Add later year' appends a plan year after the last one, and an added
+   column carries an × to take it away again. The projection re-fits over
+   whatever actual years are on screen (D.trendNext), so the table, the ≈
+   simulation bar and the comparison block can never disagree. */
 (function () {
   'use strict';
 
@@ -426,12 +436,56 @@
     return c ? c.name : code;
   }
 
-  /* ======================================================= forecasting ==== */
+  /* ======================================================= forecasting ====
+     v1.0.3 — every actual year is a configured number rather than a fixture
+     read (state.histEdit), the live budget year stays summed from the records,
+     and the year set itself is editable in both directions: 'Add earlier year'
+     prepends min(history)-1 back-cast from the trend, 'Add later year' appends
+     a plan year after the last one. The projection re-fits over whatever years
+     are on screen, so the table, the ≈ simulation and the comparison block can
+     never disagree about the same line. */
+
+  var LIVE = function () { return +CBP.CONFIG.BUDGET_YEAR; };
+
+  function amountValue(n) {
+    return (n === null || n === undefined) ? '' : n.toLocaleString('en-US');
+  }
+
+  /* a money cell that a planner may type into, and plain text for everyone else.
+     One idiom for the history years and the plan years alike — the only
+     difference is which action the change handler routes to. */
+  function moneyCell(may, attrs, label, amount, pctVal) {
+    var tail = '<span class="p7-planpct num' +
+      (pctVal !== null && pctVal !== undefined && pctVal > 100 ? ' neg' : '') + '">' +
+      e(D.pct(pctVal)) + '</span>';
+    if (!may) {
+      return '<span class="num">' + e(D.money(amount)) + '</span>' + tail;
+    }
+    return '<span class="p7-edit"><span class="p7-cur">$</span>' +
+      '<input class="p7-plan num" type="text" inputmode="numeric" autocomplete="off" ' +
+      attrs + ' value="' + e(amountValue(amount)) + '" aria-label="' + e(label) + '"></span>' +
+      tail;
+  }
+
+  /* a column header, with the × that removes an added year again */
+  function yearHead(label, sub, opts) {
+    opts = opts || {};
+    return '<th class="r p7-yh"' + (opts.title ? ' title="' + e(opts.title) + '"' : '') + '>' +
+      '<span class="p7-yhl">' + e(label) +
+      (opts.del
+        ? '<button type="button" class="p7-ydel" data-act="p7y-del" data-kind="' +
+          e(opts.del.kind) + '" data-y="' + e(String(opts.del.year)) + '" title="' +
+          e('Remove the ' + opts.del.year + ' column') + '" aria-label="' +
+          e('Remove the ' + opts.del.year + ' column') + '">×</button>'
+        : '') +
+      '</span>' + (sub ? '<small>' + e(sub) + '</small>' : '') + '</th>';
+  }
 
   function forecastTab(state, user, codes) {
     var all = D.forecastRows(state.projects, state.countries);
     var rows = all.filter(function (r) { return codes.indexOf(r.code) > -1; });
     var mayPlan = D.can(user, 'plan');
+    var live = LIVE();
 
     if (!rows.length) {
       return U.card('Forecasting',
@@ -439,126 +493,188 @@
         { cls: 'p7-card' });
     }
 
-    /* one scale across every year and the plan, so the comparison block and the
-       table read against the same 100% */
+    var actual = D.actualYears();              /* history years … + the live year */
+    var plans = D.planYears();                 /* 2027 … */
+    var projYear = rows[0].projYear;
+    var multiPlan = plans.length > 1;
+
+    /* one scale across every year, the simulation and every plan, so the
+       comparison block and the table read against the same 100% */
     var pcts = [];
     rows.forEach(function (r) {
-      [r.y2024pct, r.y2025pct, r.y2026pct, r.plan2027pct, r.proj2027pct].forEach(function (v) {
-        if (v !== null && v !== undefined) pcts.push(v);
-      });
+      r.years.forEach(function (x) { if (x.pct !== null && x.pct !== undefined) pcts.push(x.pct); });
+      r.plans.forEach(function (x) { if (x.pct !== null && x.pct !== undefined) pcts.push(x.pct); });
+      if (r.proj2027pct !== null && r.proj2027pct !== undefined) pcts.push(r.proj2027pct);
     });
     var scale = D.barScale(pcts);
 
-    var body = rows.map(function (r) {
-      var planCell = mayPlan
-        ? '<span class="p7-edit"><span class="p7-cur">$</span>' +
-          '<input class="p7-plan num" type="text" inputmode="numeric" autocomplete="off" ' +
-          'data-p7plan="' + e(r.code) + '" value="' +
-          e(r.plan2027 === null || r.plan2027 === undefined
-            ? '' : r.plan2027.toLocaleString('en-US')) +
-          '" aria-label="' + e(r.name) + ' 2027 plan in US dollars"></span>' +
-          '<span class="p7-planpct num">' + e(D.pct(r.plan2027pct)) + '</span>'
-        : '<span class="num">' + e(D.money(r.plan2027)) + '</span>' +
-          '<span class="p7-planpct num">' + e(D.pct(r.plan2027pct)) + '</span>';
+    var liveTitle = live + ' is summed from the live records on every render — an amount ' +
+      'edited anywhere in the demo moves it. It is derived, so it is never typed here.';
 
-      var projCell = (r.proj2027pct === null || r.proj2027pct === undefined)
+    /* ------------------------------------------------------- the header -- */
+    var head = '<tr><th>Country</th>';
+    actual.forEach(function (y) {
+      if (y === live) {
+        head += yearHead(String(y), 'live · derived %', { title: liveTitle });
+      } else {
+        head += yearHead(String(y), 'committed $ · %', {
+          del: D.isFixedYear(y) ? null : { kind: 'history', year: y }
+        });
+      }
+    });
+    head += yearHead(projYear + ' projected', 'simulated', {
+      title: 'A least-squares line through every actual year above, extended one year. ' +
+             'Nothing is stored — it re-fits whenever a figure moves.'
+    });
+    plans.forEach(function (y) {
+      head += yearHead(y + ' plan', 'plan $ · %', {
+        del: D.isFixedYear(y) ? null : { kind: 'plan', year: y }
+      });
+    });
+    head += '<th>Variance note</th></tr>';
+
+    /* --------------------------------------------------------- the body -- */
+    var body = rows.map(function (r) {
+      var tds = '<td>' + e(r.name) + ' <span class="p7-code">' + e(r.code) + '</span></td>';
+
+      r.years.forEach(function (x) {
+        if (x.live) {
+          tds += '<td class="r num' + (x.pct > 100 ? ' neg' : '') + '" title="' +
+            e(liveTitle + ' · ' + D.money(x.committed)) + '">' + e(D.pct(x.pct)) + '</td>';
+          return;
+        }
+        tds += '<td class="r">' + moneyCell(mayPlan,
+          'data-p7hist="' + e(r.code) + '" data-y="' + e(String(x.year)) + '"',
+          r.name + ' ' + x.year + ' committed in US dollars',
+          x.committed, x.pct) + '</td>';
+      });
+
+      tds += (r.proj2027pct === null || r.proj2027pct === undefined)
         ? '<td class="r num">—</td>'
         : '<td class="r num p7-sim' + (r.proj2027pct > 100 ? ' neg' : '') + '" title="' +
-          e('Simulated from the 2024–2026 trend · ≈ ' + D.money(r.proj2027)) + '">≈ ' +
-          e(D.pct(r.proj2027pct)) + '</td>';
+          e('Simulated from the ' + actual[0] + '–' + actual[actual.length - 1] +
+            ' trend · ≈ ' + D.money(r.proj2027)) + '">≈ ' + e(D.pct(r.proj2027pct)) + '</td>';
 
-      return '<tr><td>' + e(r.name) + ' <span class="p7-code">' + e(r.code) + '</span></td>' +
-        yCell(r.y2024pct) + yCell(r.y2025pct) + yCell(r.y2026pct) + projCell +
-        '<td class="r">' + planCell + '</td>' +
-        '<td class="p7-fnote">' + e(r.note) + '</td></tr>';
+      r.plans.forEach(function (x) {
+        tds += '<td class="r">' + moneyCell(mayPlan,
+          'data-p7plan="' + e(r.code) + '" data-y="' + e(String(x.year)) + '"',
+          r.name + ' ' + x.year + ' plan in US dollars',
+          x.value, x.pct) + '</td>';
+      });
+
+      return '<tr>' + tds + '<td class="p7-fnote">' + e(r.note) + '</td></tr>';
     }).join('');
+
+    /* enough room for country + every year column + the note, so the table
+       scrolls inside its own card rather than widening the page */
+    var minW = 190 + (actual.length + plans.length + 1) * 124 + 190;
+
+    var yearActs = mayPlan
+      ? '<div class="p7-yacts">' +
+          '<button type="button" class="p7-yadd" data-act="p7y-add-hist">+ Add earlier year</button>' +
+          '<button type="button" class="p7-yadd" data-act="p7y-add-plan">+ Add later year</button>' +
+          '<span class="p7-ynote">A new column is seeded from the trend, rounded to the ' +
+            'nearest ' + e(D.money(D.SEED_ROUND)) + ', and is editable like any other.</span>' +
+        '</div>'
+      : '';
+
+    var table = '<div class="tblwrap"><table class="tbl p7-ftbl" style="min-width:' +
+      minW + 'px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
 
     var html = U.card('Utilisation by year — ' + rows.length +
       (rows.length === 1 ? ' country' : ' countries'),
-      U.table([
-        { label: 'Country' },
-        { label: '2024 %', right: true }, { label: '2025 %', right: true },
-        { label: '2026 %', right: true }, { label: '2027 projected', right: true },
-        { label: '2027 plan', right: true },
-        { label: 'Variance note' }
-      ], [body]) +
-      err(state, 'plan') +
+      yearActs + table + err(state, 'hist') + err(state, 'plan') +
       (mayPlan
-        ? '<p class="p7-note">Type a 2027 figure and leave the field — the plan percentage, ' +
-          'the variance note and the comparison block below all recompute from it. Planning ' +
-          'figures are M1, M2 and the area office (docs/01). “2027 projected” is a ' +
-          'simulation — the 2024–2026 trend extended one year — so it moves whenever ' +
-          'the underlying records do, and the gap to your plan is the decision.</p>'
-        : '<p class="p7-note">The 2027 plan is set by M1, M2 and the area office (docs/01), ' +
-          'so it is read-only for you.</p>'),
+        ? '<p class="p7-note">Every year except ' + live + ' is a figure you can type: change ' +
+          'a committed amount or a plan and the percentage beside it, the variance note, the ' +
+          'projection and the comparison block below all recompute in the same render pass. ' +
+          live + ' is summed from the live records instead, so it moves only when a project ' +
+          'amount does. Planning figures are M1, M2 and the area office (docs/01). ' +
+          '“' + projYear + ' projected” is a simulation — a least-squares line through every ' +
+          'actual year on this table, extended one year — so the gap to your plan is the ' +
+          'decision, not the arithmetic.</p>'
+        : '<p class="p7-note">Budget history and the plan are set by M1, M2 and the area ' +
+          'office (docs/01), so every figure here is read-only for you. ' + live + ' is ' +
+          'summed from the live records and is derived for everyone.</p>'),
       { cls: 'p7-card' });
 
-    html += U.card('2024 – 2027 comparison',
-      compareBlock(rows, scale),
+    html += U.card(actual[0] + ' – ' + plans[plans.length - 1] + ' comparison',
+      compareBlock(rows, scale, multiPlan),
       { cls: 'p7-card' });
 
-    html += '<p class="pagenote">2024 and 2025 are demo history fixtures (budget_history in ' +
-      'data.js); 2026 is summed from the live records on every render, so an amount edited ' +
-      'anywhere in the demo moves it here too. Every bar shares one 0–' + scale + '% scale — ' +
-      'the 100% rule is the same line on every row, and the caret marks the 2027 plan against ' +
-      'the same ceiling. Percentages are committed against the country ceiling, not spend.</p>';
+    html += '<p class="pagenote">The earlier years are configured amounts (seeded from ' +
+      'budget_history in data.js and held in state, not read back from the fixture); ' + live +
+      ' is summed from the live records on every render, so an amount edited anywhere in the ' +
+      'demo moves it here too. Every bar shares one 0–' + scale + '% scale — the 100% rule is ' +
+      'the same line on every row, and each caret marks a plan year against the same ceiling. ' +
+      'Percentages are committed against the country ceiling, not spend.</p>';
 
     return html;
   }
 
-  function yCell(v) {
-    if (v === null || v === undefined) return '<td class="r num">—</td>';
-    return '<td class="r num' + (v > 100 ? ' neg' : '') + '">' + e(D.pct(v)) + '</td>';
-  }
-
-  /* per-country grouped bars, 2024 / 2025 / 2026, on the shared scale, with the
-     2027 plan as a caret at its own x — the rule and the caret are placed with
-     the same calc the bars are, so they line up with the ticks exactly */
-  function compareBlock(rows, scale) {
+  /* per-country grouped bars — one solid bar per actual year, the faded ≈
+     simulation, and one caret per plan year at its own x. The rule and the
+     carets are placed with the same calc the bars are, so they line up with
+     the ticks exactly. */
+  function compareBlock(rows, scale, multiPlan) {
     var f = 100 / scale;
+    var live = LIVE();
 
     var groups = rows.map(function (r) {
-      var years = [
-        { y: '2024', v: r.y2024pct }, { y: '2025', v: r.y2025pct },
-        { y: '2026', v: r.y2026pct },
-        { y: '2027', v: r.proj2027pct, sim: true }
-      ];
-      var bars = years.map(function (x) {
+      var series = r.years.map(function (x) {
+        return { y: String(x.year), v: x.pct, live: x.live };
+      });
+      series.push({ y: String(r.projYear), v: r.proj2027pct, sim: true });
+
+      var span = r.years.length
+        ? r.years[0].year + '–' + r.years[r.years.length - 1].year : '';
+
+      var bars = series.map(function (x) {
         if (x.v === null || x.v === undefined) {
-          return '<div class="p7-frow"><span class="p7-fy">' + x.y + '</span>' +
+          return '<div class="p7-frow"><span class="p7-fy">' + e(x.y) + '</span>' +
             '<span class="p7-fbar"><span class="p7-fnone">no history</span></span>' +
             '<span class="p7-fv num">—</span></div>';
         }
         var simCls = x.sim ? ' sim' : '';
-        return '<div class="p7-frow' + simCls + '"><span class="p7-fy">' + x.y +
-          (x.sim ? '<small>proj.</small>' : '') + '</span>' +
+        return '<div class="p7-frow' + simCls + '"><span class="p7-fy">' + e(x.y) +
+          (x.sim ? '<small>proj.</small>' : (x.live ? '<small>live</small>' : '')) + '</span>' +
           '<span class="p7-fbar">' +
             U.budgetBar(x.v, { scale: scale, sm: true,
               title: x.sim
-                ? r.name + ' 2027 · ≈ ' + D.pct(x.v) + ' — simulated from the 2024–2026 trend'
+                ? r.name + ' ' + x.y + ' · ≈ ' + D.pct(x.v) +
+                  ' — simulated from the ' + span + ' trend'
                 : r.name + ' ' + x.y + ' · ' + D.pct(x.v) + ' of the ceiling' }) +
           '</span><span class="p7-fv num' + (x.v > 100 ? ' neg' : '') + '">' +
           (x.sim ? '≈ ' : '') + e(D.pct(x.v)) + '</span></div>';
       }).join('');
 
-      var plan = (r.plan2027pct === null || r.plan2027pct === undefined) ? '' :
-        '<span class="p7-fplan" style="--p7-fx:' + (r.plan2027pct / scale).toFixed(6) + '" ' +
-        'title="' + e('2027 plan ' + D.money(r.plan2027) + ' · ' + D.pct(r.plan2027pct)) +
-        '"><i></i><b class="num">' + e(D.pct(r.plan2027pct)) + '</b></span>';
+      /* one caret per plan year; with more than one they carry their year, so
+         two carets on the same track can never be read as one number */
+      var plan = r.plans.map(function (x) {
+        if (x.pct === null || x.pct === undefined) return '';
+        return '<span class="p7-fplan" style="--p7-fx:' + (x.pct / scale).toFixed(6) + '" ' +
+          'title="' + e(x.year + ' plan ' + D.money(x.value) + ' · ' + D.pct(x.pct)) +
+          '"><i></i><b class="num">' +
+          e((multiPlan ? x.year + ' · ' : '') + D.pct(x.pct)) + '</b></span>';
+      }).join('');
 
       return '<div class="p7-fgrp"><div class="p7-fname">' + e(r.name) +
         ' <span class="p7-code">' + e(r.code) + '</span></div>' +
-        '<div class="p7-ftrack" style="--p7-utick:' + f.toFixed(6) + '">' +
+        '<div class="p7-ftrack' + (multiPlan ? ' multi' : '') +
+        '" style="--p7-utick:' + f.toFixed(6) + '">' +
         '<span class="p7-frule" aria-hidden="true"></span>' + plan + bars +
         '</div></div>';
     }).join('');
 
+    var projYear = rows.length ? rows[0].projYear : '';
+
     return '<div class="p7-fcompare">' + groups + '</div>' +
-      '<p class="p7-note"><span class="p7-fkey"></span>The caret marks the 2027 plan; the ' +
-      'faded fourth bar is the simulated 2027 projection (2024–2026 trend). ' +
-      'The vertical rule is 100% of the country ceiling — the same x on every bar, so a ' +
-      'year that crosses it is over-committed by exactly the hatched part. 2024 and 2025 ' +
-      'come from the demo history fixture.</p>';
+      '<p class="p7-note"><span class="p7-fkey"></span>Each caret marks a plan year; the ' +
+      'faded last bar is the simulated ' + e(String(projYear)) + ' projection, a least-squares ' +
+      'line through every actual year above it. The vertical rule is 100% of the country ' +
+      'ceiling — the same x on every bar, so a year that crosses it is over-committed by ' +
+      'exactly the hatched part. Every year before ' + live + ' is a configured amount; ' +
+      live + ' is summed from the live records.</p>';
   }
 
   /* ==================================================== event wiring ====== */
@@ -669,28 +785,69 @@
     }
   });
 
-  /* 2027 plan — committed on change (which is also what a blur after an edit
-     fires), never on every keystroke: A.planSet is a logged, noticed write. */
+  /* plan and history amounts — committed on change (which is also what a blur
+     after an edit fires), never on every keystroke: both are logged, noticed
+     writes through CBP.actions, and both are viewer-locked there as well as
+     here. A digit-free entry is refused by the action and surfaces inline. */
   document.addEventListener('change', function (ev) {
     if (!on7()) return;
     var t = ev.target;
     if (!t || !t.getAttribute) return;
-    var code = t.getAttribute('data-p7plan');
-    if (!code) return;
+
+    var planCode = t.getAttribute('data-p7plan');
+    var histCode = t.getAttribute('data-p7hist');
+    if (!planCode && !histCode) return;
     if (!D.can(CBP.state.user, 'plan')) return;
 
+    var year = parseInt(t.getAttribute('data-y'), 10);
     var raw = String(t.value === undefined || t.value === null ? '' : t.value);
     var n = Math.round(Number(raw.replace(/[^0-9.\-]/g, '')));
+    var typed = /\d/.test(raw) && isFinite(n);
+
     /* re-entering the same figure is not an edit — skip it rather than let the
        action refuse with "Nothing changed" */
-    if (/\d/.test(raw) && isFinite(n) && n === D.plan2027(code)) {
-      CBP.state.ui.err = null;
-      CBP.render();
-      return;
+    var res;
+    if (planCode) {
+      if (!year) year = D.PLAN_BASE_YEAR;
+      if (typed && n === D.planFor(planCode, year)) {
+        CBP.state.ui.err = null;
+        CBP.render();
+        return;
+      }
+      res = A.planSet(planCode, raw, year);
+    } else {
+      var h = D.history(histCode, year);
+      if (typed && h && n === h.committed) {
+        CBP.state.ui.err = null;
+        CBP.render();
+        return;
+      }
+      res = A.histSet(histCode, year, raw);
     }
-
-    var res = A.planSet(code, raw);
     if (!res || !res.ok) CBP.render();     /* a refusal only leaves ui.err behind */
+  });
+
+  /* adding and removing a year column — area-level writes, so they carry the
+     same 'plan' permission and the same viewer lock as the figures themselves,
+     and the buttons are not rendered at all for anyone else */
+  document.addEventListener('click', function (ev) {
+    if (!on7()) return;
+    var t = closest(ev.target, '[data-act]');
+    if (!t) return;
+    var act = t.getAttribute('data-act');
+    if (!act || act.indexOf('p7y-') !== 0) return;
+    ev.preventDefault();
+    if (!D.can(CBP.state.user, 'plan')) return;
+
+    var res;
+    if (act === 'p7y-add-hist')      res = A.histYearAdd();
+    else if (act === 'p7y-add-plan') res = A.planYearAdd();
+    else if (act === 'p7y-del') {
+      res = A.yearRemove(t.getAttribute('data-kind'),
+                         parseInt(t.getAttribute('data-y'), 10));
+    } else return;
+
+    if (!res || !res.ok) CBP.render();
   });
 
   /* exposed for the build harness — the same paths the controls use */

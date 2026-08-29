@@ -19,6 +19,22 @@
 .cchip.on{background:var(--glass);border-color:var(--glass);color:#fff}
 .cchip.on .n{background:rgba(255,255,255,.22);color:#fff}
 .cchip:focus-visible{outline:2px solid var(--glass);outline-offset:1px}
+
+/* v1.0.3 — each country chip carries its flag glyph, and a SELECTED country
+   chip drops the generic glass fill for its own identity: the pastel bold as
+   the body and a 3px accent in the flag colour, exactly the grammar the band
+   below will use. "All countries" is not a country, so it keeps the glass
+   treatment and is the one chip that never tints. Unselected chips stay white —
+   six pastel chips in a row would read as a colour swatch, not a control. */
+.cchip .ccflag{margin-right:1px}
+.cselect .cchip[data-act="p4c-country"].on{
+  background:var(--ccb,var(--glass));border-color:var(--ccx,var(--glass));
+  color:var(--ink);box-shadow:inset 3px 0 0 var(--ccx,var(--glass))}
+.cselect .cchip[data-act="p4c-country"].on .n{
+  background:rgba(34,48,59,.10);color:var(--slate)}
+.cselect .cchip[data-act="p4c-country"].on:hover{border-color:var(--ccx,var(--glass))}
+.cselect .cchip[data-act="p4c-country"].on:focus-visible{
+  outline-color:var(--ccx,var(--glass))}
 .cselect .cshint{font-size:12.5px;color:var(--muted);flex:1 1 220px;min-width:0}
 
 /* ==================================== P3 · layered country register ======= */
@@ -32,26 +48,42 @@
 
 .cgrp{margin-bottom:var(--gap);min-width:0}
 
-/* the glass band: a structural header for the country, not an alert tint —
-   --glass mixed to 6% over the card white, so it reads as a layer under the
-   project cards rather than a status colour on them */
+/* v1.0.3 — the country band, retyped onto the C-21 country identity palette.
+   The v1.0.1 glass treatment (--glass mixed to 6% over card white) was the same
+   for all six countries; it is replaced by that country's own pastel BOLD tone
+   plus a 3px left rule in its saturated flag accent. Every value inside the band
+   is unchanged — committed, ceiling, coverage, over and queue all still arrive
+   already derived from countryRollup(). */
 .cband{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:11px 16px;border:1px solid var(--line);border-radius:var(--r);
-  background:var(--card);
-  background:color-mix(in srgb,var(--glass) 6%,var(--card));
+  padding:11px 16px;border:1px solid var(--line);
+  border-left:3px solid var(--ccx,var(--cc-x-line));
+  border-radius:var(--r);
+  background:var(--ccb,var(--cc-x-bold));
   box-shadow:var(--shadow)}
 .cbtitle{display:flex;align-items:baseline;gap:10px;min-width:0}
+.cbtitle .ccflag{align-self:center}
 .cbtitle b{font-size:14px;font-weight:700;color:var(--ink)}
-.cbtitle .cnt{font-size:12.5px;color:var(--muted)}
+/* --muted clears 4.5:1 on white but not on the pastels, so every label inside
+   a band steps up to --slate (≥ 5.5:1 on all seven swatches) */
+.cbtitle .cnt{font-size:12.5px;color:var(--slate)}
 .cbfig{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  font-size:12.5px;color:var(--muted)}
-.cbfig .cbmoney b{color:var(--slate);font-weight:600}
+  font-size:12.5px;color:var(--slate)}
+.cbfig .cbmoney b{color:var(--ink);font-weight:600}
 .cbfig .over{color:var(--rose);font-weight:700}
-.cbfig .cbq b{color:var(--slate);font-weight:600}
+.cbfig .cbq b{color:var(--ink);font-weight:600}
+/* the coverage track is a near-white hairline bar on white; over a pastel it
+   would vanish, so inside a band it becomes a tint of the ink instead */
+.cband .covbar{background:rgba(34,48,59,.12)}
+.cband .covcell .cv{color:var(--slate)}
+.cband .covcell .cv.neg{color:var(--rose)}
 
-/* project rows: white cards, inset 12px under the band, joined to it by one
-   hairline so an open row can never be mistaken for the country itself */
-.cbody{margin-left:12px;padding-left:12px;border-left:1px solid var(--line)}
+/* project rows: white cards on the country's pastel LIGHT tone, inset 12px
+   under the band and joined to it by one hairline, so an open row can never be
+   mistaken for the country itself while the strip still reads as that country */
+.cbody{margin-left:12px;padding:2px 12px 12px;
+  background:var(--ccl,var(--cc-x-light));
+  border-left:1px solid var(--ccx,var(--line));
+  border-radius:0 0 var(--r) var(--r)}
 .cbody details.prj{position:relative;margin-top:8px;background:var(--card);
   border:1px solid var(--line);border-bottom:1px solid var(--line);
   border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}

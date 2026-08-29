@@ -41,8 +41,11 @@
       var count = n.badge ? (counts[n.badge] || 0) : 0;
       var badge = count > 0
         ? '<span class="badge num">' + count + '</span>' : '';
+      /* v1.0.3 — the TimeBlock chip is relabelled at the client's request: the
+         module is licensed, not optional, so the nav says so outright. */
       var addon = n.addon
-        ? '<span class="addon" title="Optional add-on module">Add-on</span>' : '';
+        ? '<span class="addon" title="Licensed add-on module — required licenses apply">' +
+          'Required Licenses</span>' : '';
       return '<a href="#/' + e(n.route) + '"' + (on ? ' class="on"' : '') + '>' +
              '<span>' + e(n.label) + addon + '</span>' + badge + '</a>';
     }).join('');

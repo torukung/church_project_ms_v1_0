@@ -66,6 +66,23 @@
     var plan2027 = {};
     (data.budget_history || []).forEach(function (r) { plan2027[r.code] = r.plan_2027; });
 
+    /* v1.0.3 — the history years become configurable numbers rather than fixed
+       fixtures. state.histEdit = { code: { year: committed } } is seeded from
+       budget_history at init, so the fixture is the SEED and state is the live
+       source D.history() reads. Years the Forecasting tab adds (2023, 2022 …)
+       exist here and nowhere else; their ceiling is the standing 1,000,000. */
+    var histEdit = {};
+    (data.budget_history || []).forEach(function (r) {
+      var per = histEdit[r.code] = {};
+      Object.keys(r.years || {}).forEach(function (y) { per[y] = r.years[y].committed; });
+    });
+
+    /* v1.0.3 — plan years keyed by year. The 2027 entry IS the plan2027 object
+       above (same reference, not a copy), so state.plan2027, D.plan2027 and
+       A.planSet(code, value) keep behaving exactly as they did in v1.0.1 while
+       2028, 2029 … live alongside it. */
+    var planYears = { '2027': plan2027 };
+
     CBP.state = {
       user: start,
       users: users,
@@ -87,6 +104,8 @@
 
       /* v1.0.1 — 2027 planning + the dashboard sync stamp */
       plan2027: plan2027,
+      planYears: planYears,   /* v1.0.3 — { year: { code: amount } }, 2027 aliased above */
+      histEdit: histEdit,     /* v1.0.3 — { code: { year: committed } } */
       dashSyncedAt: null,
       widgetMeta: {},       /* { widgetId: { desc } } — demo-level dataset definitions */
 

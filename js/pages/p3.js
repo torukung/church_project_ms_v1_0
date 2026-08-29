@@ -14,6 +14,32 @@
 
   CBP.pages = CBP.pages || {};
 
+  /* ------------------------------------------------- v1.0.3 · country identity
+     The flag glyph and the palette class are the two halves of the country
+     identity system (palette defined once in css/app.css, C-21). Both are
+     resolved from the country CODE only, so an unseeded code degrades to the
+     neutral .cc-x swatch and an empty flag rather than throwing or printing
+     "undefined". The demo runs on macOS, where the regional-indicator pairs
+     below render as flags natively — no image files, so file:// stays clean. */
+  var FLAG = {
+    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦'
+  };
+
+  function flagOf(code) { return FLAG[String(code || '').toUpperCase()] || ''; }
+
+  /* '' → the palette class for this code, or the neutral fallback */
+  function ccOf(code) {
+    var k = String(code || '').toUpperCase();
+    return FLAG[k] ? 'cc-' + k.toLowerCase() : 'cc-x';
+  }
+
+  /* the glyph as markup — aria-hidden, because the country NAME is always
+     printed beside it and a screen reader must not hear the flag twice */
+  function flagMark(code) {
+    var f = flagOf(code);
+    return f ? '<span class="ccflag" aria-hidden="true">' + f + '</span>' : '';
+  }
+
   /* ------------------------------------------------ country selection ----
      ui.p3Countries — null (or anything unusable) means "every country in
      scope". CBP.setUser does not know about this key, so the selection is
@@ -109,7 +135,11 @@
       rows.sort(function (a, b) {
         return statusRank(a.status) - statusRank(b.status) || a.id.localeCompare(b.id);
       });
-      html += '<section class="cgrp">' + countryBand(r) + '<div class="cbody">' +
+      /* the palette class rides on the section, so the band header (--ccb) and
+         the project-card area (--ccl) both resolve from one declaration */
+      var cc = ccOf(r.code);
+      html += '<section class="cgrp ' + cc + '">' + countryBand(r, cc) +
+        '<div class="cbody">' +
         rows.map(function (p) { return projectRow(p, state); }).join('') +
         '</div></section>';
     });
@@ -167,9 +197,11 @@
       var c = state.countries.filter(function (x) { return x.code === code; })[0];
       var n = scoped.filter(function (p) { return p.country === code; }).length;
       var on = !all && sel.indexOf(code) > -1;
-      return '<button class="cchip' + (on ? ' on' : '') + '" data-act="p4c-country" ' +
+      return '<button class="cchip ' + ccOf(code) + (on ? ' on' : '') +
+        '" data-act="p4c-country" ' +
         'data-c="' + e(code) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-        e(c ? c.name : code) + ' <span class="n num">' + n + '</span></button>';
+        flagMark(code) + e(c ? c.name : code) +
+        ' <span class="n num">' + n + '</span></button>';
     }).join('');
 
     return '<div class="cselect" role="group" aria-label="Filter by country">' +
@@ -181,10 +213,10 @@
   }
 
   /* --------------------------- country band with the derived totals ------ */
-  function countryBand(r) {
+  function countryBand(r, cc) {
     var over = r.over > 0;
-    return '<header class="cband">' +
-      '<div class="cbtitle"><b>' + e(r.name) + '</b>' +
+    return '<header class="cband ' + cc + '">' +
+      '<div class="cbtitle">' + flagMark(r.code) + '<b>' + e(r.name) + '</b>' +
         '<span class="cnt num">' + r.count + ' project' + (r.count === 1 ? '' : 's') + '</span>' +
       '</div>' +
       '<div class="cbfig">' +

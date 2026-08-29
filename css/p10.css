@@ -1,0 +1,119 @@
+/* ============================================================================
+   p10.css — C-19 mobile quick view (#/mobile).
+   Every selector is prefixed .p10-. Tokens and spacing come from css/app.css.
+   One column always: it fills a 390px phone and sits centred, phone-width, on
+   a desktop window so the demo can show the mode without a device.
+   ========================================================================= */
+
+.p10-stage{display:flex;justify-content:center;min-width:0}
+
+/* The quick view is a device surface, not another page in the shell, so it is
+   framed at every width: it stops the demo shell's own brand and nav reading as
+   part of the phone screen. On a desktop window the same frame, centred and
+   phone-width, is the device preview. */
+.p10-phone{width:100%;max-width:430px;min-width:0;
+  border:1px solid var(--line);border-radius:14px;background:var(--card);
+  box-shadow:var(--shadow);padding:16px;margin-top:2px}
+@media(min-width:760px){.p10-phone{padding:18px;margin-top:4px}}
+
+/* ------------------------------------------------------------- header --- */
+.p10-head{display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;
+  border-bottom:1px solid var(--line);min-width:0}
+.p10-mark{font-size:15.5px;font-weight:700;letter-spacing:-.01em;min-width:0}
+.p10-mark small{display:block;font-size:11.5px;font-weight:600;color:var(--brass);
+  margin-top:2px}
+.p10-escape{margin-left:auto;flex:none;font-size:12.5px;font-weight:600;
+  color:var(--glass);text-decoration:none;padding:4px 0;white-space:nowrap}
+.p10-escape:hover{text-decoration:underline}
+
+.p10-me{padding:10px 0;border-bottom:1px solid var(--line2);min-width:0}
+.p10-me b{display:block;font-size:14px;font-weight:600}
+.p10-me span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+
+/* RM-7 — the remembered escape never traps; it offers the way back */
+.p10-remember{margin-top:var(--gap);padding:12px 14px;border:1px solid var(--line);
+  border-left:3px solid var(--brass);border-radius:var(--r);background:#fff}
+.p10-remember b{display:block;font-size:13.5px;font-weight:600}
+.p10-remember span{display:block;font-size:12.5px;color:var(--muted);margin-top:3px}
+.p10-remacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* -------------------------------------------------------- period chips -- */
+.p10-chips{display:flex;gap:6px;flex-wrap:wrap;margin:var(--gap) 0}
+.p10-chip{flex:1 1 0;min-width:0;font-size:12.5px;font-weight:600;padding:7px 4px;
+  border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--slate);
+  white-space:nowrap}
+.p10-chip:hover{border-color:var(--muted)}
+.p10-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.p10-custom{display:flex;gap:8px;margin-bottom:var(--gap);min-width:0}
+.p10-custom label{flex:1 1 0;min-width:0;font-size:11.5px;font-weight:600;
+  color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.p10-custom input{font:inherit;font-size:13px;color:var(--ink);width:100%;min-width:0;
+  padding:6px 9px;border:1px solid var(--line);border-radius:var(--r);background:#fff;
+  font-variant-numeric:tabular-nums}
+.p10-custom input:focus{outline:none;border-color:var(--brass);
+  box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+
+/* ------------------------------------------------------------ sections -- */
+.p10-sec{margin-top:18px;min-width:0}
+.p10-sec h2{display:flex;align-items:baseline;gap:8px;font-size:13px;font-weight:600;
+  color:var(--slate);margin-bottom:9px}
+.p10-sec h2 .n{font-size:11.5px;font-weight:700;color:var(--slate);background:#EDF0EC;
+  border-radius:999px;padding:1px 8px}
+.p10-group{margin-bottom:var(--gap)}
+.p10-group h3{display:flex;align-items:baseline;gap:8px;font-size:12.5px;font-weight:600;
+  color:var(--muted);margin-bottom:7px}
+.p10-group h3 .n{font-variant-numeric:tabular-nums}
+
+.p10-empty,.p10-readonly{border:1px solid var(--line);border-radius:var(--r);
+  background:#fff;padding:14px;font-size:13px;color:var(--muted)}
+.p10-readonly b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.p10-readonly span{display:block;margin-top:3px}
+
+/* -------------------------------------------------- approval cards ------ */
+.p10-card{border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  box-shadow:var(--shadow);padding:13px 14px;margin-bottom:9px;min-width:0}
+.p10-cardhd{display:flex;align-items:baseline;gap:10px;min-width:0}
+.p10-id{font-size:12px;font-weight:600;color:var(--brass);text-decoration:none;
+  font-variant-numeric:tabular-nums}
+.p10-id:hover{text-decoration:underline}
+.p10-age{margin-left:auto;flex:none;font-size:12.5px;font-weight:700;color:var(--slate)}
+.p10-age.warm{color:var(--brass)}
+.p10-age.hot{color:var(--rose)}
+.p10-name{display:block;font-size:14.5px;font-weight:600;line-height:1.35;margin-top:3px;
+  overflow-wrap:break-word}
+.p10-meta{font-size:12.5px;color:var(--muted);margin-top:3px;overflow-wrap:break-word}
+.p10-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.p10-acts .btn{flex:1 1 auto;justify-content:center}
+
+/* ------------------------------------------------ updates feed (C-09) --- */
+.p10-feed{border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  overflow:hidden}
+.p10-entry{display:block;padding:12px 14px;border-bottom:1px solid var(--line2);
+  text-decoration:none;color:inherit;min-width:0}
+.p10-entry:last-child{border-bottom:none}
+.p10-entry:hover{background:#FBFCFA}
+.p10-emeta{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:12px;
+  color:var(--muted);min-width:0}
+.p10-emeta b{font-weight:600;color:var(--slate)}
+.p10-etx{font-size:13.5px;line-height:1.5;margin-top:5px;overflow-wrap:break-word}
+.p10-eprj{font-size:12px;color:var(--muted);margin-top:5px;overflow-wrap:break-word}
+
+/* the four C-09 entry types, same colour grammar as the project stream */
+.p10-type{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;
+  border:1px solid var(--line);color:var(--slate);background:#fff;white-space:nowrap}
+.p10-type.t-note{color:var(--slate)}
+.p10-type.t-question{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.p10-type.t-decision{color:var(--glass);border-color:#D3DEEC;background:#F3F6FA}
+.p10-type.t-system{color:var(--muted);border-style:dashed}
+.p10-type.t-open{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+.p10-type.t-pinned{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+
+.p10-note{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.5;
+  border-top:1px solid var(--line2);padding-top:12px}
+
+@media(max-width:400px){
+  .p10-chip{font-size:12px;padding:7px 2px}
+  .p10-card{padding:12px}
+  .p10-acts .btn{width:100%;flex:1 1 100%}
+}

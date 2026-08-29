@@ -1,0 +1,185 @@
+/* ============================================================================
+   v101-proj.css — builder A · P3 register reframe + P4 comments / return flow.
+   Tokens and spacing come from app.css only (--paper --card --ink --slate
+   --muted --line --line2 --brass --verd --glass --rose --rose-bg --r --pad
+   --gap --shadow). One family, sentence-case labels, tabular-nums on every
+   money and count, every grid track minmax(0,1fr).
+   ========================================================================= */
+
+/* ==================================== P3 · multi-country selector ========= */
+.cselect{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  margin:var(--gap) 0 0;padding-bottom:2px}
+.cselect .cslab{font-size:12.5px;font-weight:600;color:var(--muted);margin-right:2px}
+.cchip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--line);background:var(--card);color:var(--slate);
+  white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.cchip:hover{border-color:var(--muted)}
+.cchip .n{font-size:11.5px;font-weight:600;color:var(--muted);
+  background:#F1F3F0;border-radius:999px;padding:0 7px}
+.cchip.on{background:var(--glass);border-color:var(--glass);color:#fff}
+.cchip.on .n{background:rgba(255,255,255,.22);color:#fff}
+.cchip:focus-visible{outline:2px solid var(--glass);outline-offset:1px}
+.cselect .cshint{font-size:12.5px;color:var(--muted);flex:1 1 220px;min-width:0}
+
+/* ==================================== P3 · layered country register ======= */
+.preg{min-width:0}
+.preg .lhead{display:grid;
+  grid-template-columns:minmax(0,1fr) 184px 112px 128px 72px 26px;
+  gap:12px;align-items:center;padding:9px 16px;
+  background:transparent;border:none;
+  font-size:12.5px;font-weight:600;color:var(--muted)}
+.preg .lhead .r{text-align:right}
+
+.cgrp{margin-bottom:var(--gap);min-width:0}
+
+/* the glass band: a structural header for the country, not an alert tint —
+   --glass mixed to 6% over the card white, so it reads as a layer under the
+   project cards rather than a status colour on them */
+.cband{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 16px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--card);
+  background:color-mix(in srgb,var(--glass) 6%,var(--card));
+  box-shadow:var(--shadow)}
+.cbtitle{display:flex;align-items:baseline;gap:10px;min-width:0}
+.cbtitle b{font-size:14px;font-weight:700;color:var(--ink)}
+.cbtitle .cnt{font-size:12.5px;color:var(--muted)}
+.cbfig{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-size:12.5px;color:var(--muted)}
+.cbfig .cbmoney b{color:var(--slate);font-weight:600}
+.cbfig .over{color:var(--rose);font-weight:700}
+.cbfig .cbq b{color:var(--slate);font-weight:600}
+
+/* project rows: white cards, inset 12px under the band, joined to it by one
+   hairline so an open row can never be mistaken for the country itself */
+.cbody{margin-left:12px;padding-left:12px;border-left:1px solid var(--line)}
+.cbody details.prj{position:relative;margin-top:8px;background:var(--card);
+  border:1px solid var(--line);border-bottom:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.cbody details.prj:last-of-type{border-bottom:1px solid var(--line)}
+.cbody details.prj::before{content:"";position:absolute;left:-12px;top:24px;
+  width:12px;height:1px;background:var(--line)}
+.cbody details.prj[open]{box-shadow:var(--shadow),inset 0 0 0 1px var(--line2)}
+
+.preg summary.prow{display:grid;
+  grid-template-columns:minmax(0,1fr) 184px 112px 128px 72px 26px;
+  gap:12px;align-items:center;padding:11px 16px}
+.preg summary.prow:hover{background:#FBFCFA}
+.preg details.prj[open] summary.prow{background:#F8FAF8;
+  border-bottom:1px solid var(--line2)}
+
+/* the conversation pill — count, plus a dot when something is unread for you */
+.cmtcell{display:flex;justify-content:flex-end;min-width:0}
+.cpill{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;
+  color:var(--slate);background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:3px 10px;white-space:nowrap;position:relative}
+.cpill .ic{color:var(--muted);font-size:12px;line-height:1}
+.cpill:hover{border-color:var(--muted)}
+.cpill.none{color:var(--muted);border-style:dashed}
+.cpill.unread{color:var(--ink)}
+.cpill .dot{width:7px;height:7px;border-radius:50%;background:var(--rose);flex:none}
+.cpill:focus-visible{outline:2px solid var(--glass);outline-offset:1px}
+
+.cempty{border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  padding:var(--pad);display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.cempty b{font-size:13.5px;font-weight:700}
+.cempty span{font-size:12.5px;color:var(--muted)}
+
+/* ==================================== P4 · breadcrumb + strips =========== */
+.p4-crumb{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.p4-crumb a{color:var(--glass);text-decoration:none}
+.p4-crumb a:hover{text-decoration:underline}
+.p4-crumb .sep{color:var(--muted);font-weight:400}
+.p4-crumb b{color:var(--ink);font-weight:600}
+.p4-crumb .pid{color:var(--brass);font-weight:600}
+
+/* alert rule: 3px left rule and a red value, no tinted card (design rule 4) */
+.p4-unread{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:0 0 var(--gap);padding:10px 14px;background:var(--card);
+  border:1px solid var(--line);border-left:3px solid var(--rose);
+  border-radius:var(--r);font-size:13px;color:var(--slate)}
+.p4-unread b{font-size:17px;font-weight:700;color:var(--rose);line-height:1}
+.p4-unread .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.p4-inlink{font:inherit;font-weight:600;color:var(--glass);text-decoration:underline;
+  padding:0;background:none;border:none}
+.p4-inlink:hover{color:var(--ink)}
+
+.p4-return{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:0 0 var(--gap);padding:11px 14px;background:var(--card);
+  border:1px solid var(--line);border-left:3px solid var(--verd);
+  border-radius:var(--r);font-size:13px;color:var(--slate)}
+.p4-return b{font-size:13.5px;font-weight:700;color:var(--verd)}
+.p4-return .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.p4-desc{font-size:13.5px;color:var(--slate);line-height:1.5;margin-top:11px;
+  padding-top:11px;border-top:1px solid var(--line2)}
+.p4-desc.empty{color:var(--muted);font-style:italic;font-size:12.5px}
+
+/* ==================================== P4 · comments feed ================= */
+.cm-card{padding:0}
+.cm-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:13px var(--pad);border-bottom:1px solid var(--line)}
+.cm-htitle{min-width:0}
+.cm-htitle b{font-size:13px;font-weight:600;color:var(--slate)}
+.cm-htitle small{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+.cm-hacts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.cm-feed{max-height:560px;overflow-y:auto;padding:4px var(--pad) 0}
+.cm{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid var(--line2)}
+.cm:last-child{border-bottom:none}
+.cm.unread{border-left:3px solid var(--rose);padding-left:11px;margin-left:-14px}
+.cm-av{flex:none;width:30px;height:30px;border-radius:50%;background:#EDF0EC;
+  color:var(--slate);font-size:11.5px;font-weight:700;display:flex;
+  align-items:center;justify-content:center}
+.cm-av.note{background:var(--brass-bg);color:var(--brass)}
+.cm-b{min-width:0;flex:1}
+.cm-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;
+  color:var(--muted);margin-bottom:4px}
+.cm-meta b{font-size:13px;font-weight:600;color:var(--ink)}
+.cm-meta .num{font-variant-numeric:tabular-nums}
+.cm-kind{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  color:var(--brass);background:var(--brass-bg);border:1px solid #E2D3B4;
+  border-radius:999px;padding:1px 9px;white-space:nowrap}
+.cm-kind .ic{font-weight:700;line-height:1}
+.cm-flag{font-size:11.5px;font-weight:600;color:var(--rose);border:1px solid #E5C6C4;
+  border-radius:999px;padding:1px 9px;white-space:nowrap}
+.cm-edited{font-size:11.5px;color:var(--muted);font-style:italic}
+.cm-new{font-size:11.5px;font-weight:700;color:var(--rose)}
+.cm-txt{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}
+.cm-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cm-edit{margin-top:4px}
+
+.cm-composer{border-top:1px solid var(--line);background:#FAFBFA;
+  padding:13px var(--pad)}
+.cm-composer.readonly{font-size:12.5px;color:var(--muted);font-style:italic;
+  border-radius:0 0 var(--r) var(--r)}
+.cm-crow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:9px}
+.cm-crow .sp{margin-left:auto;display:flex;gap:6px}
+.cm-hint{font-size:12px;color:var(--muted);flex:1 1 240px;min-width:0}
+.cm-foot{font-size:12px;color:var(--muted);padding:11px var(--pad) 13px;
+  border-top:1px solid var(--line2)}
+
+/* the audit stream says, once, where the conversation actually lives */
+.act-sep{font-size:12px;color:var(--muted);padding:11px var(--pad);
+  border-bottom:1px solid var(--line2)}
+
+/* ========================================================= responsive ==== */
+@media(max-width:1020px){
+  .preg .lhead,.preg summary.prow{
+    grid-template-columns:minmax(0,1fr) 156px 104px 104px 66px 26px}
+}
+@media(max-width:860px){
+  .preg .lhead,.preg summary.prow{
+    grid-template-columns:minmax(0,1fr) 104px 26px;row-gap:8px}
+  .preg .lhead .c-stage,.preg .lhead .c-prog,.preg .lhead .c-cmt{display:none}
+  .preg .cmtcell{grid-column:1/-1;order:6;justify-content:flex-start}
+  .cbfig{margin-left:0;width:100%;gap:10px}
+}
+@media(max-width:520px){
+  .preg .lhead{display:none}
+  .preg summary.prow{padding:11px 12px}
+  .cband{padding:10px 12px}
+  .cbody{margin-left:8px;padding-left:10px}
+  .cbody details.prj::before{left:-10px;width:10px}
+  .cm-feed,.cm-head,.cm-composer,.cm-foot,.act-sep{padding-left:14px;padding-right:14px}
+  .cm.unread{margin-left:-8px}
+}

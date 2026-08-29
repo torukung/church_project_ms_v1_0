@@ -1,0 +1,320 @@
+/* ============================================================================
+   p7p8.css — Budget (#/budget) and Alert centre (#/alerts).
+   Every selector is prefixed .p7- or .p8-. Tokens and spacing come from
+   css/app.css; nothing is redefined here.
+   ========================================================================= */
+
+.p7-page,.p8-page{min-width:0}
+
+/* ======================================================= P7 · Budget ===== */
+
+.p7-year{font-size:12.5px;font-weight:600;color:var(--muted)}
+.p7-yearnote{font-size:12px;color:var(--muted)}
+.p7-hint{margin:0 0 var(--gap);padding:9px 13px;border:1px solid var(--line);
+  border-left:3px solid var(--brass);border-radius:var(--r);background:#fff;
+  font-size:12.5px;color:var(--slate)}
+.p7-kpis{margin-top:var(--gap)}
+.p7-card + .p7-card,.p7-kpis + .p7-card{margin-top:var(--gap)}
+.p7-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5;max-width:82ch}
+
+.p7-code{font-size:11.5px;font-weight:600;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.p7-page .tbl td:first-child{font-weight:600}
+.p7-page .tblwrap .tbl{min-width:720px}
+
+/* inline ceiling editor — Admin and M1 only */
+.p7-edit{display:inline-flex;align-items:center;gap:2px;justify-content:flex-end}
+.p7-cur{font-size:13px;color:var(--muted)}
+.p7-ceil{font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);
+  text-align:right;width:118px;padding:4px 8px;border:1px solid var(--line);
+  border-radius:var(--r);background:#fff;font-variant-numeric:tabular-nums}
+.p7-ceil:hover{border-color:var(--muted)}
+.p7-ceil:focus{outline:none;border-color:var(--brass);
+  box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+/* the spinner steals width and the value is typed, not stepped */
+.p7-ceil::-webkit-outer-spin-button,.p7-ceil::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0}
+.p7-ceil{-moz-appearance:textfield;appearance:textfield}
+
+.p7-page .tbl tr.p7-tot td{border-top:1px solid var(--line);border-bottom:none;
+  font-weight:700;padding-top:13px}
+.p7-page .tbl .neg{color:var(--rose);font-weight:700}
+
+/* the reused mini C-03 bar needs a column width to live in */
+.p7-page .p2-bar.sm{width:150px;min-width:150px;flex:none;display:inline-block;
+  vertical-align:middle}
+/* the aligned C-03 bar inside a table cell: one width for the whole column, so
+   the per-row 100% ticks land on the same x down the table too */
+.p7-page .tbl td .ubar-wrap{width:170px;min-width:170px}
+
+/* ---------------------------------------------- P7 · sub-menu + header --- */
+/* same tab grammar as the P8 and P9 strips — brass underline, sentence case */
+.p7-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);
+  margin:var(--gap) 0;overflow-x:auto;min-width:0}
+.p7-tab{padding:9px 14px;font-size:13.5px;color:var(--muted);white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0}
+.p7-tab:hover{color:var(--slate)}
+.p7-tab.on{color:var(--ink);font-weight:600;border-bottom-color:var(--brass)}
+
+.p7-synced{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+/* design rule 4 — an alert is a 3px left rule, never a tinted card */
+.p7-err{font-size:12.5px;font-weight:600;color:var(--slate);
+  border-left:3px solid var(--rose);padding-left:10px;margin-top:12px;max-width:82ch}
+.p7-empty{font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 0}
+
+/* ------------------------------- P7 · aligned utilisation column (C-03) --
+   Every row is the same three-track grid and the bars carry no value column of
+   their own, so the per-row 100% tick from U.budgetBar and the column-long rule
+   below are placed by the SAME calc and coincide exactly. --p7-utick is written
+   inline by p7.js as 100/scale. */
+.p7-ucol{position:relative;padding-top:22px;min-width:0;
+  --p7-ul:180px; --p7-uv:62px; --p7-ug:12px}
+.p7-urow{display:grid;gap:var(--p7-ug);align-items:center;padding:7px 0;min-width:0;
+  grid-template-columns:var(--p7-ul) minmax(0,1fr) var(--p7-uv)}
+.p7-urow + .p7-urow{border-top:1px solid var(--line2)}
+.p7-uname{font-size:13px;font-weight:600;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.p7-ubar{min-width:0}
+.p7-uval{text-align:right;font-size:13px;font-weight:600;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.p7-uval.neg{color:var(--rose)}
+.p7-urule,.p7-u100{position:absolute;pointer-events:none;
+  left:calc(var(--p7-ul) + var(--p7-ug) +
+    (100% - var(--p7-ul) - var(--p7-uv) - 2 * var(--p7-ug)) * var(--p7-utick))}
+.p7-urule{top:20px;bottom:2px;width:1px;background:var(--ink);opacity:.30;z-index:2}
+.p7-u100{top:0;transform:translateX(-50%);font-size:11.5px;color:var(--muted);
+  white-space:nowrap}
+
+/* ------------------------------------------------ P7 · report builder ---- */
+.p7-builder .p7-rgrp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:9px 0;border-bottom:1px solid var(--line2);min-width:0}
+.p7-builder .p7-rgrp:last-of-type{border-bottom:none}
+.p7-rlab{flex:none;width:84px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.p7-racts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;
+  border-top:1px solid var(--line);padding-top:12px;min-width:0}
+.p7-racts .btn[disabled]{opacity:.45;cursor:default}
+.p7-rstate{font-size:12px;color:var(--muted);min-width:0}
+.p7-rscope{font-size:12.5px;color:var(--muted);margin-bottom:10px;
+  font-variant-numeric:tabular-nums}
+
+/* ------------------------------------------------- P7 · forecasting ------ */
+.p7-plan{font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);
+  text-align:right;width:118px;padding:4px 8px;border:1px solid var(--line);
+  border-radius:var(--r);background:#fff;font-variant-numeric:tabular-nums}
+.p7-plan:hover{border-color:var(--muted)}
+.p7-plan:focus{outline:none;border-color:var(--brass);
+  box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+.p7-planpct{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;
+  font-variant-numeric:tabular-nums}
+.p7-page .tbl td.p7-fnote{font-weight:400;font-size:12.5px;color:var(--muted);
+  white-space:normal;min-width:190px}
+
+.p7-fcompare{min-width:0}
+.p7-fgrp{display:grid;grid-template-columns:150px minmax(0,1fr);gap:var(--gap);
+  padding:14px 0;border-bottom:1px solid var(--line2);min-width:0;align-items:center}
+.p7-fgrp:last-child{border-bottom:none}
+.p7-fname{font-size:13px;font-weight:600;min-width:0}
+.p7-ftrack{position:relative;padding-top:18px;min-width:0;
+  --p7-fl:52px; --p7-fv:58px; --p7-fg:10px}
+.p7-frow{display:grid;gap:var(--p7-fg);align-items:center;padding:3px 0;min-width:0;
+  grid-template-columns:var(--p7-fl) minmax(0,1fr) var(--p7-fv)}
+.p7-fy{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.p7-fbar{min-width:0}
+.p7-fnone{display:block;font-size:11.5px;color:var(--muted);font-style:italic}
+.p7-fv{text-align:right;font-size:12.5px;font-weight:600;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.p7-fv.neg{color:var(--rose)}
+.p7-frule{position:absolute;top:16px;bottom:2px;width:1px;background:var(--ink);
+  opacity:.30;pointer-events:none;z-index:2;
+  left:calc(var(--p7-fl) + var(--p7-fg) +
+    (100% - var(--p7-fl) - var(--p7-fv) - 2 * var(--p7-fg)) * var(--p7-utick))}
+/* the 2027 plan marker — a brass caret with its own dotted drop line, so it can
+   never be mistaken for the 100% rule */
+.p7-fplan{position:absolute;top:2px;bottom:2px;width:0;z-index:3;
+  left:calc(var(--p7-fl) + var(--p7-fg) +
+    (100% - var(--p7-fl) - var(--p7-fv) - 2 * var(--p7-fg)) * var(--p7-fx))}
+.p7-fplan::after{content:'';position:absolute;top:14px;bottom:0;left:0;
+  border-left:1px dotted var(--brass);pointer-events:none}
+.p7-fplan i{position:absolute;top:8px;left:-5px;width:0;height:0;
+  border-left:5px solid transparent;border-right:5px solid transparent;
+  border-top:6px solid var(--brass)}
+.p7-fplan b{position:absolute;top:-4px;left:0;transform:translateX(-50%);
+  font-size:11px;font-weight:600;color:var(--brass);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.p7-fkey{display:inline-block;width:0;height:0;margin-right:7px;vertical-align:middle;
+  border-left:5px solid transparent;border-right:5px solid transparent;
+  border-top:6px solid var(--brass)}
+
+/* ------------------------------------------ P7 · RD-3 print pre-read ----- */
+.p7-print{display:none}
+
+/* ================================================== P8 · Alert centre ==== */
+
+.p8-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);
+  margin:var(--gap) 0;overflow-x:auto;min-width:0}
+.p8-tab{padding:9px 14px;font-size:13.5px;color:var(--muted);white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0}
+.p8-tab:hover{color:var(--slate)}
+.p8-tab.on{color:var(--ink);font-weight:600;border-bottom-color:var(--brass)}
+
+.p8-lead{font-size:13px;color:var(--muted);margin-bottom:var(--gap);max-width:82ch}
+.p8-note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5;max-width:82ch}
+.p8-note b{color:var(--slate);font-weight:600}
+.p8-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--gap)}
+
+.p8-empty{padding:18px 0 6px}
+.p8-empty b{display:block;font-size:14.5px;font-weight:600}
+.p8-empty span{display:block;font-size:13px;color:var(--muted);margin-top:4px;max-width:70ch}
+
+/* ------------------------------------------------------- the sent log --- */
+.p8-list{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.p8-row{border-bottom:1px solid var(--line2)}
+.p8-row:last-child{border-bottom:none}
+.p8-row.open{background:#FCFDFC}
+.p8-mailhd{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
+  padding:11px 14px;min-width:0}
+.p8-mailhd:hover{background:#FBFCFA}
+.p8-rule{flex:none;width:62px;text-align:center;font-size:12px;font-weight:700;
+  font-variant-numeric:tabular-nums;padding:3px 6px;border-radius:999px;
+  border:1.5px solid var(--line);color:var(--slate);background:#fff;margin-top:1px}
+.p8-mailtx{min-width:0;flex:1}
+.p8-mailtx b{display:block;font-size:14px;font-weight:600;line-height:1.35}
+.p8-mailtx span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+.p8-chev{flex:none;color:var(--muted);font-size:11px;margin-top:4px}
+
+.p8-mail{padding:2px 14px 16px 88px}
+.p8-meta{display:flex;gap:10px;align-items:baseline;font-size:12.5px;padding:3px 0;
+  min-width:0}
+.p8-meta span{flex:none;width:74px;color:var(--muted);font-weight:600}
+.p8-meta b{font-weight:600;color:var(--slate);min-width:0;overflow-wrap:break-word}
+.p8-meta b small{font-weight:400;color:var(--muted)}
+.p8-meta a{color:var(--glass);text-decoration:none}
+.p8-meta a:hover{text-decoration:underline}
+.p8-body{font-family:inherit;font-size:13px;line-height:1.55;color:var(--slate);
+  white-space:pre-wrap;overflow-wrap:break-word;margin-top:9px;padding:12px 14px;
+  border:1px solid var(--line2);border-left:3px solid var(--line);border-radius:var(--r);
+  background:#FBFCFA}
+
+@media(max-width:640px){.p8-mail{padding-left:14px}}
+
+/* ---------------------------------------------------- rule catalogue ---- */
+.p8-page .tblwrap .tbl{min-width:760px}
+.p8-id{font-variant-numeric:tabular-nums;font-weight:700;color:var(--slate)}
+.p8-tag{display:inline-block;font-size:11px;font-weight:600;color:var(--brass);
+  background:var(--brass-bg);border:1px solid #E2D3B4;border-radius:999px;
+  padding:0 8px;white-space:nowrap}
+.p8-toggle{display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 4px;
+  border:1px solid var(--line);border-radius:999px;background:#fff;white-space:nowrap}
+.p8-toggle:hover{border-color:var(--muted)}
+.p8-knob{width:26px;height:15px;border-radius:999px;background:#DFE3DE;position:relative;
+  flex:none;transition:background .15s}
+.p8-knob::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;
+  border-radius:50%;background:#fff;transition:transform .15s}
+.p8-toggle.on .p8-knob{background:var(--verd)}
+.p8-toggle.on .p8-knob::after{transform:translateX(11px)}
+.p8-state{font-size:12.5px;font-weight:600;color:var(--muted)}
+.p8-toggle.on .p8-state{color:var(--verd)}
+.p8-state.ison{color:var(--verd)}
+.p8-state.isoff{color:var(--muted)}
+
+/* -------------------------------------------- C-14 · template editor ---- */
+.p8-editor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:var(--gap);align-items:start}
+.p8-editor > .card:last-child{grid-column:1/-1}
+@media(max-width:940px){.p8-editor{grid-template-columns:minmax(0,1fr)}
+  .p8-editor > .card:last-child{grid-column:auto}}
+
+.p8-flabel{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:7px}
+.p8-tokens{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--gap)}
+.p8-token{font-size:12.5px;font-weight:600;color:var(--glass);background:#F3F6FA;
+  border:1px solid #D3DEEC;border-radius:var(--r);padding:3px 9px;white-space:nowrap}
+.p8-token:hover{background:#E9F0F8;border-color:var(--glass)}
+
+.p8-field{margin-bottom:12px;min-width:0}
+.p8-field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);
+  margin-bottom:5px}
+.p8-input{font:inherit;font-size:13.5px;color:var(--ink);width:100%;padding:8px 11px;
+  border:1px solid var(--line);border-radius:var(--r);background:#fff;min-width:0}
+.p8-input:focus{outline:none;border-color:var(--brass);
+  box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+.p8-area{line-height:1.55;resize:vertical;min-height:150px}
+.p8-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.p8-saved{font-size:12.5px;font-weight:600;color:var(--verd)}
+
+.p8-prev{border:1px solid var(--line);border-radius:var(--r);padding:14px;
+  background:#FBFCFA;min-width:0}
+.p8-prevhd{display:flex;gap:10px;align-items:baseline;font-size:12.5px;padding:2px 0;
+  min-width:0}
+.p8-prevhd span{flex:none;width:62px;color:var(--muted);font-weight:600}
+.p8-prevhd b{font-weight:600;color:var(--ink);min-width:0;overflow-wrap:break-word}
+.p8-prev .p8-body{background:#fff}
+.p8-vals{margin-top:var(--gap);border-top:1px solid var(--line2);padding-top:10px}
+.p8-vals .p8-meta span{width:132px;font-variant-numeric:tabular-nums}
+
+.p8-others{list-style:none;font-size:13px}
+.p8-others li{display:flex;gap:10px;align-items:baseline;padding:7px 0;
+  border-bottom:1px solid var(--line2);min-width:0;flex-wrap:wrap}
+.p8-others li:last-child{border-bottom:none}
+.p8-others b{flex:none;width:44px;font-weight:700;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.p8-others span{flex:1;min-width:0;color:var(--slate)}
+.p8-others em{flex:none;font-style:normal;font-size:12px;color:var(--muted)}
+
+/* ------------------------------------------- RD-2 · director digest ----- */
+.p8-digest{border:1px solid var(--line);border-radius:var(--r);background:#FBFCFA;
+  padding:16px;min-width:0}
+.p8-digestbody{margin-top:12px;border-top:1px solid var(--line2);padding-top:12px}
+.p8-sec + .p8-sec{margin-top:16px;border-top:1px solid var(--line2);padding-top:14px}
+.p8-sec h4{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.p8-sec h4 .num{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.p8-grp{margin-bottom:8px;min-width:0}
+.p8-grp:last-child{margin-bottom:0}
+.p8-grp > b{display:block;font-size:12.5px;font-weight:600;color:var(--muted);
+  margin-bottom:2px}
+.p8-line{display:flex;gap:10px;align-items:baseline;padding:4px 0;font-size:13px;
+  color:var(--slate);text-decoration:none;min-width:0}
+.p8-line:hover span:last-child{color:var(--glass)}
+.p8-lead2{flex:none;min-width:64px;font-weight:700;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.p8-lead2.hot{color:var(--rose)}
+.p8-line span:last-child{min-width:0;overflow-wrap:break-word}
+.p8-foot{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line2);
+  padding-top:9px}
+.p8-quiet b{display:block;font-size:14.5px;font-weight:600;color:var(--verd)}
+.p8-quiet span{display:block;font-size:13px;color:var(--muted);margin-top:4px;max-width:70ch}
+
+@media(max-width:940px){
+  .p7-fgrp{grid-template-columns:minmax(0,1fr);gap:6px;align-items:start}
+}
+@media(max-width:760px){
+  .p7-ucol{--p7-ul:120px}
+}
+@media(max-width:520px){
+  .p8-rule{width:54px}
+  .p8-mail{padding-left:14px}
+  .p8-meta span{width:64px}
+  .p7-ceil{width:100px}
+  .p7-plan{width:100px}
+  .p7-ucol{--p7-ul:96px;--p7-uv:52px;--p7-ug:8px}
+  .p7-rlab{width:100%}
+  .p7-ftrack{--p7-fl:42px;--p7-fv:50px}
+}
+
+/* ------------------------------------------------------------------------ */
+/* RD-3 meeting pack: Print / export gives the dated report, chrome stripped. */
+/* The shell rules (sidebar, topbar, page head) already come from dash.css.   */
+/* ------------------------------------------------------------------------ */
+@media print{
+  .p7-tabs,.p7-builder,.p7-racts,.p7-hint,.p7-rstate{display:none !important}
+  .p7-print{display:block;border-bottom:1.5px solid var(--ink);
+    padding-bottom:8px;margin-bottom:10px}
+  .p7-print h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .p7-print p{font-size:10px;color:var(--slate);margin-top:2px;
+    font-variant-numeric:tabular-nums}
+  .p7-page .card{box-shadow:none;break-inside:avoid;page-break-inside:avoid;
+    padding:10px}
+  .p7-page .tblwrap{overflow:visible}
+  .p7-page .tblwrap .tbl{min-width:0;font-size:10px}
+  .p7-note,.p7-rscope{font-size:9px}
+}

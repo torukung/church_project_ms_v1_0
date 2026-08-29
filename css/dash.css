@@ -1,0 +1,302 @@
+/* ============================================================================
+   dash.css — P2 Dashboard only (C-18 widget board, C-20 scope selector,
+   C-03 budget bar, RD-1/RD-4/RD-5 widgets and the RD-3 print pre-read).
+
+   Every selector is prefixed .p2- (page) or .dw- (widget), so this file never
+   reaches another page. Tokens come from css/app.css — nothing is redefined
+   here; the micro-layouts ported from reference/P2_Dashboard_UI_Sample_v3.html
+   are re-tokenised onto those variables.
+   ========================================================================= */
+
+.p2-page { min-width: 0; }
+
+/* ------------------------------------------------ tabs = named dashboards */
+.p2-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);
+  margin:var(--gap) 0;overflow-x:auto;min-width:0}
+.p2-tab{padding:9px 14px;font-size:13.5px;color:var(--muted);white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0}
+.p2-tab:hover{color:var(--slate)}
+.p2-tab.on{color:var(--ink);font-weight:600;border-bottom-color:var(--brass)}
+/* a tab that cannot be reached while a layout draft is open */
+.p2-tab.locked{opacity:.45;cursor:default}
+.p2-tab.locked:hover{color:var(--muted)}
+/* where "+ New dashboard" used to sit: creation moved to Administration, so
+   this is a quiet pointer to it, never an action */
+.p2-manage{margin-left:auto;align-self:center;padding:9px 4px 9px 14px;
+  font-size:12.5px;color:var(--muted);text-decoration:none;white-space:nowrap}
+a.p2-manage:hover{color:var(--glass);text-decoration:underline}
+
+/* =========================================== C-20 · country scope pane === */
+.p2-scope-pane{position:absolute;right:0;top:calc(100% + 6px);z-index:40;width:250px;
+  background:#fff;border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 10px 30px rgba(34,48,59,.14);padding:10px;display:none}
+.p2-scope-pane.open{display:block}
+.p2-scope-pane .hd{display:flex;justify-content:space-between;align-items:center;
+  font-size:12.5px;font-weight:600;color:var(--muted);padding:2px 6px 8px}
+.p2-scope-pane .hd button{color:var(--glass);font-weight:600;font-size:12.5px}
+.p2-scope-list label{display:flex;align-items:center;gap:10px;padding:7px 6px;
+  border-radius:6px;font-size:13.5px;cursor:pointer}
+.p2-scope-list label:hover{background:#F5F7F4}
+.p2-scope-list input{width:15px;height:15px;accent-color:var(--brass);flex:none}
+.p2-scope-pane .ft{font-size:11.5px;color:var(--muted);padding:8px 6px 2px;
+  border-top:1px solid var(--line2);margin-top:6px;line-height:1.45}
+
+.p2-hint{margin:0 0 var(--gap);padding:9px 13px;border:1px solid var(--line);
+  border-left:3px solid var(--brass);border-radius:var(--r);background:#fff;
+  font-size:12.5px;color:var(--slate)}
+.p2-lead{font-size:13px;color:var(--muted);margin:0 0 var(--gap);max-width:82ch}
+
+/* ============================================ C-18 · the widget board ====
+   v1.0.1 — the board is a stack of rows; each row is its own grid of
+   minmax(0,1fr) tracks and every widget spans the `w` its layout entry asks
+   for. A row holds at most the 3 tracks of the board grid, so the widths in
+   dashboard.layout are honoured exactly; a row that asks for fewer than 3
+   shares itself out in the ratio requested (two 1× widgets = the confirmed
+   50/50 pair) rather than leaving a hole. */
+.p2-grid{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+.p2-row{display:grid;gap:var(--gap);align-items:start;min-width:0}
+.dw{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:var(--pad);min-width:0}
+.dw-bare{background:none;border:none;box-shadow:none;padding:0}
+
+.dw-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:var(--gap);min-width:0}
+.dw-hd h2{font-size:13px;font-weight:600;color:var(--slate);min-width:0}
+.dw-hd.bare{margin-bottom:8px}
+.dw-tools{margin-left:auto;display:flex;align-items:baseline;gap:12px;flex:none}
+.dw-more{font-size:12.5px;font-weight:600;color:var(--glass);text-decoration:none}
+.dw-date{font-size:12px;color:var(--muted)}
+.p2-x{font-size:15px;line-height:1;color:var(--muted);padding:0 2px;border-radius:4px}
+.p2-x:hover{color:var(--rose)}
+.dw-bd{min-width:0}
+
+.p2-empty{font-size:13px;color:var(--muted);padding:10px 0 4px}
+.p2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5}
+
+.p2-blank{border:1px dashed var(--line);border-radius:var(--r);background:#fff;
+  padding:34px var(--pad);text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:8px}
+.p2-blank b{font-size:15px;font-weight:700}
+.p2-blank span{font-size:13px;color:var(--muted)}
+
+/* ============================== C-03 · budget bar vs ceiling ============= */
+.p2-bwrap{padding:26px 2px 2px}
+.p2-bar{position:relative;height:26px;border-radius:6px;background:#EFF1EE;min-width:0}
+.p2-bar.sm{height:14px;border-radius:999px;flex:1}
+.p2-fill{position:absolute;inset:0;display:flex;border-radius:inherit;overflow:hidden}
+.p2-seg{height:100%;display:block;flex:none}
+.p2-over{position:absolute;top:0;bottom:0;border-radius:0 6px 6px 0;
+  background:repeating-linear-gradient(135deg,
+    rgba(163,66,62,.16) 0 5px, rgba(163,66,62,.32) 5px 10px)}
+.p2-bar.sm .p2-over{border-radius:0 999px 999px 0}
+.p2-tick{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink);
+  border-radius:2px}
+.p2-ticklbl{position:absolute;top:-24px;transform:translateX(-50%);font-size:11.5px;
+  font-weight:600;color:var(--slate);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.p2-ticklbl.end{transform:none;text-align:right}
+.p2-ticklbl.start{transform:none}
+
+/* legend row — fixed amount and percent columns keep every row aligned */
+.p2-legend{margin-top:18px;font-size:13.5px}
+.p2-lrow{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--line2);min-width:0}
+.p2-lrow.total{border-bottom:none;padding-top:10px;font-weight:700}
+.p2-dot{width:9px;height:9px;border-radius:3px;flex:none}
+.p2-llbl{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p2-lamt{font-variant-numeric:tabular-nums;text-align:right;min-width:92px;flex:none}
+.p2-lpct{font-variant-numeric:tabular-nums;text-align:right;min-width:52px;flex:none;
+  color:var(--muted);font-size:12.5px}
+.p2-lpct.neg{color:var(--rose);font-weight:700}
+
+/* per-country ceiling bars */
+.p2-clist{display:flex;flex-direction:column;gap:4px}
+.p2-crow{display:flex;align-items:center;gap:12px;padding:7px 0;
+  border-bottom:1px solid var(--line2);min-width:0}
+.p2-crow:last-child{border-bottom:none}
+.p2-cname{flex:0 0 104px;font-size:13.5px;font-weight:600;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p2-cval{flex:0 0 52px;text-align:right;font-size:12.5px;
+  font-variant-numeric:tabular-nums;color:var(--slate)}
+.p2-cval.neg{color:var(--rose);font-weight:700}
+/* the shared-scale bar (U.budgetBar) takes the rest of the row */
+.p2-crow .ubar-wrap,.p2-ycrow .ubar-wrap{flex:1 1 auto;min-width:0}
+
+/* ================================ attention list / RD-4 roll-up rows ==== */
+.p2-att{min-width:0}
+.p2-arow{display:flex;gap:12px;align-items:flex-start;padding:11px 0;
+  border-bottom:1px solid var(--line2);text-decoration:none;color:inherit;min-width:0}
+.p2-arow:last-child{border-bottom:none}
+.p2-arow:hover:not(.static) .p2-atx b{color:var(--glass)}
+.p2-att .tagpill{width:60px;min-width:60px;margin-top:1px}
+.p2-atx{min-width:0}
+.p2-atx b{display:block;font-size:14px;font-weight:600;line-height:1.35}
+.p2-atx span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+
+/* ==================================== RD-1 · sortable league table ======= */
+.p2-league th.p2-sortable{cursor:pointer;user-select:none}
+.p2-league th.p2-sortable:hover{color:var(--slate)}
+.p2-league th.p2-sortable.on{color:var(--ink)}
+.p2-arrow{font-size:9px;margin-left:5px;color:var(--brass)}
+.p2-league .p2-rank{width:34px;color:var(--muted)}
+.p2-league td .neg{color:var(--rose);font-weight:700}
+.p2-league td .dim{color:var(--muted)}
+.dw .tbl a{color:var(--glass);font-weight:600;text-decoration:none}
+.dw .tbl a:hover{text-decoration:underline}
+.dw .tbl .dim{color:var(--muted);font-weight:400}
+/* a 1-track widget carries fewer columns — let its table fit the card, and
+   the .tblwrap keeps scrolling anything that still will not */
+.dw-w1 .tblwrap .tbl{min-width:392px}
+
+/* ================================= v1.0.1 · layout edit mode (quiet) =====
+   Nothing here introduces a colour: the affordances are the existing line /
+   muted / slate / brass tokens at small sizes, so a board being edited reads
+   as the same board with a working surface, not a different design. */
+.p2-editbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;
+  gap:12px;flex-wrap:wrap;margin:0 0 var(--gap);padding:10px 14px;
+  background:var(--card);border:1px solid var(--line);border-left:3px solid var(--brass);
+  border-radius:var(--r);box-shadow:var(--shadow)}
+.p2-editttl{font-size:13px;font-weight:600;color:var(--ink);min-width:0}
+.p2-edithow{font-size:12.5px;color:var(--muted);min-width:0;flex:1 1 240px}
+.p2-editacts{display:flex;gap:8px;flex:none;margin-left:auto}
+
+.p2-editing .dw-edit{border-style:dashed}
+.dw-grip{font-size:13px;letter-spacing:-3px;color:var(--muted);cursor:grab;flex:none;
+  line-height:1;align-self:center}
+.dw-edit[draggable="true"]{cursor:grab}
+.dw.dragging{opacity:.5}
+.dw.dropat{border-style:solid;border-color:var(--brass);
+  box-shadow:0 0 0 1px var(--brass) inset, var(--shadow)}
+
+/* the per-widget control row, under the header */
+.dw-tools.edit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:0 0 var(--gap);padding-bottom:10px;border-bottom:1px solid var(--line2)}
+.dw-bare .dw-tools.edit{margin-top:8px}
+.p2-ebg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;flex:none}
+.p2-eb{font-size:12px;font-weight:600;color:var(--muted);padding:3px 9px;
+  line-height:1.5;border-radius:0}
+.p2-ebg .p2-eb + .p2-eb{border-left:1px solid var(--line)}
+.p2-eb:hover:not(:disabled){color:var(--ink);background:#F5F7F4}
+.p2-eb:disabled{opacity:.35;cursor:default}
+.p2-span{font-variant-numeric:tabular-nums}
+.p2-span.on{color:var(--ink);background:#F1F3F0;box-shadow:inset 0 -2px 0 var(--brass)}
+.p2-ebpos{font-size:11.5px;color:var(--muted);flex:none}
+.dw-tools.edit .p2-x{margin-left:auto;border:1px solid var(--line);padding:1px 8px}
+
+/* =============================== the predefined widget catalogue tray ==== */
+.p2-tray{margin-top:var(--gap);border:1px dashed var(--line);border-radius:var(--r);
+  background:var(--card);padding:var(--pad);min-width:0}
+.p2-trayhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  margin-bottom:var(--gap);min-width:0}
+.p2-trayhd h2{font-size:13px;font-weight:600;color:var(--slate)}
+.p2-trayhd span{font-size:12.5px;color:var(--muted);min-width:0}
+.p2-pickgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.p2-pick{text-align:left;border:1px solid var(--line);border-radius:var(--r);
+  background:#fff;padding:12px 14px;min-width:0;display:block}
+.p2-pick:hover{border-color:var(--brass);background:#FCFBF7}
+.p2-pick b{display:block;font-size:13.5px;font-weight:600}
+.p2-pick span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.p2-pick em{display:block;font-size:11.5px;font-style:normal;font-weight:600;
+  color:var(--brass);margin-top:6px}
+
+/* =========================== v1.0.1 · budget years 2024–2027 (yearcompare)
+   One block per country, three utilisation bars and the 2027 plan marker. The
+   blocks are a single auto-fill grid, so the widget reads the same at a 1×, 2×
+   or 3× span and every bar keeps the shared 100% rule at the same x. */
+.p2-yc{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  gap:var(--gap);min-width:0}
+.p2-ycblock{min-width:0;padding:10px 0 2px;border-top:1px solid var(--line2)}
+.p2-ychd{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;min-width:0}
+.p2-ychd b{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.p2-ychd span{font-size:11.5px;color:var(--muted);margin-left:auto;flex:none}
+.p2-ycrow{display:flex;align-items:center;gap:10px;padding:3px 0;min-width:0}
+.p2-ycyr{flex:0 0 34px;font-size:12px;color:var(--muted);font-weight:600}
+.p2-ycrow.plan .p2-ycyr{color:var(--brass)}
+/* the plan row shares the bar geometry but carries a marker, not a fill */
+.p2-ycplan{background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}
+.p2-ycmark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--brass);
+  border-radius:2px}
+.p2-ycmark::after{content:'';position:absolute;left:-3px;top:-4px;width:8px;height:8px;
+  background:var(--brass);transform:rotate(45deg);border-radius:1px}
+.p2-ycnote{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+/* the league coverage column is a bar column now — keep it from collapsing */
+.p2-league td.p2-covcol{min-width:148px}
+.p2-league th.p2-covcol{min-width:148px}
+
+/* ========================================== RD-3 · print pre-read ======== */
+.p2-print{display:none}
+
+@media (max-width:940px){
+  /* one widget per row: the inline span from dashboard.layout is overridden
+     rather than dropped, so the saved layout survives the narrow view */
+  .p2-row{grid-template-columns:minmax(0,1fr) !important}
+  .p2-row > .dw{grid-column:1 / -1 !important}
+  .p2-pickgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .p2-yc{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+}
+@media (max-width:520px){
+  .p2-scope-pane{width:min(250px,78vw)}
+  .p2-cname{flex-basis:84px}
+  .p2-lamt{min-width:88px}
+  .p2-lrow{font-size:13px}
+  .p2-pickgrid{grid-template-columns:minmax(0,1fr)}
+  .p2-yc{grid-template-columns:minmax(0,1fr)}
+  .p2-manage{margin-left:0;padding-left:8px}
+  .p2-editbar{gap:8px}
+  .p2-editacts{margin-left:0}
+}
+
+/* ------------------------------------------------------------------------ */
+/* RD-3 meeting pack: Export prints a clean, one-page dated pre-read.        */
+/* ------------------------------------------------------------------------ */
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+
+  html,body{background:#fff !important}
+  body{font-size:10px;line-height:1.4}
+
+  .side,.topbar,.hintbar{display:none !important}
+  .shell{display:block !important}
+  .main{padding:0 !important;max-width:none !important}
+
+  .pagehead,.crumb,.p2-tabs,.p2-hint,.p2-lead,.pagenote,
+  .p2-editbar,.p2-tray,.dw-tools.edit,.dw-grip,.p2-manage,
+  .p2-x,.dw-more,.dw-tools .p2-x,.p2-blank .btn{display:none !important}
+
+  .p2-print{display:block;border-bottom:1.5px solid var(--ink);
+    padding-bottom:8px;margin-bottom:10px}
+  .p2-print h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .p2-print p{font-size:10px;color:var(--slate);margin-top:2px;
+    font-variant-numeric:tabular-nums}
+
+  .p2-grid{gap:8px}
+  .p2-row{gap:8px}
+  .dw{box-shadow:none;padding:10px;break-inside:avoid;page-break-inside:avoid}
+  .dw-edit{border-style:solid !important}
+  .dw-bare{padding:0}
+  .dw-hd{margin-bottom:8px}
+  .dw-hd h2{font-size:10.5px}
+
+  .kpis{gap:8px;margin-bottom:0}
+  .kpi{padding:9px 11px;box-shadow:none;break-inside:avoid}
+  .kpi .v{font-size:16px}
+  .kpi .k,.kpi .d{font-size:9px}
+
+  .p2-bwrap{padding:20px 2px 2px}
+  .p2-bar{height:16px}
+  .p2-legend{margin-top:10px;font-size:10px}
+  .p2-lrow{padding:4px 0}
+  .p2-arow{padding:6px 0}
+  .p2-atx b{font-size:10.5px}
+  .p2-atx span{font-size:9.5px}
+
+  .tbl{font-size:9.5px}
+  .tbl th{padding:0 7px 5px}
+  .tbl td{padding:5px 7px}
+  .tblwrap{overflow:visible !important}
+  .tblwrap .tbl{min-width:0 !important}
+  .p2-note{display:none}
+  a{text-decoration:none;color:inherit !important}
+}

@@ -1,0 +1,273 @@
+/* ============================================================================
+   P4 project detail · P6 approvals inbox · C-08 / C-09 / C-10 / C-11 / C-15
+   Everything here is namespaced .p4- / .p6- / .act- and reuses the tokens and
+   the card anatomy from css/app.css. One family, sentence-case labels,
+   tabular numerals on every money and day value.
+   ========================================================================= */
+
+/* ================================================== P4 · header ========== */
+.p4-head{display:flex;align-items:flex-start;gap:var(--gap);flex-wrap:wrap;margin-bottom:8px}
+.p4-htitle{min-width:0;flex:1 1 320px}
+.p4-htitle h1{font-size:23px;font-weight:700;letter-spacing:-.015em;line-height:1.25}
+.p4-tags{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:7px}
+.p4-tag{font-size:12px;font-weight:600;color:var(--slate);background:#EFF1EE;
+  border-radius:999px;padding:2px 10px;white-space:nowrap}
+.p4-warn{font-size:12px;font-weight:600;color:var(--brass);background:var(--brass-bg);
+  border:1px solid #E2D3B4;border-radius:999px;padding:1px 10px;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.p4-warn.hot{color:var(--rose);background:var(--rose-bg);border-color:#E5C6C4}
+.p4-hacts{display:flex;gap:8px;flex-wrap:wrap}
+.p4-hmeta{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12.5px;
+  color:var(--muted);padding-bottom:var(--gap);border-bottom:1px solid var(--line)}
+.p4-hmeta b{color:var(--slate);font-weight:600}
+.p4-hprog{display:flex;align-items:center;gap:8px;min-width:0}
+
+/* ------------------------------------------- C-10 pinned decision banner - */
+.p4-pin{display:flex;gap:12px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:14px var(--pad);margin:var(--gap) 0}
+.p4-pinlab{flex:none;font-size:12.5px;font-weight:600;color:var(--brass)}
+.p4-pinbody{min-width:0;font-size:13.5px;color:var(--ink)}
+.p4-pinbody small{display:block;font-size:12px;color:var(--muted);margin-top:3px;
+  font-variant-numeric:tabular-nums}
+.p4-pinact{margin-left:auto;flex:none}
+.p4-pin.empty{display:block;border-left-color:var(--line);color:var(--muted);
+  font-size:12.5px;box-shadow:none;background:transparent;border-style:dashed;padding:11px 14px}
+
+/* ================================================== P4 · two-column ====== */
+.p4-cols{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:var(--gap);
+  align-items:start;margin-top:var(--gap)}
+.p4-main{min-width:0}
+.p4-aside{min-width:0;display:flex;flex-direction:column;gap:var(--gap)}
+.p4-aside .card + .card{margin-top:0}
+.p4-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.p4-two + .card,.p4-two + .p4-two{margin-top:var(--gap)}
+.p4-two .card + .card{margin-top:0}
+
+/* ------------------------------------------------------------- tabs ----- */
+.p4-tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);
+  margin-bottom:var(--gap)}
+.p4-tab{font-size:13px;font-weight:600;color:var(--muted);padding:8px 13px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.p4-tab:hover{color:var(--slate)}
+.p4-tab.on{color:var(--ink);border-bottom-color:var(--brass)}
+.p4-tbadge{font-size:11.5px;font-weight:700;color:var(--rose);background:var(--rose-bg);
+  border-radius:999px;padding:0 7px}
+
+/* ---------------------------------------------------------- field lists - */
+.p4-fields{display:grid;gap:0}
+.p4-field{display:flex;justify-content:space-between;gap:12px;padding:6px 0;
+  border-bottom:1px solid var(--line2);font-size:13px}
+.p4-field:last-child{border-bottom:none}
+.p4-field span{color:var(--muted);font-size:12.5px;font-weight:600;flex:none}
+.p4-field b{font-weight:600;text-align:right;min-width:0;overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums}
+.p4-note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.p4-note.alert{border-left:3px solid var(--rose);padding-left:10px;color:var(--slate)}
+.p4-err{font-size:12.5px;font-weight:600;color:var(--rose);border-left:3px solid var(--rose);
+  padding:2px 0 2px 10px;margin:8px 0}
+.p4-empty{font-size:12.5px;color:var(--muted);font-style:italic;padding:14px 0}
+
+/* ------------------------------------------------------- budget line ---- */
+.p4-bl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--gap);
+  align-items:center}
+.p4-blv span,.p4-blr span{display:block;font-size:19px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.p4-blr{text-align:right}
+.p4-blv small,.p4-blr small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.p4-blbar{height:7px;border-radius:999px;background:#EFF1EE;overflow:hidden}
+.p4-blbar i{display:block;height:100%;background:var(--brass);border-radius:999px}
+.p4-btbl td{font-size:13px}
+
+/* ------------------------------------------------------- timeline card -- */
+.p4-thead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;
+  font-weight:600;color:var(--slate);margin-bottom:var(--gap)}
+.p4-thead .r{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+
+/* ============================================ C-08 · approval panel ====== */
+.p4-steps{display:grid;gap:0}
+.p4-step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;
+  border-bottom:1px solid var(--line2)}
+.p4-step:last-child{border-bottom:none}
+.p4-step .mk{flex:none;width:16px;text-align:center;font-weight:700;font-size:13px}
+.p4-step b{display:block;font-size:13px;font-weight:600}
+.p4-step small{display:block;font-size:12.5px;color:var(--muted);margin-top:1px;
+  font-variant-numeric:tabular-nums}
+.p4-step small b{display:inline;color:var(--slate)}
+.p4-step.ok .mk{color:var(--verd)}
+.p4-step.wait .mk{color:var(--brass)}
+.p4-step.hot .mk{color:var(--rose)}
+.p4-step.todo .mk,.p4-step.todo b{color:var(--muted)}
+
+/* ------------------------------------------- C-15 external gate tracker - */
+.p4-gate{border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);
+  padding:10px 0;margin:2px 0}
+.p4-glab{font-size:12.5px;font-weight:600;color:var(--brass);margin-bottom:8px}
+.p4-gsys{padding:9px 0;border-bottom:1px dashed var(--line)}
+.p4-gsys:last-of-type{border-bottom:none}
+.p4-gsys.hot{border-left:3px solid var(--rose);padding-left:10px}
+.p4-gh{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.p4-gh b{font-size:13px;font-weight:600}
+.p4-gp{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;
+  border:1px solid var(--line);color:var(--slate);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.p4-gp.ok{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.p4-gp.wait{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.p4-gp.hot{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+.p4-gp.todo{color:var(--muted);border-style:dashed}
+.p4-gsub{font-size:12.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.p4-gsub b{color:var(--slate);font-weight:600}
+.p4-grem{display:block;font-style:normal;font-size:12px;color:var(--slate);margin-top:3px}
+.p4-gbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* ------------------------------------------------- A-07 ready prompt ---- */
+.p4-ready{border-left:3px solid var(--brass);padding:8px 0 8px 11px;margin:10px 0 2px}
+.p4-ready b{display:block;font-size:13px;font-weight:700;color:var(--brass)}
+.p4-ready small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.p4-ready.compact{margin:var(--gap) 0 0}
+
+/* ------------------------------------------------------- forms / inputs - */
+.p4-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.p4-lab{display:block;font-size:12.5px;font-weight:600;color:var(--muted);min-width:0}
+.p4-lab.wide{grid-column:1/-1}
+.p4-input{display:block;width:100%;font:inherit;font-size:13.5px;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:7px 11px;
+  margin-top:5px;font-weight:400;min-width:0}
+.p4-input.sm{font-size:12.5px;padding:5px 10px;margin-top:7px}
+.p4-input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+.p4-input[disabled]{background:#F7F8F6;color:var(--muted)}
+textarea.p4-input{resize:vertical;line-height:1.5}
+.p4-lab .sel{display:block;width:100%;margin-top:5px;font-weight:400;font-size:13.5px}
+.p4-actrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--gap)}
+.p4-owner{display:flex;gap:11px;align-items:center;margin-bottom:11px}
+.p4-owner b{display:block;font-size:13.5px;font-weight:600}
+.p4-owner small{display:block;font-size:12px;color:var(--muted)}
+.p4-msub{font-size:12.5px;color:var(--muted);margin-bottom:11px;
+  font-variant-numeric:tabular-nums}
+.p4-modal{max-width:560px;max-height:88vh;overflow:auto}
+.p4-modal .p4-lab{margin-top:11px}
+
+/* ============================================== C-09 · activity stream === */
+.act-card{padding:0}
+.act-ftabs{display:flex;gap:2px;flex-wrap:wrap;padding:0 var(--pad);
+  border-bottom:1px solid var(--line)}
+.act-ftab{font-size:12.5px;font-weight:600;color:var(--muted);padding:10px 11px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.act-ftab .n{font-size:11.5px;color:var(--muted);margin-left:3px}
+.act-ftab:hover{color:var(--slate)}
+.act-ftab.on{color:var(--ink);border-bottom-color:var(--brass)}
+.act-stream{max-height:560px;overflow-y:auto;padding:4px var(--pad) 0}
+
+.act-entry{display:flex;gap:11px;padding:13px 0 13px 11px;border-bottom:1px solid var(--line2);
+  border-left:3px solid var(--line)}
+.act-entry:last-child{border-bottom:none}
+.act-entry.t-question{border-left-color:#E2D3B4}
+.act-entry.t-question.open-q{border-left-color:var(--rose)}
+.act-entry.t-decision{border-left-color:var(--brass)}
+.act-entry.t-system{border-left-color:var(--line2)}
+.act-entry.t-system .act-txt{color:var(--muted)}
+.act-av{flex:none;width:30px;height:30px;border-radius:50%;background:#EDF0EC;
+  color:var(--slate);font-size:11.5px;font-weight:700;display:flex;align-items:center;
+  justify-content:center}
+.act-av.sys{background:#F3F5F2;color:var(--muted);font-size:13px}
+.act-b{min-width:0;flex:1}
+.act-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;
+  color:var(--muted);margin-bottom:4px}
+.act-meta b{font-size:13px;font-weight:600;color:var(--ink)}
+.act-meta .num{font-variant-numeric:tabular-nums}
+.act-type{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 9px;
+  border:1px solid var(--line);color:var(--slate);white-space:nowrap}
+.act-type.t-question,.act-type.t-open{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+.act-type.t-decision,.act-type.t-pinned{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.act-type.t-resolved{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.act-type.t-system,.act-type.t-arch{color:var(--muted)}
+.act-edited{font-size:11.5px;color:var(--muted);font-style:italic}
+.act-txt{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}
+.act-mention{color:var(--glass);font-weight:600}
+.act-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.act-reply{margin-top:9px;padding-left:11px;border-left:2px solid var(--line)}
+.act-reply .act-txt{font-size:13px}
+.act-reply-box{margin-top:9px;padding-left:11px;border-left:2px solid var(--line)}
+.act-edit{margin-top:4px}
+
+/* -------------------------------------------------------- C-11 composer - */
+.act-composer{border-top:1px solid var(--line);background:#FAFBFA;padding:13px var(--pad);
+  border-radius:0 0 var(--r) var(--r)}
+.act-composer.readonly{font-size:12.5px;color:var(--muted);font-style:italic}
+.act-crow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
+.act-crow .sp{margin-left:auto;display:flex;gap:6px}
+.act-tchip{font-size:12.5px;font-weight:600;padding:4px 12px;border-radius:999px;
+  border:1px solid var(--line);background:#fff;color:var(--slate);white-space:nowrap}
+.act-tchip:hover{border-color:var(--muted)}
+.act-tchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.act-tchip.t-question.on{background:var(--rose);border-color:var(--rose)}
+.act-tchip.t-decision.on{background:var(--brass);border-color:var(--brass)}
+.act-assign{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+  color:var(--muted)}
+.act-assign .sel{font-size:12.5px;padding:4px 9px}
+.act-chint{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* ================================================ P6 · approvals inbox === */
+.p6-sec{margin-top:22px}
+.p6-sech{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.p6-sech h2{font-size:13px;font-weight:600;color:var(--slate);display:flex;
+  align-items:center;gap:7px}
+.p6-sech .n{font-size:11.5px;font-weight:700;color:var(--slate);background:#EDF0EC;
+  border-radius:999px;padding:0 8px}
+.p6-sech .sub{font-size:12.5px;color:var(--muted);min-width:0;flex:1 1 320px}
+
+.p6-card{display:grid;grid-template-columns:minmax(0,1fr) 118px auto;gap:var(--gap);
+  align-items:center;background:var(--card);border:1px solid var(--line);
+  border-left:3px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:14px var(--pad);margin-bottom:10px}
+.p6-card.hot{border-left-color:var(--rose)}
+.p6-who{min-width:0}
+.p6-id{font-size:12px;font-weight:600;color:var(--brass);text-decoration:none;
+  font-variant-numeric:tabular-nums}
+.p6-id:hover{text-decoration:underline}
+.p6-who b{display:block;font-size:14px;font-weight:600;line-height:1.35}
+.p6-meta{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.p6-gates{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.p6-gp{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 9px;
+  border:1px solid var(--line);color:var(--slate);white-space:nowrap}
+.p6-gp.ok{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.p6-gp.wait{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.p6-gp.hot{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+.p6-gp.todo{color:var(--muted);border-style:dashed}
+.p6-age{text-align:right;min-width:0}
+.p6-age .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.p6-age small{display:block;font-size:12px;color:var(--muted)}
+.p6-age.warm .v{color:var(--brass)}
+.p6-age.hot .v{color:var(--rose)}
+.p6-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.p6-readonly{font-size:12.5px;color:var(--slate);background:var(--card);
+  border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:11px 14px;margin-top:var(--gap)}
+
+/* ===================================================== responsive ======== */
+@media(max-width:1080px){
+  .p4-cols{grid-template-columns:minmax(0,1fr)}
+  .p4-aside{order:-1}            /* approval before the conversation when stacked */
+}
+@media(max-width:900px){
+  .p4-two{grid-template-columns:minmax(0,1fr)}
+  .p4-form{grid-template-columns:minmax(0,1fr)}
+  .p4-bl{grid-template-columns:minmax(0,1fr);gap:8px}
+  .p4-blr{text-align:left}
+}
+@media(max-width:760px){
+  .p6-card{grid-template-columns:minmax(0,1fr) auto}
+  .p6-acts{grid-column:1/-1;justify-content:flex-start}
+  .act-stream{padding-left:14px;padding-right:14px}
+  .act-ftabs{padding:0 14px}
+  .act-composer{padding:12px 14px}
+}
+@media(max-width:520px){
+  .p4-head{gap:10px}
+  .p4-htitle h1{font-size:20px}
+  .p4-hmeta{gap:12px}
+  .p6-card{grid-template-columns:minmax(0,1fr);padding:13px 14px}
+  .p6-age{text-align:left}
+  .p4-pin{padding:12px 14px;flex-wrap:wrap}
+  .p4-pinact{margin-left:0}
+}

@@ -1,0 +1,203 @@
+/* ============================================================================
+   P5 cross-project timeline · P9 administration.
+   Namespaced .p5- / .p9-, tokens and card anatomy from css/app.css.
+   Same Gantt grammar as C-06: pill bars, month grid, one rose line for today.
+   ========================================================================= */
+
+/* ================================================= P5 · controls ========= */
+.p5-controls{align-items:center}
+.p5-glab{font-size:12.5px;font-weight:600;color:var(--muted);margin-right:2px}
+.p5-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;
+  flex:1 1 430px;justify-content:flex-end;min-width:0;font-size:12px;color:var(--muted)}
+.p5-key{width:14px;height:8px;border-radius:999px;flex:none;margin-left:6px;
+  background:var(--gantt-fill);border:1px solid var(--gantt-edge)}
+.p5-key.plan{background:#F5F6F4;border-style:dashed;border-color:var(--s4)}
+.p5-key.over{background:var(--rose-bg);border-color:#D8A9A6}
+.p5-key.mile{width:9px;height:9px;border-radius:2px;transform:rotate(45deg);
+  background:var(--brass);border:none}
+.p5-key.today{width:2px;height:12px;border-radius:0;background:var(--rose);border:none}
+
+/* ================================================= P5 · the chart ======== */
+.p5-card{padding:0;overflow:hidden}
+.p5-scroll{overflow-x:auto}
+.p5-inner{position:relative;min-width:760px;--p5-lab:236px}
+
+.p5-head,.p5-grp,.p5-row{display:grid;grid-template-columns:var(--p5-lab) minmax(0,1fr)}
+.p5-head{background:#FAFBFA;border-bottom:1px solid var(--line)}
+.p5-head .p5-lab{font-size:12.5px;font-weight:600;color:var(--muted);padding:7px 12px}
+.p5-months{display:flex;min-width:0}
+.p5-mh{text-align:center;padding:7px 4px;font-size:12.5px;color:var(--slate);
+  border-left:1px solid var(--line2);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;min-width:0}
+.p5-mh:first-child{border-left:none}
+
+.p5-lab{border-right:1px solid var(--line);padding:8px 12px;min-width:0;
+  display:flex;flex-direction:column;justify-content:center}
+.p5-lab b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.p5-lab small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.p5-lab small.unowned{color:var(--rose);font-weight:600}
+.p5-id{font-style:normal;font-weight:600;color:var(--brass);font-variant-numeric:tabular-nums}
+.p5-lab small.unowned .p5-id{color:var(--brass)}
+
+.p5-grp{background:#F6F8F5;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.p5-grp:first-of-type{border-top:none}
+.p5-grp .p5-lab{padding:9px 12px}
+.p5-grp .p5-lab b{font-size:13.5px;font-weight:700}
+.p5-grp .p5-lab small{white-space:normal;line-height:1.4}
+
+.p5-row{border-bottom:1px solid var(--line2);color:inherit}
+.p5-row:last-child{border-bottom:none}
+.p5-row:hover{background:#FBFCFA}
+.p5-row.sel{background:#FBFCFA}
+/* the record link is the label column only, so the balloons in the track can be
+   real controls without an interactive element nesting inside a link */
+.p5-plink{display:flex;flex-direction:column;justify-content:center;min-width:0;
+  text-decoration:none;color:inherit}
+.p5-plink:hover b{color:var(--glass)}
+
+.p5-track{position:relative;min-height:44px}
+.p5-track.grp{min-height:0}
+
+.p5-bar{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  height:26px;min-width:26px;border-radius:999px;
+  background:var(--gantt-fill);border:1px solid var(--gantt-edge);
+  display:flex;align-items:center;gap:7px;padding:0 10px;font-size:12.5px;
+  color:var(--ink);white-space:nowrap;overflow:hidden}
+.p5-bar i{width:7px;height:7px;border-radius:50%;background:var(--gantt-edge);flex:none}
+/* a bar too short to carry its label reads as a marker, not a clipped pill */
+.p5-bar.tiny{min-width:18px;padding:0;justify-content:center}
+.p5-bar span{overflow:hidden;text-overflow:ellipsis}
+.p5-bar.v2{background:var(--gantt-fill2);border-color:var(--gantt-edge2)}
+.p5-bar.v2 i{background:var(--gantt-edge2)}
+.p5-bar.plan{background:#F5F6F4;border-style:dashed;border-color:var(--s4);color:var(--muted)}
+.p5-bar.plan i{background:var(--s4)}
+.p5-bar.plan.over{background:var(--rose-bg);border-color:#D8A9A6;color:var(--rose);font-weight:600}
+.p5-bar.plan.over i{background:var(--rose)}
+
+.p5-mile{position:absolute;top:11px;z-index:4;width:9px;height:9px;
+  transform:translate(-50%,-50%) rotate(45deg);background:var(--brass);border-radius:2px}
+.p5-mile.over{background:var(--rose)}
+.p5-note{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  padding-left:10px;font-size:12px;color:var(--muted);font-style:italic;white-space:nowrap}
+.p5-note.before{padding:0 10px 0 0;text-align:right}
+.p5-note.over{color:var(--rose);font-style:normal;font-weight:600}
+
+.p5-div{position:absolute;top:0;bottom:0;width:1px;background:var(--line2);z-index:1}
+.p5-today{position:absolute;top:0;bottom:0;width:1.5px;background:var(--rose);opacity:.7;
+  z-index:5;pointer-events:none}
+.p5-todaypill{position:absolute;z-index:6;top:38px;transform:translateX(-50%);
+  background:#F7E3E1;color:var(--rose);border-radius:999px;font-size:11.5px;font-weight:600;
+  padding:2px 9px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+.p5-empty{font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 0}
+
+/* ============================== P5 · movable balloons (v1.0.1 item 8) ===== */
+/* A balloon is only ever a <button> where the persona may move the record, so
+   a viewer's chart carries no handle, no focus ring and no cursor change. */
+.p5-lead{font-size:13px;color:var(--slate);margin:0 0 var(--gap);max-width:86ch}
+
+.p5-bar.p5-live,.p5-mile.p5-live{cursor:grab;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.p5-bar.p5-live{text-align:left}
+.p5-mile.p5-live{padding:0}
+/* the diamond is 9px of ink; give the pointer a 23px target around it */
+.p5-mile.p5-live::after{content:'';position:absolute;top:-7px;right:-7px;
+  bottom:-7px;left:-7px}
+.p5-bar.p5-live:hover{border-color:var(--glass)}
+.p5-mile.p5-live:hover{box-shadow:0 0 0 3px rgba(60,99,160,.18)}
+.p5-bar.p5-live:active,.p5-mile.p5-live:active{cursor:grabbing}
+.p5-bar.p5-live:focus-visible,.p5-mile.p5-live:focus-visible{
+  outline:2px solid var(--glass);outline-offset:2px}
+/* the selected balloon — a brass ring, the same "you are editing this" mark the
+   rest of the demo uses, never a tinted card */
+.p5-bar.on{box-shadow:0 0 0 2px var(--brass)}
+.p5-mile.on{box-shadow:0 0 0 3px rgba(154,120,51,.45)}
+
+/* the keyboard tray, hung under the row it belongs to */
+.p5-edit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;
+  padding:9px 14px 9px 12px;background:#FAFBFA;border-bottom:1px solid var(--line2);
+  border-left:3px solid var(--brass)}
+.p5-editlab{font-size:12.5px;color:var(--slate);min-width:0}
+.p5-editlab b{font-weight:600;color:var(--ink)}
+.p5-editlab .num{font-variant-numeric:tabular-nums;color:var(--muted)}
+.p5-nudge{display:flex;gap:6px;flex:none}
+.p5-editnote{font-size:12px;color:var(--muted);min-width:0}
+.p5-editerr{font-size:12.5px;font-weight:600;color:var(--rose);
+  border-left:3px solid var(--rose);padding-left:9px;min-width:0}
+
+/* the live date, following the pointer while a balloon is dragged */
+.p5-tip{position:fixed;z-index:90;display:none;transform:translate(-50%,-180%);
+  background:var(--ink);color:#fff;border-radius:var(--r);padding:4px 10px;
+  font-family:var(--f);font-size:12.5px;font-weight:600;white-space:nowrap;
+  pointer-events:none;font-variant-numeric:tabular-nums;
+  box-shadow:0 6px 18px rgba(34,48,59,.28)}
+.p5-tip.on{display:block}
+
+/* ================================================= P9 · administration === */
+.p9-tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);
+  margin:var(--gap) 0}
+.p9-tab{font-size:13px;font-weight:600;color:var(--muted);padding:8px 13px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.p9-tab:hover{color:var(--slate)}
+.p9-tab.on{color:var(--ink);border-bottom-color:var(--brass)}
+
+.p9-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);
+  align-items:start}
+.p9-two + .card{margin-top:var(--gap)}
+.p9-two .card + .card{margin-top:0}
+.p9-gate p + p{margin-top:8px}
+
+.p9-pill{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;
+  padding:1px 9px;border:1px solid var(--line);color:var(--slate);white-space:nowrap}
+.p9-pill.verd{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.p9-pill.brass{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.p9-pill.rose{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+
+.p9-rights{font-size:12.5px;color:var(--slate)}
+.p9-sub{display:block;font-size:12px;color:var(--muted)}
+.p9-alertv{color:var(--rose);font-weight:700;font-variant-numeric:tabular-nums}
+.p9-note{font-size:12.5px;color:var(--muted);margin-top:11px}
+.p9-note.alert{border-left:3px solid var(--rose);padding-left:10px;color:var(--slate)}
+.p9-empty{font-size:12.5px;color:var(--muted);font-style:italic;padding:4px 0}
+
+.p9-kvs{display:grid;gap:0}
+.p9-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--line2);font-size:13px}
+.p9-kv:last-child{border-bottom:none}
+.p9-kv span{color:var(--slate);font-weight:600;font-size:12.5px}
+.p9-kv b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.p9-kv small{grid-column:1/-1;font-size:12px;color:var(--muted)}
+
+.p9-prefs{display:flex;gap:var(--gap);align-items:flex-start;flex-wrap:wrap}
+.p9-prefs .p9-kv{flex:1 1 320px;border-bottom:none;padding:0}
+.p9-list{list-style:none;font-size:13px;color:var(--slate)}
+.p9-list li{padding:6px 0;border-bottom:1px solid var(--line2);display:flex;gap:9px}
+.p9-list li:last-child{border-bottom:none}
+.p9-list li::before{content:'·';color:var(--brass);font-weight:700}
+.p9-int{display:flex;justify-content:space-between;gap:10px;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--line2);font-size:13px;flex-wrap:wrap;min-width:0}
+.p9-int > span{min-width:0;overflow-wrap:anywhere}
+.p9-int .p9-pill{white-space:normal;text-align:center;min-width:0;overflow-wrap:anywhere}
+.p9-int:last-of-type{border-bottom:none}
+
+/* ===================================================== responsive ======== */
+@media(max-width:1020px){
+  .p9-two{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:760px){
+  .p5-legend{margin-left:0;width:100%}
+  .p5-inner{--p5-lab:180px}
+}
+@media(max-width:520px){
+  .p5-controls{gap:6px}
+  .p5-edit{gap:7px;padding:9px 10px}
+  .p5-editnote{width:100%}
+  .p9-prefs .p9-kv{flex:1 1 100%}
+  /* the integration rows carry long capsule text — stack them rather than
+     letting a nowrap capsule set the page width */
+  .p9-int{flex-direction:column;align-items:flex-start;gap:5px}
+  .p9-int .p9-pill{text-align:left}
+  .p9-kv{grid-template-columns:minmax(0,1fr)}
+  .p9-kv b{text-align:left}
+}

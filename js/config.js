@@ -51,7 +51,7 @@ CBP.CONFIG = {
     { route: 'dashboard', label: 'Dashboard' },
     { route: 'projects',  label: 'Projects' },
     { route: 'approvals', label: 'Approvals', badge: 'approvals' },
-    { route: 'timeline',  label: 'Timeline' },
+    { route: 'timeline',  label: 'TimeBlock', addon: true },
     { route: 'budget',    label: 'Budget' },
     { route: 'messages',  label: 'Messages & Alerts', badge: 'messages' },
     { group: 'Admin' },

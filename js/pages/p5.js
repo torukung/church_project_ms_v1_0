@@ -180,14 +180,14 @@
     var scopeName = codes.length === state.countries.length
       ? 'Asia Area' : codes.map(countryName).join(' · ');
 
-    var html = '<div class="crumb">Timeline · ' + e(scopeName) +
+    var html = '<div class="crumb">TimeBlock · ' + e(scopeName) +
       ' · Budget year ' + e(CBP.CONFIG.BUDGET_YEAR) + '</div>' +
-      '<div class="pagehead"><h1>Timeline</h1>' +
+      '<div class="pagehead"><h1>TimeBlock<span class="p5-addon" title="Optional add-on module (D-07)">Add-on module</span></h1>' +
       '<span class="sub">' + scoped.length + ' project' + (scoped.length === 1 ? '' : 's') +
       ' in scope · ' + e(D.fmtDateY(iso(m.from))) + ' – ' + e(D.fmtDateY(iso(D.addDays(m.to, -1)))) +
       '</span><div class="sp">' +
         (D.can(user, 'viewGantt')
-          ? '<button class="btn" data-act="deeplink">Open in Timeblock ↗</button>' : '') +
+          ? '<button class="btn" data-act="deeplink">Open full editor in TimeBlock ↗</button>' : '') +
       '</div></div>';
 
     /* group-by switch */
@@ -205,7 +205,7 @@
       '</span></div>';
 
     if (!rows.length) {
-      return html + U.card('Timeline',
+      return html + U.card('TimeBlock',
         '<div class="p5-empty">No projects in your scope carry a timeline yet.</div>');
     }
 
@@ -256,7 +256,7 @@
       (movable
         ? 'Moving dates is owner + M1-and-above (D-06): drag a balloon, or select it and nudge, ' +
           'and the record is saved here with its own activity line — the full phase editor still ' +
-          'lives on the project page and in Timeblock (D-07).'
+          'lives on the project page and in the TimeBlock full editor (D-07).'
         : 'Moving dates is owner + M1-and-above (D-06), so this chart is read-only for you — ' +
           'the balloons carry no handles.') +
       ' Scope: ' + e(codes.join(', ')) + '.</p>';

@@ -388,3 +388,42 @@ details.prj[open] .chev{transform:rotate(180deg)}
   .topbar .rt{width:100%;margin-left:0}
   .sel{max-width:100%}
 }
+
+/* ---------------------------------------------------- v1.0.2 brand mark -- */
+/* "Church Budget&Project MS" — chapel glyph in gold with a slow lux shimmer
+   sweep and three twinkling glints. Deliberate client-requested accent; the
+   effect stays inside the brand block and uses the brass family only. */
+.brand-v2{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-v2 .btxt{min-width:0}
+.brand-v2 .bname{display:block;font-size:14.5px;line-height:1.15;color:var(--ink)}
+.bico{width:30px;height:30px;flex:none;overflow:visible}
+.bico .bico-door{fill:#FDFBF6}
+.bico{filter:drop-shadow(0 1px 2px rgba(154,120,51,.35))}
+.bico g{animation:bico-lux 5.5s ease-in-out infinite}
+@keyframes bico-lux{
+  0%,100%{filter:brightness(1)}
+  46%{filter:brightness(1)}
+  52%{filter:brightness(1.28) saturate(1.15)}
+  58%{filter:brightness(1)}
+}
+.bico .glint{fill:#E9D9A8;opacity:0}
+.bico .g1{animation:bico-glint 5.5s ease-in-out infinite .2s}
+.bico .g2{animation:bico-glint 5.5s ease-in-out infinite 1.9s}
+.bico .g3{animation:bico-glint 5.5s ease-in-out infinite 3.4s}
+@keyframes bico-glint{
+  0%,100%{opacity:0;transform:scale(.4)}
+  6%{opacity:.95;transform:scale(1.15)}
+  12%{opacity:0;transform:scale(.4)}
+}
+@media (prefers-reduced-motion:reduce){
+  .bico g,.bico .glint{animation:none}
+  .bico .glint{opacity:.5}
+}
+
+/* Add-on module chip beside a nav label (TimeBlock, D-07) */
+.side a .addon{font-size:10px;font-weight:600;color:var(--brass);
+  border:1px solid #E2D3B4;border-radius:999px;padding:0 6px;margin-left:7px;
+  vertical-align:1px;background:#FDFBF6;letter-spacing:0}
+.p5-addon{font-size:11px;font-weight:600;color:var(--brass);
+  border:1px solid #E2D3B4;border-radius:999px;padding:1px 8px;margin-left:8px;
+  vertical-align:3px;background:#FDFBF6}

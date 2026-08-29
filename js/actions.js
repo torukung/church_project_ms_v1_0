@@ -1316,7 +1316,7 @@
 
     /* --------------------------------------------------------- misc ------- */
     'deeplink': function () {
-      CBP.notice('“Open full editor” deep-links the Timeblock timeline in a new tab (D-07). ' +
+      CBP.notice('“Open full editor in TimeBlock” deep-links the TimeBlock add-on module in a new tab (D-07). ' +
                  'The demo stops at the link — there is no data round-trip.');
       return true;
     },

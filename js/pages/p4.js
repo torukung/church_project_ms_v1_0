@@ -359,7 +359,7 @@
       '<span>' + (planned ? 'Planned implementation timeline' : 'Implementation timeline') + '</span>' +
       '<span class="r">' +
         (A.can(state.user, 'editGantt', p) ? btn('Configure phases', 'deeplink', p.id) : '') +
-        btn('Open full editor ↗', 'deeplink', p.id) +
+        btn('Open full editor in TimeBlock ↗', 'deeplink', p.id) +
       '</span></div>';
 
     var body = model
@@ -368,9 +368,9 @@
             'Progress reports only once the project reaches status 1 (C-17).'
           : 'Progress is the elapsed share of each implementation phase; the red line is ' +
             e(D.fmtDateY(CBP.CONFIG.TODAY)) + '.') +
-        ' “Open full editor” deep-links Timeblock in a new tab (D-07) — no data round-trip.</p>'
+        ' “Open full editor in TimeBlock” deep-links the TimeBlock add-on in a new tab (D-07) — no data round-trip.</p>'
       : empty('No phases entered yet. The mini Gantt appears here once phases are added ' +
-              '(D-06 / D-07); the full editor is Timeblock.');
+              '(D-06 / D-07); the full editor is the TimeBlock add-on.');
 
     return U.card('', head + body, { cls: 'p4-tl' });
   }

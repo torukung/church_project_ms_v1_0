@@ -443,7 +443,7 @@
        table read against the same 100% */
     var pcts = [];
     rows.forEach(function (r) {
-      [r.y2024pct, r.y2025pct, r.y2026pct, r.plan2027pct].forEach(function (v) {
+      [r.y2024pct, r.y2025pct, r.y2026pct, r.plan2027pct, r.proj2027pct].forEach(function (v) {
         if (v !== null && v !== undefined) pcts.push(v);
       });
     });
@@ -461,8 +461,14 @@
         : '<span class="num">' + e(D.money(r.plan2027)) + '</span>' +
           '<span class="p7-planpct num">' + e(D.pct(r.plan2027pct)) + '</span>';
 
+      var projCell = (r.proj2027pct === null || r.proj2027pct === undefined)
+        ? '<td class="r num">—</td>'
+        : '<td class="r num p7-sim' + (r.proj2027pct > 100 ? ' neg' : '') + '" title="' +
+          e('Simulated from the 2024–2026 trend · ≈ ' + D.money(r.proj2027)) + '">≈ ' +
+          e(D.pct(r.proj2027pct)) + '</td>';
+
       return '<tr><td>' + e(r.name) + ' <span class="p7-code">' + e(r.code) + '</span></td>' +
-        yCell(r.y2024pct) + yCell(r.y2025pct) + yCell(r.y2026pct) +
+        yCell(r.y2024pct) + yCell(r.y2025pct) + yCell(r.y2026pct) + projCell +
         '<td class="r">' + planCell + '</td>' +
         '<td class="p7-fnote">' + e(r.note) + '</td></tr>';
     }).join('');
@@ -472,14 +478,17 @@
       U.table([
         { label: 'Country' },
         { label: '2024 %', right: true }, { label: '2025 %', right: true },
-        { label: '2026 %', right: true }, { label: '2027 plan', right: true },
+        { label: '2026 %', right: true }, { label: '2027 projected', right: true },
+        { label: '2027 plan', right: true },
         { label: 'Variance note' }
       ], [body]) +
       err(state, 'plan') +
       (mayPlan
         ? '<p class="p7-note">Type a 2027 figure and leave the field — the plan percentage, ' +
           'the variance note and the comparison block below all recompute from it. Planning ' +
-          'figures are M1, M2 and the area office (docs/01).</p>'
+          'figures are M1, M2 and the area office (docs/01). “2027 projected” is a ' +
+          'simulation — the 2024–2026 trend extended one year — so it moves whenever ' +
+          'the underlying records do, and the gap to your plan is the decision.</p>'
         : '<p class="p7-note">The 2027 plan is set by M1, M2 and the area office (docs/01), ' +
           'so it is read-only for you.</p>'),
       { cls: 'p7-card' });
@@ -511,7 +520,8 @@
     var groups = rows.map(function (r) {
       var years = [
         { y: '2024', v: r.y2024pct }, { y: '2025', v: r.y2025pct },
-        { y: '2026', v: r.y2026pct }
+        { y: '2026', v: r.y2026pct },
+        { y: '2027', v: r.proj2027pct, sim: true }
       ];
       var bars = years.map(function (x) {
         if (x.v === null || x.v === undefined) {
@@ -519,12 +529,16 @@
             '<span class="p7-fbar"><span class="p7-fnone">no history</span></span>' +
             '<span class="p7-fv num">—</span></div>';
         }
-        return '<div class="p7-frow"><span class="p7-fy">' + x.y + '</span>' +
+        var simCls = x.sim ? ' sim' : '';
+        return '<div class="p7-frow' + simCls + '"><span class="p7-fy">' + x.y +
+          (x.sim ? '<small>proj.</small>' : '') + '</span>' +
           '<span class="p7-fbar">' +
             U.budgetBar(x.v, { scale: scale, sm: true,
-              title: r.name + ' ' + x.y + ' · ' + D.pct(x.v) + ' of the ceiling' }) +
+              title: x.sim
+                ? r.name + ' 2027 · ≈ ' + D.pct(x.v) + ' — simulated from the 2024–2026 trend'
+                : r.name + ' ' + x.y + ' · ' + D.pct(x.v) + ' of the ceiling' }) +
           '</span><span class="p7-fv num' + (x.v > 100 ? ' neg' : '') + '">' +
-          e(D.pct(x.v)) + '</span></div>';
+          (x.sim ? '≈ ' : '') + e(D.pct(x.v)) + '</span></div>';
       }).join('');
 
       var plan = (r.plan2027pct === null || r.plan2027pct === undefined) ? '' :
@@ -540,7 +554,8 @@
     }).join('');
 
     return '<div class="p7-fcompare">' + groups + '</div>' +
-      '<p class="p7-note"><span class="p7-fkey"></span>The caret marks the 2027 plan. ' +
+      '<p class="p7-note"><span class="p7-fkey"></span>The caret marks the 2027 plan; the ' +
+      'faded fourth bar is the simulated 2027 projection (2024–2026 trend). ' +
       'The vertical rule is 100% of the country ceiling — the same x on every bar, so a ' +
       'year that crosses it is over-committed by exactly the hatched part. 2024 and 2025 ' +
       'come from the demo history fixture.</p>';

@@ -632,14 +632,35 @@
       var plan = D.plan2027(c.code);
       var planPct = D.utilisation(plan, c.ceiling);
 
+      var proj = D.trend2027(y24, y25, y26);
+
       return {
         code: c.code, name: c.name, ceiling: c.ceiling,
         committed2026: committed,
         y2024pct: y24, y2025pct: y25, y2026pct: y26,
         plan2027: plan, plan2027pct: planPct,
+        proj2027pct: proj,
+        proj2027: proj === null ? null : Math.round(proj / 100 * c.ceiling),
         note: forecastNote(y24, y25, y26, planPct)
       };
     });
+  };
+
+  /* v1.0.2 — simulated 2027 projection: a least-squares line through the
+     utilisation points we actually hold (2024/2025/2026), extended one year.
+     Pure derivation from the history fixtures + live 2026 data — nothing
+     seeded — so editing a project re-simulates it. Clamped at 0. */
+  D.trend2027 = function (y24, y25, y26) {
+    var pts = [];
+    if (y24 !== null && y24 !== undefined) pts.push([0, y24]);
+    if (y25 !== null && y25 !== undefined) pts.push([1, y25]);
+    if (y26 !== null && y26 !== undefined) pts.push([2, y26]);
+    if (pts.length < 2) return pts.length === 1 ? Math.round(pts[0][1]) : null;
+    var n = pts.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    pts.forEach(function (p) { sx += p[0]; sy += p[1]; sxx += p[0] * p[0]; sxy += p[0] * p[1]; });
+    var slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+    var icept = (sy - slope * sx) / n;
+    return Math.max(0, Math.round(icept + slope * 3));
   };
 
   /* the variance sentence beside each forecast row — derived, never seeded */

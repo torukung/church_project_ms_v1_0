@@ -267,7 +267,7 @@
       html += '<div class="ph">' + (planned ? 'Planned implementation timeline' : 'Implementation timeline') +
         '<span class="r">' +
           U.action(user, 'editGantt', p, 'Configure', { sm: true }) +
-          U.action(user, 'editGantt', p, 'Open full editor ↗', { sm: true }) +
+          U.action(user, 'editGantt', p, 'Open full editor in TimeBlock ↗', { sm: true }) +
         '</span></div>';
       html += U.gantt(p);
       html += '<div class="gnote">' + (planned

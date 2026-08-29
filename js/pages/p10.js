@@ -78,7 +78,7 @@
 
     /* ------------------------------------------------------- (a) header -- */
     html += '<header class="p10-head">' +
-      '<div class="p10-mark">Budget Platform<small>Asia Area · quick view</small></div>' +
+      '<div class="p10-mark">Church Budget&amp;Project MS<small>Asia Area · quick view</small></div>' +
       '<a class="p10-escape" href="#/dashboard" data-p10="fullsite">Full site ↗</a>' +
       '</header>' +
       '<div class="p10-me"><b>' + e(user.name) + '</b>' +

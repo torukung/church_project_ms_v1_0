@@ -1,4 +1,4 @@
-# Church Project-Budget Management Platform — Demo v1.0.1
+# Church Project-Budget Management Platform — Demo v1.0.2
 
 A fully client-side demo of a budget approval and visibility platform for a church humanitarian
 area office running **22 countries × $1,000,000/year** (6 countries seeded). Built from
@@ -106,3 +106,15 @@ builders + independent audit; full contract in `../ARCH_v1.0.1.md` + `../CORE_AP
 - A phases-only or timeline-gesture save never arms the "Back to projects" bar; record saves do.
 - Report-builder defaults are a session preference and stay available to the viewer (no data
   write), consistent with "export still works".
+
+## v1.0.2 (29 Aug 2026) — minor edit
+
+- **TimeBlock** — the Timeline page is remarked as the TimeBlock add-on module: sidebar entry
+  "TimeBlock" with an "Add-on" chip, page header badge, and every full-editor remark now reads
+  "Open full editor in TimeBlock" (P3, P4, P5, deep-link notice, admin integrations row).
+- **Forecasting simulation** — new "2027 projected" column and a faded fourth comparison bar:
+  a least-squares extension of the 2024–2026 utilisation trend (`D.trend2027`), derived on
+  every render, marked with "≈" and italics so simulation never reads as record data.
+- **Brand** — sidebar mark is now "Church Budget&Project MS" with a gold chapel glyph carrying
+  a slow lux shimmer and three twinkling glints (pure CSS, honours `prefers-reduced-motion`;
+  the mobile quick-view mark follows).

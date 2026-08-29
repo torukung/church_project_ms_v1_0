@@ -41,12 +41,34 @@
       var count = n.badge ? (counts[n.badge] || 0) : 0;
       var badge = count > 0
         ? '<span class="badge num">' + count + '</span>' : '';
+      var addon = n.addon
+        ? '<span class="addon" title="Optional add-on module">Add-on</span>' : '';
       return '<a href="#/' + e(n.route) + '"' + (on ? ' class="on"' : '') + '>' +
-             '<span>' + e(n.label) + '</span>' + badge + '</a>';
+             '<span>' + e(n.label) + addon + '</span>' + badge + '</a>';
     }).join('');
 
+    /* v1.0.2 brand mark — inline SVG chapel with a soft gold shimmer + glints */
+    var brandIcon =
+      '<svg class="bico" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<defs><linearGradient id="bg-gold" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#C9A54E"/>' +
+          '<stop offset=".5" stop-color="#9A7833"/>' +
+          '<stop offset="1" stop-color="#7C5F26"/></linearGradient></defs>' +
+        '<g fill="url(#bg-gold)">' +
+          '<path d="M11.4 2h1.2v1.6H14v1.2h-1.4v1.7l4.9 3.6v1.4l-1.5-.5V18H8V11l-1.5.5V10.1l4.9-3.6V4.8H10V3.6h1.4V2z"/>' +
+          '<path d="M4.5 12.6 7 11.8V18H4.5v-5.4zM19.5 12.6 17 11.8V18h2.5v-5.4z"/>' +
+          '<rect x="3.2" y="18.6" width="17.6" height="1.6" rx=".8"/>' +
+        '</g>' +
+        '<path class="bico-door" d="M10.8 18v-3.2a1.2 1.2 0 0 1 2.4 0V18z"/>' +
+        '<circle class="glint g1" cx="18.6" cy="4.6" r=".9"/>' +
+        '<circle class="glint g2" cx="4.9" cy="7.4" r=".7"/>' +
+        '<circle class="glint g3" cx="20.4" cy="9.8" r=".55"/>' +
+      '</svg>';
+
     return '<aside class="side">' +
-      '<div class="brand">Budget Platform<small>Asia Area</small></div>' +
+      '<div class="brand brand-v2">' + brandIcon +
+        '<span class="btxt"><span class="bname">Church Budget&amp;Project MS</span>' +
+        '<small>Asia Area</small></span></div>' +
       '<nav class="nav">' + nav + '</nav>' +
       '<div class="me"><b>' + e(state.user.name) + '</b>' +
       e(state.user.title || CBP.CONFIG.ROLE_LABEL[state.user.role]) + '</div>' +

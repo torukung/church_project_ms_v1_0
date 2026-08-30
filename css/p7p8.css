@@ -173,11 +173,13 @@
 /* v1.0.3 — more than one plan year means more than one caret on the same
    track: the labels stagger over two lines so two carets close together can
    never be read as one number */
-.p7-ftrack.multi{padding-top:34px}
-.p7-ftrack.multi .p7-frule{top:32px}
-.p7-ftrack.multi .p7-fplan i{top:24px}
-.p7-ftrack.multi .p7-fplan::after{top:30px}
-.p7-ftrack.multi .p7-fplan b{top:12px}
+.p7-ftrack.multi{padding-top:37px}
+.p7-ftrack.multi .p7-frule{top:35px}
+.p7-ftrack.multi .p7-fplan i{top:27px}
+.p7-ftrack.multi .p7-fplan::after{top:33px}
+/* the two stagger lanes are one full line-box apart (17px), so two carets that
+   sit close together on the track can never let their labels touch */
+.p7-ftrack.multi .p7-fplan b{top:15px}
 .p7-ftrack.multi .p7-fplan:nth-child(odd) b{top:-2px}
 
 /* ------------------------------------------ P7 · RD-3 print pre-read ----- */

@@ -22,7 +22,7 @@
      "undefined". The demo runs on macOS, where the regional-indicator pairs
      below render as flags natively — no image files, so file:// stays clean. */
   var FLAG = {
-    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦'
+    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦', HKG: '🇭🇰'
   };
 
   function flagOf(code) { return FLAG[String(code || '').toUpperCase()] || ''; }

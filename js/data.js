@@ -33,6 +33,11 @@ window.CBP_DATA = {
       "code": "LAO",
       "name": "Lao PDR",
       "ceiling": 1000000
+    },
+    {
+      "code": "HKG",
+      "name": "Hong Kong",
+      "ceiling": 1000000
     }
   ],
   "projects": [
@@ -195,6 +200,109 @@ window.CBP_DATA = {
       "owner": null,
       "target_date": "2026-11-30",
       "unassigned": true
+    },
+    {
+      "id": "WE26HKG0001",
+      "name": "Crossroads Foundation \u2014 Goods redistribution hub",
+      "country": "HKG",
+      "status": 1,
+      "amount": 420000,
+      "owner": "wing",
+      "backup": "daniel",
+      "primary_implementer": "Crossroads Foundation",
+      "strategic_priority": "Food Security",
+      "implementation_date": "2026-04-01",
+      "target_date": "2026-11-30",
+      "approved_at": "2026-03-20",
+      "refs": {
+        "decision_point": "DP-2026-0198",
+        "chas": "CHS-76540"
+      },
+      "gate": {
+        "decision_point": {
+          "submitted_at": "2026-02-18",
+          "approved_at": "2026-03-05"
+        },
+        "chas": {
+          "submitted_at": "2026-02-18",
+          "approved_at": "2026-03-12"
+        }
+      },
+      "phases": [
+        {
+          "phase": "Setup",
+          "start": "2026-04-01",
+          "end": "2026-05-31"
+        },
+        {
+          "phase": "Distribution rounds",
+          "start": "2026-06-01",
+          "end": "2026-09-15"
+        },
+        {
+          "phase": "Wrap-up",
+          "start": "2026-09-16",
+          "end": "2026-11-30"
+        }
+      ],
+      "d_in_q_start": "2026-02-10"
+    },
+    {
+      "id": "WE26HKG0002",
+      "name": "Food Angel \u2014 Community kitchen expansion",
+      "country": "HKG",
+      "status": 3,
+      "amount": 310000,
+      "owner": "wing",
+      "backup": "daniel",
+      "primary_implementer": "Food Angel",
+      "strategic_priority": "Food Security",
+      "submitted_at": "2026-08-20",
+      "gate": {
+        "decision_point": {
+          "submitted_at": "2026-08-24",
+          "approved_at": null
+        }
+      },
+      "d_in_q_start": "2026-08-20"
+    },
+    {
+      "id": "WE26HKG0003",
+      "name": "Elderly home retrofit \u2014 Kowloon",
+      "country": "HKG",
+      "status": 4,
+      "amount": 150000,
+      "owner": "wing",
+      "primary_implementer": "St. James Settlement",
+      "strategic_priority": "Aging & Care",
+      "target_date": "2027-03-31"
+    },
+    {
+      "id": "WE26HKG0004",
+      "name": "Typhoon readiness kits",
+      "country": "HKG",
+      "status": 2,
+      "amount": 95000,
+      "owner": "wing",
+      "primary_implementer": "HKRC",
+      "strategic_priority": "Emergency Response",
+      "submitted_at": "2026-07-28",
+      "approved_at": "2026-08-10",
+      "refs": {
+        "decision_point": "DP-2026-0431",
+        "chas": "CHS-77690"
+      },
+      "gate": {
+        "decision_point": {
+          "submitted_at": "2026-07-30",
+          "approved_at": "2026-08-08"
+        },
+        "chas": {
+          "submitted_at": "2026-07-30",
+          "approved_at": "2026-08-08"
+        }
+      },
+      "d_in_q_start": "2026-07-28"
     }
   ],
   "reconciliation": {
@@ -204,6 +312,7 @@ window.CBP_DATA = {
     "IND": 354200,
     "MMR": 627000,
     "LAO": 188000,
+    "HKG": 975000,
     "note": "Committed per country = sum(amount) all statuses. Dashboard must derive, not hard-code. 3 unassigned projects drive the attention row."
   },
   "users": [
@@ -427,6 +536,22 @@ window.CBP_DATA = {
     "body": "Submitted without an owner \u2014 needs assignment before review can route alerts.",
     "author": "daniel",
     "at": "2026-08-17"
+  },
+  {
+    "id": "L13",
+    "project": "WE26HKG0002",
+    "type": "system",
+    "body": "Status changed 4 \u2192 3 (Request submitted)",
+    "author": "wing",
+    "at": "2026-08-20"
+  },
+  {
+    "id": "L14",
+    "project": "WE26HKG0001",
+    "type": "note",
+    "body": "Distribution rounds are on track to close on 15 Sep; wrap-up paperwork starts the day after.",
+    "author": "wing",
+    "at": "2026-08-25"
   }
 ]
 ,
@@ -581,6 +706,39 @@ window.CBP_DATA = {
     "at": "2026-08-21",
     "time": "09:35",
     "body": "This one is still sitting without an owner, so no alert can route. I will assign it as soon as the Myanmar team confirm who is picking it up.",
+    "kind": "comment",
+    "edited_at": null,
+    "priority": false
+  },
+  {
+    "id": "C15",
+    "project_id": "WE26HKG0002",
+    "author": "wing",
+    "at": "2026-08-21",
+    "time": "10:05",
+    "body": "Kitchen No.4 lease signed \u2014 cost sheet attached to the request.",
+    "kind": "comment",
+    "edited_at": null,
+    "priority": false
+  },
+  {
+    "id": "C16",
+    "project_id": "WE26HKG0002",
+    "author": "daniel",
+    "at": "2026-08-22",
+    "time": "09:40",
+    "body": "Submitting this one for review. The lease and the partner\u2019s cost sheet are both on the record, so there is nothing outstanding from our side. Could M1 prioritise it? The fit-out has to finish before the winter meal programme opens.",
+    "kind": "approval_note",
+    "edited_at": null,
+    "priority": false
+  },
+  {
+    "id": "C17",
+    "project_id": "WE26HKG0001",
+    "author": "wing",
+    "at": "2026-08-25",
+    "time": "16:12",
+    "body": "Distribution round 3 closed ahead of plan \u2014 41 tonnes moved through the hub this month. The rounds still finish on 15 Sep and wrap-up is unchanged.",
     "kind": "comment",
     "edited_at": null,
     "priority": false
@@ -743,6 +901,32 @@ window.CBP_DATA = {
       }
     },
     "plan_2027": 240000
+  },
+  {
+    "code": "HKG",
+    "years": {
+      "2024": {
+        "ceiling": 1000000,
+        "committed": 580000,
+        "spent_q": [
+          112000,
+          145000,
+          158000,
+          152000
+        ]
+      },
+      "2025": {
+        "ceiling": 1000000,
+        "committed": 660000,
+        "spent_q": [
+          128000,
+          165000,
+          180000,
+          172000
+        ]
+      }
+    },
+    "plan_2027": 900000
   }
 ]
 };

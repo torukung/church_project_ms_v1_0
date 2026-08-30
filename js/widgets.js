@@ -35,6 +35,30 @@
     return c ? c.name : code;
   };
 
+  /* ------------------------------------------- v1.0.4 · country identity ---
+     The same grammar the P3 register and the P11 hub use: the flag glyph plus
+     the .cc-<code> palette class from css/app.css (C-21). Both resolve from the
+     CODE alone, and a country the palette has never heard of falls back to the
+     neutral .cc-x swatch with no glyph — so a seventh country arriving in the
+     fixtures renders a complete row on day one, and the dash.css rules below
+     name every colour with a .cc-x fallback so it is legible even before the
+     palette learns its three tones. */
+  var FLAG = {
+    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳',
+    MMR: '🇲🇲', LAO: '🇱🇦', HKG: '🇭🇰'
+  };
+
+  W.ccOf = function (code) {
+    var k = String(code || '').toUpperCase();
+    return FLAG[k] ? 'cc-' + k.toLowerCase() : 'cc-x';
+  };
+
+  /* aria-hidden: the country name is always printed beside the glyph */
+  W.flagMark = function (code) {
+    var f = FLAG[String(code || '').toUpperCase()];
+    return f ? '<span class="ccflag" aria-hidden="true">' + f + '</span>' : '';
+  };
+
   /* ================================================== scope (C-20 engine) == */
 
   /* countries this user may ever see — the scope selector offers no more */
@@ -318,7 +342,11 @@
     };
   };
 
-  /* the P2 "Needs attention" rows, built from that one exception set */
+  /* the P2 "Needs attention" rows, built from that one exception set.
+     v1.0.4 — each row now also carries the country it belongs to (null for the
+     one roll-up row that spans several), so the message widget can list a
+     country's alerts without deriving them a second time. Nothing about the
+     wording, the order or the exception set itself changes. */
   W.alerts = function (ctx) {
     var x = W.exceptionSet(ctx);
     var out = [];
@@ -328,14 +356,15 @@
         sev: i.overdue ? 'rose' : 'brass', pill: D.days(i.days), sort: i.days,
         title: i.project.id + ' · ' + i.project.name,
         sub: W.countryName(ctx.state, i.country) + ' · ' + i.text,
-        href: '#/project/' + i.project.id
+        href: '#/project/' + i.project.id, country: i.country
       });
     });
 
     x.over.forEach(function (i) {
       out.push({
         sev: 'rose', pill: D.pct(i.coverage), sort: i.coverage,
-        title: i.row.name + ' over ceiling', sub: i.text, href: '#/projects'
+        title: i.row.name + ' over ceiling', sub: i.text, href: '#/projects',
+        country: i.country
       });
     });
 
@@ -344,20 +373,45 @@
         sev: 'brass', pill: D.days(i.days), sort: i.days,
         title: i.project.id + ' · ' + i.project.name,
         sub: W.countryName(ctx.state, i.country) + ' · ' + i.text,
-        href: '#/project/' + i.project.id
+        href: '#/project/' + i.project.id, country: i.country
       });
     });
 
     if (x.unowned.length) {
       out.push({
         sev: '', pill: String(x.unowned.length), sort: x.unowned.length,
-        title: 'Projects without an owner', sub: x.unownedText, href: '#/projects'
+        title: 'Projects without an owner', sub: x.unownedText, href: '#/projects',
+        country: null
       });
     }
 
     return out.sort(function (a, b) {
       return (SEV_RANK[a.sev] - SEV_RANK[b.sev]) || (b.sort - a.sort);
     });
+  };
+
+  /* the same rows, split by country. The roll-up "no owner" row is expanded
+     back into one row per country so every alert lands in exactly one queue and
+     the per-country counts add up to the scope's own list. */
+  W.alertsByCountry = function (ctx) {
+    var by = {};
+    function push(code, row) { (by[code] = by[code] || []).push(row); }
+
+    W.alerts(ctx).forEach(function (a) {
+      if (a.country) push(a.country, a);
+    });
+
+    W.exceptionSet(ctx).unowned.forEach(function (i) {
+      push(i.country, {
+        sev: '', pill: 'no owner', sort: 0,
+        title: i.project.id + ' · ' + i.project.name,
+        sub: W.countryName(ctx.state, i.country) + ' · ' +
+             (seedText('unassigned', {}) || 'No owner set — alerts cannot route'),
+        href: '#/project/' + i.project.id, country: i.country
+      });
+    });
+
+    return by;
   };
 
   /* ================================================= micro-layout builders = */
@@ -582,19 +636,358 @@
     }
   });
 
-  /* --------------------------------------------------- needs attention --- */
+  /* --------------------------------------------------- needs attention ---
+     v1.0.4 — the widget answers the two questions the ToR asks of it, in two
+     labelled sections: what is waiting for an approval decision, and which
+     implementation phase runs out next. Both lists are derived (derive.js) and
+     both state their all-clear in one muted line rather than disappearing, so
+     the card keeps its shape whatever the scope holds.
+
+     W.exceptionSet and the RD-2 digest that reads it are untouched. */
   reg({
     id: 'attention',
-    title: 'Needs attention',
-    blurb: 'Derived exceptions: idle gates, over-ceiling countries, passed targets, no owner.',
+    title: 'Needs attention — approvals and timelines',
+    blurb: 'Two derived lists: records waiting for an approval decision beyond the ' +
+           'configured wait, and implementation phases whose end date is close.',
     size: 'half',
     more: 'View all →',
     moreHref: '#/alerts',
     render: function (state, codes, ctx) {
       ctx = ctx || W.ctx(state, codes);
-      var rows = W.alerts(ctx);
-      if (!rows.length) return W.empty('Nothing needs attention in the selected scope.');
-      return '<div class="p2-att">' + rows.map(W.attentionRow).join('') + '</div>';
+
+      /* ---- section 1 · approval required ---- */
+      var appr = D.approvalRequired(ctx.projects);
+      var s1 = section('Approval required', appr.length,
+        'waiting longer than ' + CBP.CONFIG.APPROVAL_WAIT_DAYS + ' days',
+        appr.length
+          ? appr.map(function (r) {
+              return atRow({
+                sev: 'rose', pill: D.days(r.waited),
+                href: '#/project/' + r.p.id,
+                title: r.p.id + ' · ' + r.p.name,
+                meta: ccChip(state, r.p.country) +
+                  '<span class="at-val neg">waiting ' + e(D.days(r.waited)) +
+                  ' since submit</span>' +
+                  '<span class="at-when">submitted ' + e(D.fmtDateY(r.p.submitted_at)) +
+                  '</span>'
+              });
+            }).join('')
+          : allClear('Nothing has been waiting for an approval decision longer than ' +
+                     CBP.CONFIG.APPROVAL_WAIT_DAYS + ' days.'));
+
+      /* ---- section 2 · project timeline alert ---- */
+      var due = D.phaseDeadlines(ctx.projects, CBP.CONFIG.PHASE_WARN_DAYS);
+      var s2 = section('Project timeline alert', due.length,
+        'phase ends inside ' + CBP.CONFIG.PHASE_WARN_DAYS + ' days',
+        due.length
+          ? due.map(function (r) {
+              var hot = r.daysLeft <= 7;
+              return atRow({
+                sev: hot ? 'rose' : 'brass', pill: D.days(r.daysLeft),
+                href: '#/project/' + r.p.id,
+                title: r.p.id + ' · ' + r.p.name,
+                meta: ccChip(state, r.p.country) +
+                  '<span class="at-phase">' + e(r.name) + '</span>' +
+                  '<span class="at-val ' + (hot ? 'neg' : 'warn') + '">ends in ' +
+                  e(D.days(r.daysLeft)) + '</span>' +
+                  '<span class="at-when">' + e(D.fmtDateY(r.end)) + '</span>'
+              });
+            }).join('')
+          : allClear('No implementation phase ends inside the next ' +
+                     CBP.CONFIG.PHASE_WARN_DAYS + ' days.'));
+
+      return '<div class="at-secs">' + s1 + s2 + '</div>';
+    }
+  });
+
+  /* a quiet section header + its rows */
+  function section(label, n, note, body) {
+    return '<section class="at-sec">' +
+      '<div class="at-hd"><span class="at-lbl">' + e(label) + '</span>' +
+      '<span class="at-note">' + e(note) + '</span>' +
+      '<span class="at-n num">' + n + '</span></div>' + body + '</section>';
+  }
+
+  function allClear(msg) {
+    return '<div class="at-clear">' + e(msg) + '</div>';
+  }
+
+  function atRow(r) {
+    return '<a class="at-row" href="' + e(r.href) + '">' +
+      U.attentionPill(r.pill, r.sev) +
+      '<span class="at-tx"><b>' + e(r.title) + '</b>' +
+      '<span class="at-meta">' + r.meta + '</span></span></a>';
+  }
+
+  /* the country chip: flag + name in the country's own pastel (C-21) */
+  function ccChip(state, code) {
+    return '<span class="dwcc ' + W.ccOf(code) + '">' + W.flagMark(code) +
+      e(W.countryName(state, code)) + '</span>';
+  }
+  W.ccChip = ccChip;
+
+  /* ================================ v1.0.4 · budget track (country detail) ==
+     "More details" on the Overview board: one row per country in scope showing
+     the ceiling, the spend split across the D-01 ladder under a single grouped
+     sub-head, and an aligned bar for the total against that ceiling. Clicking a
+     row opens the project queue behind those numbers, grouped by rung, so the
+     counts on screen are visibly the counts in the header.
+
+     Nothing here knows a country code: the rows come from ctx.rows and the
+     colours from the .cc-<code> utility classes, so a seventh country appears
+     the moment its projects do. Read-only for every persona, the viewer
+     included — the block carries links and counts and no control at all. */
+
+  var SPEND_COLS = [1, 2, 3, 4];      /* ladder order, left to right */
+
+  function uiMap(state, key) {
+    var m = state && state.ui ? state.ui[key] : null;
+    return (m && typeof m === 'object') ? m : {};
+  }
+
+  function btAmount(list) {
+    return list.reduce(function (a, p) { return a + (p.amount || 0); }, 0);
+  }
+
+  /* the queue behind one country's numbers, rung by rung */
+  function btQueue(state, r) {
+    if (!r.projects.length) {
+      return '<div class="bt-empty">No project records in ' + e(r.name) +
+        ' yet — the whole ' + e(D.money(r.ceiling)) + ' ceiling is unallocated.</div>';
+    }
+
+    var blocks = CBP.CONFIG.STATUS_ORDER.map(function (s) {
+      var list = r.projects.filter(function (p) { return p.status === s; });
+      if (!list.length) return '';
+      list = list.slice().sort(function (a, b) {
+        return (b.amount || 0) - (a.amount || 0) ||
+               (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      });
+
+      var rows = list.map(function (p) {
+        var remark;
+        if (p.status === 1) {
+          var from = p.implementation_date || p.approved_at;
+          remark = from ? 'implementing since ' + D.fmtDateY(from) : 'in implementation';
+        } else if (p.status === 'declined') {
+          remark = 'declined' + (p.declined_at ? ' ' + D.fmtDateY(p.declined_at) : '');
+        } else {
+          var q = D.dInQ(p);
+          remark = (q === null) ? 'not yet in the queue' : 'in queue ' + D.days(q);
+        }
+        return '<a class="bt-prow" href="#/project/' + e(p.id) + '">' +
+          '<span class="bt-pid">' + e(p.id) + '</span>' +
+          '<span class="bt-pname">' + e(p.name) + '</span>' +
+          '<span class="bt-prem">' + e(remark) + '</span>' +
+          '<span class="bt-pamt num">' + e(D.money(p.amount || 0)) + '</span></a>';
+      }).join('');
+
+      return '<div class="bt-rung">' +
+        '<div class="bt-rhd">' + U.statusPill(s) +
+        '<span class="bt-rn num">' + e(W.plural(list.length, 'project')) + '</span>' +
+        '<span class="bt-ramt num">' + e(D.money(btAmount(list))) + '</span>' +
+        (s === 'declined'
+          ? '<span class="bt-rnote">not counted in the split</span>' : '') +
+        '</div>' + rows + '</div>';
+    }).join('');
+
+    return '<div class="bt-q">' + blocks + '</div>';
+  }
+
+  reg({
+    id: 'budgettrack',
+    title: 'Budget track — country detail',
+    blurb: 'Per country: the year’s budget ceiling against the spend split across the four ' +
+           'ladder rungs, with the project queue behind every number one click away.',
+    size: 'full',
+    more: 'Open budget →',
+    moreHref: '#/budget',
+    render: function (state, codes, ctx) {
+      ctx = ctx || W.ctx(state, codes);
+      if (!ctx.rows.length) {
+        return W.empty('No country is in this scope yet — tick a country to open its budget track.');
+      }
+
+      var open = uiMap(state, 'btOpen');
+      var rows = ctx.rows.map(function (r) {
+        var sp = D.spendByStatus(r.projects);
+        return { r: r, sp: sp, pct: r.ceiling ? (sp.total / r.ceiling * 100) : 0 };
+      });
+      /* ONE scale across every country in the widget, so the 100% rule is a
+         single line down the bar column (ToR 9) */
+      var scale = D.barScale(rows.map(function (x) { return x.pct; }));
+
+      var head =
+        '<tr>' +
+          '<th rowspan="2">Country</th>' +
+          '<th rowspan="2" class="r">' + e(CBP.CONFIG.BUDGET_YEAR) + ' budget</th>' +
+          '<th colspan="5" class="c bt-grp">Actual spend</th>' +
+          '<th rowspan="2" class="bt-barh">vs ceiling</th>' +
+        '</tr><tr>' +
+          SPEND_COLS.map(function (s) {
+            return '<th class="r bt-sub">' + e(CBP.CONFIG.STATUS[s].short) + '</th>';
+          }).join('') +
+          '<th class="r bt-sub bt-tot">Total</th>' +
+        '</tr>';
+
+      var body = rows.map(function (x) {
+        var r = x.r, sp = x.sp;
+        var on = !!open[r.code];
+        var cells = SPEND_COLS.map(function (s) {
+          var v = sp['s' + s];
+          return '<td class="r num">' + (v ? e(D.money(v)) : '<span class="dim">—</span>') +
+            '</td>';
+        }).join('');
+
+        var line = '<tr class="bt-row ' + W.ccOf(r.code) + (on ? ' on' : '') +
+          '" data-act="w-bt" data-code="' + e(r.code) + '" role="button" tabindex="0"' +
+          ' aria-expanded="' + on + '" title="' +
+          e((on ? 'Hide' : 'Show') + ' the ' + r.name + ' project queue') + '">' +
+          '<td class="bt-cty"><span class="bt-chev" aria-hidden="true">' +
+            (on ? '▾' : '▸') + '</span>' + W.flagMark(r.code) +
+            '<b>' + e(r.name) + '</b>' +
+            '<span class="bt-n num" title="' + e(W.plural(r.count, 'project')) + '">' +
+            r.count + '</span></td>' +
+          '<td class="r num">' + e(D.money(r.ceiling)) + '</td>' +
+          cells +
+          '<td class="r num bt-tot' + (sp.total > r.ceiling ? ' neg' : '') + '">' +
+            e(D.money(sp.total)) + '</td>' +
+          '<td class="bt-bar">' + U.budgetBar(x.pct, {
+            scale: scale, sm: true, label: true,
+            title: D.money(sp.total) + ' of the ' + D.money(r.ceiling) + ' ' +
+                   CBP.CONFIG.BUDGET_YEAR + ' ceiling'
+          }) + '</td></tr>';
+
+        if (on) {
+          line += '<tr class="bt-exp ' + W.ccOf(r.code) + '"><td colspan="8">' + btQueue(state, r) + '</td></tr>';
+        }
+        return line;
+      }).join('');
+
+      return '<div class="tblwrap"><table class="tbl bt-tbl"><thead>' + head +
+        '</thead><tbody>' + body + '</tbody></table></div>' +
+        '<p class="p2-note">Actual spend splits the committed budget across the ladder — ' +
+        'Implementation, Approved, Submitted and In development — so the four columns add up ' +
+        'to the total, and the total is drawn against the country ceiling on one shared scale ' +
+        'to ' + e(String(Math.round(scale))) + '%. Open a country to see the records behind ' +
+        'its columns, grouped by the same rungs; day counts are derived against ' +
+        e(D.fmtDateY(CBP.CONFIG.TODAY)) + '. Declined records are not committed money and sit ' +
+        'outside the split.</p>';
+    }
+  });
+
+  /* ================================ v1.0.4 · unread messages & alerts ======
+     One row per country in scope: what is unread for the SIGNED-IN persona
+     (D.unreadByCountry, the same read state the sidebar balloon counts) beside
+     the exceptions already derived for that country by W.exceptionSet. A row
+     with neither collapses to a quiet zero line rather than disappearing, so
+     the widget is a full picture of the scope and not only its bad news.
+
+     Viewer-safe: counts, briefs and links, no read/flag/reply control. */
+
+  function maSnippet(body, n) {
+    var s = String(body || '').replace(/\s+/g, ' ').trim();
+    return s.length > n ? s.slice(0, n - 1).replace(/[\s,;:.\-]+$/, '') + '…' : s;
+  }
+
+  var MA_BRIEFS = 3;      /* how many of the briefest unread items a row shows */
+  var MA_SNIP = 92;
+
+  function maUnreadIn(state, r) {
+    var user = state.user;
+    var ids = {};
+    r.projects.forEach(function (p) { ids[p.id] = true; });
+    return D.commentsVisible(user).filter(function (c) {
+      return ids[c.project_id] && D.isUnread(user, c);
+    }).sort(function (a, b) {
+      var la = String(a.body || '').length, lb = String(b.body || '').length;
+      return (la - lb) || D.commentOrder(a, b);
+    });
+  }
+
+  reg({
+    id: 'msgalert',
+    title: 'Unread messages & alerts',
+    blurb: 'Per country: what is unread for the signed-in user and how many exceptions that ' +
+           'country carries, with the briefest unread items one click away.',
+    size: 'full',
+    more: 'Open Messages & Alerts →',
+    moreHref: '#/messages',
+    render: function (state, codes, ctx) {
+      ctx = ctx || W.ctx(state, codes);
+      if (!ctx.rows.length) {
+        return W.empty('No country is in this scope yet — tick a country to see its messages.');
+      }
+
+      var open = uiMap(state, 'maOpen');
+      var unread = D.unreadByCountry(state.user, ctx.projects);
+      var alerts = W.alertsByCountry(ctx);
+
+      var items = ctx.rows.map(function (r) {
+        var un = unread[r.code] || 0;
+        var al = (alerts[r.code] || []).length;
+        var quiet = (un === 0 && al === 0);
+        var on = !quiet && !!open[r.code];
+
+        var counts =
+          '<span class="ma-cnt' + (un ? ' has' : '') + '">' +
+            '<b class="num">' + un + '</b>' + (un ? '<i class="ma-dot"></i>' : '') +
+            '<span>' + (un === 1 ? 'unread message' : 'unread messages') + '</span></span>' +
+          '<span class="ma-cnt' + (al ? ' warn' : '') + '">' +
+            '<b class="num">' + al + '</b>' +
+            '<span>' + (al === 1 ? 'alert' : 'alerts') + '</span></span>';
+
+        var head = quiet
+          ? '<div class="ma-row static ' + W.ccOf(r.code) + '">' +
+              '<span class="ma-chev" aria-hidden="true"></span>' + W.flagMark(r.code) +
+              '<span class="ma-name">' + e(r.name) + '</span>' +
+              '<span class="ma-counts">' + counts + '</span>' +
+              '<span class="ma-quiet">nothing new</span></div>'
+          : '<div class="ma-row ' + W.ccOf(r.code) + (on ? ' on' : '') +
+              '" data-act="w-ma" data-code="' + e(r.code) + '" role="button" tabindex="0"' +
+              ' aria-expanded="' + on + '" title="' +
+              e((on ? 'Hide' : 'Show') + ' the ' + r.name + ' messages and alerts') + '">' +
+              '<span class="ma-chev" aria-hidden="true">' + (on ? '▾' : '▸') + '</span>' +
+              W.flagMark(r.code) +
+              '<span class="ma-name">' + e(r.name) + '</span>' +
+              '<span class="ma-counts">' + counts + '</span></div>';
+
+        var body = '';
+        if (on) {
+          var list = maUnreadIn(state, r);
+          var briefs = list.slice(0, MA_BRIEFS);
+          body += '<div class="ma-body">';
+          body += '<div class="ma-shd">' + e(W.plural(list.length, 'unread message')) +
+            (list.length > briefs.length
+              ? ' · showing the ' + briefs.length + ' briefest' : '') + '</div>';
+          body += briefs.length
+            ? briefs.map(function (c) {
+                return '<a class="ma-msg" href="#/project/' + e(c.project_id) + '">' +
+                  '<span class="ma-au">' + e(CBP.userName(c.author)) + '</span>' +
+                  '<span class="ma-pid">' + e(c.project_id) + '</span>' +
+                  '<span class="ma-snip">' + e(maSnippet(c.body, MA_SNIP)) + '</span></a>';
+              }).join('')
+            : '<div class="ma-none">Nothing unread here — every message in ' + e(r.name) +
+              ' has been read.</div>';
+
+          var al2 = alerts[r.code] || [];
+          body += '<div class="ma-shd">' + e(W.plural(al2.length, 'alert')) + '</div>';
+          body += al2.length
+            ? '<div class="p2-att ma-alerts">' + al2.map(W.attentionRow).join('') + '</div>'
+            : '<div class="ma-none">No exception is open in ' + e(r.name) + '.</div>';
+
+          body += '<a class="ma-more" href="#/messages">Open Messages &amp; Alerts</a>';
+          body += '</div>';
+        }
+
+        return '<div class="ma-item ' + W.ccOf(r.code) + '">' + head + body + '</div>';
+      }).join('');
+
+      return '<div class="ma-list">' + items + '</div>' +
+        '<p class="p2-note">Unread is counted for ' + e(state.user.name) +
+        ' — your own messages are never unread, and a country outside your data scope is not ' +
+        'counted at all, so these numbers add up to the balloon in the sidebar. Alerts are the ' +
+        'same derived exceptions the alert centre sends.</p>';
     }
   });
 
@@ -1033,6 +1426,50 @@
         'seeded budget history, ' + e(CBP.CONFIG.BUDGET_YEAR) + ' sums the live ' +
         'commitments, and 2027 is the plan marker (◆) from the Forecasting tab.</p>';
     }
+  });
+
+  /* ================================== v1.0.4 · expand / collapse wiring ====
+     Registered ONCE, at load, on document — never per render. The two actions
+     are names this file owns ('w-bt', 'w-ma'); actions.js does not know them,
+     so it never claims the event and never stops it, and the handler below does
+     not stop it either: a click anywhere on the board should still close an
+     open scope pane, which is p2.js's own listener talking. State goes into
+     ui.btOpen / ui.maOpen (seeded in store.js) and one CBP.render() pass
+     rebuilds the board from it.
+
+     Toggling is a disclosure, not a mutation — nothing is written to a project,
+     so the viewer expands a country exactly like everybody else. */
+
+  var TOGGLE = { 'w-bt': 'btOpen', 'w-ma': 'maOpen' };
+
+  function toggleOpen(act, code) {
+    if (!CBP.state || !code || !TOGGLE[act]) return false;
+    var key = TOGGLE[act];
+    var ui = CBP.state.ui || (CBP.state.ui = {});
+    if (!ui[key] || typeof ui[key] !== 'object') ui[key] = {};
+    ui[key][code] = !ui[key][code];
+    return true;
+  }
+
+  function hit(node) {
+    return (node && node.closest)
+      ? node.closest('[data-act="w-bt"],[data-act="w-ma"]') : null;
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = hit(ev.target);
+    if (!t) return;
+    ev.preventDefault();
+    if (toggleOpen(t.getAttribute('data-act'), t.getAttribute('data-code'))) CBP.render();
+  });
+
+  /* the rows are role="button" — keep them on the keyboard path */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'Spacebar') return;
+    var t = hit(ev.target);
+    if (!t) return;
+    ev.preventDefault();
+    if (toggleOpen(t.getAttribute('data-act'), t.getAttribute('data-code'))) CBP.render();
   });
 
 })();

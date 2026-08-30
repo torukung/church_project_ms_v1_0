@@ -136,7 +136,7 @@ a.p2-manage:hover{color:var(--glass);text-decoration:underline}
 .p2-league th.p2-sortable{cursor:pointer;user-select:none}
 .p2-league th.p2-sortable:hover{color:var(--slate)}
 .p2-league th.p2-sortable.on{color:var(--ink)}
-.p2-arrow{font-size:9px;margin-left:5px;color:var(--brass)}
+.p2-arrow{font-size:10px;margin-left:5px;color:var(--brass)}
 .p2-league .p2-rank{width:34px;color:var(--muted)}
 .p2-league td .neg{color:var(--rose);font-weight:700}
 .p2-league td .dim{color:var(--muted)}
@@ -160,7 +160,7 @@ a.p2-manage:hover{color:var(--glass);text-decoration:underline}
 .p2-editacts{display:flex;gap:8px;flex:none;margin-left:auto}
 
 .p2-editing .dw-edit{border-style:dashed}
-.dw-grip{font-size:13px;letter-spacing:-3px;color:var(--muted);cursor:grab;flex:none;
+.dw-grip{font-size:13px;letter-spacing:-3px;color:var(--slate);cursor:grab;flex:none;
   line-height:1;align-self:center}
 .dw-edit[draggable="true"]{cursor:grab}
 .dw.dragging{opacity:.5}
@@ -173,14 +173,14 @@ a.p2-manage:hover{color:var(--glass);text-decoration:underline}
 .dw-bare .dw-tools.edit{margin-top:8px}
 .p2-ebg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);
   overflow:hidden;flex:none}
-.p2-eb{font-size:12px;font-weight:600;color:var(--muted);padding:3px 9px;
+.p2-eb{font-size:12px;font-weight:600;color:var(--slate);padding:3px 9px;
   line-height:1.5;border-radius:0}
 .p2-ebg .p2-eb + .p2-eb{border-left:1px solid var(--line)}
 .p2-eb:hover:not(:disabled){color:var(--ink);background:#F5F7F4}
 .p2-eb:disabled{opacity:.35;cursor:default}
 .p2-span{font-variant-numeric:tabular-nums}
 .p2-span.on{color:var(--ink);background:#F1F3F0;box-shadow:inset 0 -2px 0 var(--brass)}
-.p2-ebpos{font-size:11.5px;color:var(--muted);flex:none}
+.p2-ebpos{font-size:11.5px;color:var(--slate);flex:none}
 .dw-tools.edit .p2-x{margin-left:auto;border:1px solid var(--line);padding:1px 8px}
 
 /* =============================== the predefined widget catalogue tray ==== */
@@ -221,6 +221,161 @@ a.p2-manage:hover{color:var(--glass);text-decoration:underline}
   background:var(--brass);transform:rotate(45deg);border-radius:1px}
 .p2-ycnote{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45}
 
+/* ======================= v1.0.4 · country identity inside a widget ========
+   The .cc-<code> utility classes in app.css (C-21) expose --ccb / --ccl / --ccx
+   for whatever country the row carries. Every rule below names a .cc-x fallback
+   as well, so a country the palette has not learned yet still renders a legible
+   chip and a visible accent rather than an unresolved variable. */
+.dwcc{display:inline-flex;align-items:center;gap:5px;flex:none;
+  font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;
+  background:var(--ccb,var(--cc-x-bold));border-radius:999px;padding:1px 9px;
+  font-variant-numeric:normal}
+.dwcc .ccflag{font-size:12px}
+
+/* =========================== v1.0.4 · attention, in two labelled sections ==
+   Card anatomy is untouched: the sections are quiet 12.5px/600 slate-muted
+   headers over the same row grammar the board already uses. The only colour is
+   the value itself — brass approaching a deadline, rose past a threshold — and
+   never a tinted row (design rule 4). */
+.at-secs{min-width:0}
+.at-sec + .at-sec{margin-top:18px}
+.at-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0;
+  padding-bottom:7px;border-bottom:1px solid var(--line)}
+.at-lbl{font-size:12.5px;font-weight:600;color:var(--slate);min-width:0}
+.at-note{font-size:11.5px;color:var(--muted);min-width:0}
+.at-n{margin-left:auto;flex:none;font-size:12px;font-weight:600;color:var(--slate);
+  background:#F1F3F0;border-radius:999px;padding:0 8px;
+  font-variant-numeric:tabular-nums}
+.at-clear{font-size:12.5px;color:var(--muted);padding:11px 0 2px;line-height:1.5}
+
+.at-row{display:flex;gap:12px;align-items:flex-start;padding:11px 0;
+  border-bottom:1px solid var(--line2);text-decoration:none;color:inherit;min-width:0}
+.at-row:last-child{border-bottom:none}
+.at-row .tagpill{width:60px;min-width:60px;margin-top:1px}
+.at-row:hover .at-tx b{color:var(--glass)}
+.at-tx{min-width:0;flex:1}
+.at-tx b{display:block;font-size:14px;font-weight:600;line-height:1.35;
+  overflow-wrap:break-word}
+.at-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;
+  font-size:12.5px;color:var(--muted);min-width:0}
+.at-phase{font-weight:600;color:var(--slate)}
+.at-val{font-variant-numeric:tabular-nums;font-weight:600;color:var(--slate)}
+.at-val.neg{color:var(--rose)}
+.at-val.warn{color:var(--brass)}
+.at-when{font-variant-numeric:tabular-nums}
+
+/* ============================ v1.0.4 · budget track (country detail) ======
+   One table, one sub-headed spend group, one expandable queue per country. The
+   table scrolls inside its own .tblwrap when the card is narrower than the
+   eight columns need — the page itself never scrolls sideways (design rule 7).*/
+/* eight columns need room: the horizontal padding is tightened from the shared
+   12px so the whole table fits a 3-track card at 1280 without scrolling, and
+   the .dw-w1 rule above (which narrows every widget table) is restated at a
+   higher specificity so a 1× card scrolls it inside .tblwrap instead of
+   crushing it. The page itself never scrolls sideways. */
+.dw .tblwrap .tbl.bt-tbl{min-width:790px}
+.bt-tbl th{padding-left:7px;padding-right:7px}
+.bt-tbl td{padding:11px 7px}
+.bt-tbl th.bt-grp{text-align:center;border-bottom:1px solid var(--line2);
+  padding-bottom:4px}
+.bt-tbl th.bt-sub{font-weight:600;color:var(--muted);padding-top:4px}
+.bt-tbl th.c{text-align:center}
+.bt-tbl th.bt-barh{min-width:126px}
+.bt-tbl td.bt-cty{min-width:172px}
+.bt-tbl td.bt-tot,.bt-tbl th.bt-tot{border-left:1px solid var(--line2);font-weight:600}
+.bt-tbl td.bt-tot.neg{color:var(--rose);font-weight:700}
+.dw .tbl.bt-tbl .dim{color:var(--slate)}
+
+.bt-row{cursor:pointer}
+.bt-row > td{box-shadow:inset 0 -1px 0 var(--line2)}
+.bt-row:hover > td{background:#F5F7F4}
+.bt-row.on > td{background:#F5F7F4}
+.bt-row > td:first-child{box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line)),
+  inset 0 -1px 0 var(--line2)}
+.bt-row:focus-visible{outline:2px solid var(--glass);outline-offset:-2px}
+.bt-cty{display:flex;align-items:center;gap:8px;min-width:0}
+.bt-cty b{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.bt-chev{flex:none;width:11px;font-size:10px;color:var(--muted);line-height:1}
+.bt-row.on .bt-chev{color:var(--slate)}
+.bt-n{flex:none;font-size:11.5px;color:var(--slate);font-variant-numeric:tabular-nums;
+  background:#F1F3F0;border-radius:999px;padding:0 7px}
+.bt-bar .ubar-wrap{min-width:112px}
+
+/* the expanded queue: rungs in ladder order, each with its own sub-total, so
+   the counts on screen are visibly the counts in the header columns above */
+.bt-exp > td{background:var(--ccl,var(--cc-x-light));padding:0 !important;
+  box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line))}
+/* the queue keeps its own measure rather than stretching the full table width —
+   its amounts line up with the rung sub-total above them, not with the header
+   columns, and the eye does not travel the whole card to read a remark */
+.bt-q{padding:12px 14px 14px;max-width:840px}
+.bt-rung + .bt-rung{margin-top:12px}
+.bt-rhd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;
+  padding-bottom:6px;border-bottom:1px solid var(--line2)}
+.bt-rn{font-size:12px;color:var(--slate);font-variant-numeric:tabular-nums}
+.bt-ramt{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.bt-rnote{flex:0 0 100%;font-size:11.5px;color:var(--slate)}
+.bt-prow{display:flex;align-items:baseline;gap:10px;min-width:0;padding:7px 0;
+  border-bottom:1px solid var(--line2);text-decoration:none;color:inherit}
+.bt-prow:last-child{border-bottom:none}
+.bt-prow:hover .bt-pname{color:var(--glass)}
+.bt-pid{flex:none;font-size:12px;font-weight:600;color:var(--glass);
+  font-variant-numeric:tabular-nums}
+.bt-pname{flex:1 1 auto;min-width:0;font-size:13px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.bt-prem{flex:none;font-size:12px;color:var(--slate);font-variant-numeric:tabular-nums}
+.bt-pamt{flex:0 0 96px;text-align:right;font-size:12.5px;
+  font-variant-numeric:tabular-nums}
+.bt-empty{padding:12px 14px;font-size:12.5px;color:var(--slate)}
+
+/* ============================ v1.0.4 · unread messages & alerts ========== */
+.ma-list{min-width:0}
+.ma-item + .ma-item{margin-top:2px}
+.ma-row{display:flex;align-items:center;gap:9px;min-width:0;padding:10px 10px 10px 12px;
+  border-bottom:1px solid var(--line2);
+  box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line));cursor:pointer}
+.ma-row.static{cursor:default}
+.ma-row:hover:not(.static){background:#F5F7F4}
+.ma-row.on{background:var(--ccl,var(--cc-x-light));border-bottom-color:transparent}
+.ma-row:focus-visible{outline:2px solid var(--glass);outline-offset:-2px}
+.ma-chev{flex:none;width:11px;font-size:10px;color:var(--slate);line-height:1}
+.ma-name{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.ma-counts{margin-left:auto;display:flex;align-items:center;gap:16px;flex:none}
+.ma-cnt{display:inline-flex;align-items:baseline;gap:5px;font-size:12px;
+  color:var(--slate)}
+.ma-cnt b{font-size:13.5px;font-weight:600;color:var(--slate);
+  font-variant-numeric:tabular-nums}
+.ma-cnt.has b{color:var(--ink);font-weight:700}
+.ma-cnt.warn b{color:var(--brass);font-weight:700}
+.ma-dot{width:7px;height:7px;border-radius:50%;background:var(--rose);
+  align-self:center;flex:none;font-style:normal}
+.ma-quiet{flex:none;font-size:11.5px;color:var(--slate);margin-left:14px}
+
+.ma-body{padding:4px 12px 14px 15px;background:var(--ccl,var(--cc-x-light));
+  border-bottom:1px solid var(--line2)}
+.ma-shd{font-size:12px;font-weight:600;color:var(--slate);padding:10px 0 5px;
+  border-bottom:1px solid var(--line2)}
+.ma-msg{display:flex;align-items:baseline;gap:9px;min-width:0;padding:8px 0;
+  border-bottom:1px solid var(--line2);text-decoration:none;color:inherit}
+.ma-msg:hover .ma-snip{color:var(--glass)}
+.ma-au{flex:none;font-size:12px;font-weight:600;color:var(--slate)}
+.ma-pid{flex:none;font-size:11.5px;font-weight:600;color:var(--brass);
+  font-variant-numeric:tabular-nums}
+.ma-snip{flex:1 1 auto;min-width:0;font-size:12.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.ma-none{font-size:12.5px;color:var(--slate);padding:9px 0 3px}
+.ma-alerts .p2-arow{padding:9px 0}
+/* v1.0.4 UX-integrity: the shared attention row prints its sub-line in --muted,
+   which clears AA on white but not on the tinted country body it sits in here
+   (C-21: only ink / slate / rose print on a pastel) */
+.ma-alerts .p2-atx span{color:var(--slate)}
+.ma-more{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:600;
+  color:var(--glass);text-decoration:none}
+.ma-more:hover{text-decoration:underline}
+
 /* the league coverage column is a bar column now — keep it from collapsing */
 .p2-league td.p2-covcol{min-width:148px}
 .p2-league th.p2-covcol{min-width:148px}
@@ -233,11 +388,38 @@ a.p2-manage:hover{color:var(--glass);text-decoration:underline}
      rather than dropped, so the saved layout survives the narrow view */
   .p2-row{grid-template-columns:minmax(0,1fr) !important}
   .p2-row > .dw{grid-column:1 / -1 !important}
+
+  /* the expanded queue lives inside the table, so it is as wide as the table
+     and scrolls with it. Below this width the table no longer fits the card,
+     so every part of a queue row is stacked hard against the LEFT edge — id
+     and amount, then the name, then the remark — and the whole row stays
+     readable without scrolling the table sideways first. */
+  .bt-q{max-width:none}
+  .bt-prow{flex-wrap:wrap;gap:3px 10px}
+  .bt-pid{order:1}
+  .bt-pamt{order:2;flex:0 0 auto;text-align:left;margin-left:0;font-weight:600}
+  .bt-pname{order:3;flex:1 0 100%;white-space:normal;overflow:visible}
+  .bt-prem{order:4;flex:1 0 100%}
+  .bt-rhd{gap:6px 10px}
+  .bt-ramt{margin-left:0}
   .p2-pickgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .p2-yc{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 }
+@media (max-width:760px){
+  /* the message row stacks its counts under the country name rather than
+     squeezing them; the block itself never widens the page */
+  .ma-row{flex-wrap:wrap}
+  .ma-counts{margin-left:0;flex-basis:100%;padding-left:20px;gap:14px}
+  .ma-quiet{margin-left:auto}
+  .at-note{flex-basis:100%;order:3}
+}
 @media (max-width:520px){
   .p2-scope-pane{width:min(250px,78vw)}
+  .bt-q{padding:10px 11px 12px}
+  .ma-body{padding-left:12px}
+  .ma-msg{flex-wrap:wrap;gap:6px}
+  .ma-snip{flex-basis:100%;white-space:normal}
+  .at-row .tagpill{width:52px;min-width:52px}
   .p2-cname{flex-basis:84px}
   .p2-lamt{min-width:88px}
   .p2-lrow{font-size:13px}

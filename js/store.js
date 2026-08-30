@@ -114,8 +114,24 @@
          `widgets` are CBP.W.registry ids, consumed verbatim by pages/p2.js.
          Boards a user adds carry custom:true and live alongside these. */
       dashboards: [
+        /* v1.0.4 — the Overview board leads with the country budget track
+           (ToR 30 Aug: "move to the top"), then the headline figures, then the
+           two lists. msgalert and attention both carry a real, scrollable list
+           of rows rather than a single figure, so each takes the full three
+           tracks: paired at 1× they would each be a third of the board at
+           1280 and the message briefs would wrap to two lines a piece. The
+           layout is seeded explicitly rather than left to defaultLayout, so it
+           stays what the ToR asked for however a widget's own size changes.
+           'budget' and 'coverage' stay in the catalogue and are one click away
+           in Edit layout — they simply leave this board's seed. */
         { id: 'overview',   name: 'Overview',
-          widgets: ['kpis', 'budget', 'attention', 'coverage'] },
+          widgets: ['budgettrack', 'kpis', 'msgalert', 'attention'],
+          layout: {
+            budgettrack: { w: 3, order: 1 },
+            kpis:        { w: 3, order: 2 },
+            msgalert:    { w: 3, order: 3 },
+            attention:   { w: 3, order: 4 }
+          } },
         { id: 'approval',   name: 'Approval Status',
           widgets: ['gate', 'statusmix', 'delegation'] },
         { id: 'budgetutil', name: 'Budget Utilisation',
@@ -137,6 +153,13 @@
         /* v1.0.1 — P2 dashboard edit mode (layout only; creation lives in P9) */
         dashEdit: false,        /* the dashboard id being edited, or false */
         dashDraft: null,        /* deep copy of { widgets, layout } while editing */
+
+        /* v1.0.4 — which country blocks are expanded on the two new Overview
+           widgets, { countryCode: true }. Pure disclosure state: nothing here
+           is written to a project, so the viewer opens a country like anybody
+           else, and a code that leaves the data simply stops being read. */
+        btOpen: {},             /* budgettrack — the country project queues */
+        maOpen: {},             /* msgalert — the country message blocks */
 
         /* v1.0.1 — P7 sub-menus */
         p7Tab: 'util',          /* util ∣ reports ∣ forecast */
@@ -180,9 +203,12 @@
 
     /* v1.0.1 — every board carries a layout map beside its widget id list. The
        `widgets` array stays the authoritative id list; layout only says how
-       wide each one is and in what order it sits. */
+       wide each one is and in what order it sits.
+
+       v1.0.4 — a board that seeds its own layout (Overview) keeps it; every
+       other board still derives one from the widget sizes. */
     CBP.state.dashboards.forEach(function (b) {
-      b.layout = defaultLayout(b.widgets || []);
+      b.layout = b.layout || defaultLayout(b.widgets || []);
     });
 
     return CBP.state;

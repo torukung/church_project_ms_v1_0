@@ -1,7 +1,7 @@
-# Church Project-Budget Management Platform — Demo v1.0.2
+# Church Project-Budget Management Platform — Demo v1.0.4
 
 A fully client-side demo of a budget approval and visibility platform for a church humanitarian
-area office running **22 countries × $1,000,000/year** (6 countries seeded). Built from
+area office running **22 countries × $1,000,000/year** (7 countries seeded). Built from
 **Blueprint v1.5 (confirmed 28 Aug 2026)** — decisions D-01…D-15, R-1…R-4 and the Regional
 Director basics RD-1…RD-5 are all in scope.
 
@@ -118,3 +118,81 @@ builders + independent audit; full contract in `../ARCH_v1.0.1.md` + `../CORE_AP
 - **Brand** — sidebar mark is now "Church Budget&Project MS" with a gold chapel glyph carrying
   a slow lux shimmer and three twinkling glints (pure CSS, honours `prefers-reduced-motion`;
   the mobile quick-view mark follows).
+
+## v1.0.3 (29 Aug 2026) — minor edit
+
+- **Country identity system** — every seeded country carries its flag (emoji) and a pastel
+  palette drawn from its international flag colors (bold pastel headers, light pastel row
+  areas, saturated accent rules; AA-contrast tuned, C-21 tokens in app.css). Applied to the
+  Projects country selector chips, the country group bands, and mirrored across the Messages
+  & Alerts hub (rows, chips, group headers, pinned cards) so both pages read as one system.
+- **TimeBlock** — the "Add-on" chip is now **Required Licenses** (nav, page badge, admin
+  integrations row). Phase bars are resizable by dragging either end (day-snapped, start<end
+  guarded); the date remarks tied to the bar update live during the drag, and the selection
+  tray gains Start/End ±1 day nudges. Commits keep the single projectUpdate path + log line.
+- **Alerts** — column widths rechecked in all four sections; rule ids no longer wrap.
+- **Forecasting** — per-country, per-year numbers are configurable (history years editable;
+  2026 stays derived from live records); the comparison graph and the trend projection
+  re-derive from configured numbers; years can be added backward (back-cast seeds) and
+  forward (new plan years, trend seeds), added years removable (×).
+
+### v1.0.3 as-built rulings
+
+- Pastel country tints are an explicit client request and override the "no tinted cards"
+  rule for country bands/rows only; text on pastel steps up to slate/ink for AA contrast,
+  and the IND/MMR accent rules are darkened from literal flag yellows to clear 3:1.
+- Flags are emoji (macOS demo); unknown countries fall back to a neutral palette, no glyph.
+- LAO pairs a red pastel with the flag's blue accent rule to stay distinct from NPL crimson.
+- A.histSet stays country-scope-checked; year add/remove is area-level (plan permission).
+- The projection column keeps targeting the first year after the live budget year (2027).
+
+## v1.0.4 (29 Aug 2026) — dashboard enhancement
+
+- **Hong Kong (HKG)** — the 7th seeded country, with data across the whole platform: 4
+  projects (WE26HKG0001 status 1 with phases, WE26HKG0002 status 3 submitted 20 Aug,
+  WE26HKG0003 status 4, WE26HKG0004 status 2; committed $975,000 = 97.5% of the $1,000,000
+  ceiling), 2024/2025 history (58%/66%) plus an editable 2027 plan of $900,000, 3 seeded
+  comments (C15–C17), 2 activity entries, and the 🇭🇰 flag wherever flags render (P3, P11).
+  It carries its own **bauhinia-purple** `cc-hkg` palette rather than a literal red/white
+  reading of the flag — see the ruling below.
+- **Dashboard — Overview reworked** — a new **Budget track — country detail** widget leads
+  the board: per-country rows show the year's ceiling, the committed spend split
+  Implementation / Approved / Submitted / In development under one "Actual spend" group
+  header, and a mini budget bar for every country aligned to a single shared scale.
+  Expanding a row lists that country's projects grouped by status rung, with counts and
+  totals matching the header columns, each project linking to its page; open records show
+  "in queue N d" from the queue clock, status-1 records show "implementing since" their
+  start date.
+- **Dashboard — new Unread messages & alerts widget** replaces the segmented budget bar on
+  Overview (the bar and the compact country coverage widgets stay in the predefined
+  catalogue, one click away in Edit layout). Per-country rows show the signed-in persona's
+  unread count and that country's open alert count; expanding a row shows an "N unread
+  messages" header, up to 3 of the briefest unread items linking to their projects, that
+  country's alert lines, and a link through to Messages & Alerts.
+- **Dashboard — Needs attention reworked** into two labelled sections: **Approval
+  required** (status-3 records waiting longer than the configured wait since submission,
+  longest first, red day counts) and **Project timeline alert** (implementation phases
+  ending inside the configured window, soonest first, brass at 30 days or closer, red at 7
+  days or closer). Both thresholds live in `config.js` (Admin-configurable in the real
+  product); the RD-2 director exception digest is untouched.
+- **Live examples** — with `CONFIG.TODAY` at 2026-08-28, WE26HKG0002 shows 8 days waiting
+  in Approval required (submitted 20 Aug); WE26HKG0001's "Distribution rounds" phase ends
+  15 Sep, 18 days out, in Project timeline alert. WE26BGD0002 is a standing reminder that
+  the platform runs two independent clocks off two different start dates: its approval
+  wait derives from `submitted_at` (210 days), while its CHaS gate clock derives from the
+  gate's own `submitted_at` (197 days) — both correct, neither the other.
+
+### v1.0.4 as-built rulings
+
+- Hong Kong's flag is red and white; its bauhinia flower is purple. The country's palette
+  is built from the bauhinia, not the flag ground, because a red `cc-hkg` would sit next
+  to NPL's crimson and LAO's red with nothing to tell them apart at a glance.
+- Hong Kong ships with area-office scope only: **daniel** (M2, area-wide) and **admin**
+  see it; **priya**, **anik** and the viewer persona do not, and no seeded M1 covers it
+  (Priya's scope is South Asia, Marco's is Mekong). Accepted for the demo — approvals for
+  Hong Kong sit with the area office until an M1 region is assigned.
+- `budgettrack` and `msgalert` both carry a full, scrollable per-country list rather than a
+  single figure, so the Overview seed gives each the full board width; `budget` and
+  `coverage` are unchanged widgets that simply leave this one board's default seed.
+- `W.exceptionSet` and the RD-2 director digest read from it unchanged; the two attention
+  sections on Overview are a new read of the same derived exception set, not a new one.

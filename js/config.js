@@ -14,6 +14,12 @@ CBP.CONFIG = {
   KICKOFF_THRESHOLD_DAYS: 30,  /* approved but not started */
   COVERAGE_WARN: 80,           /* coverage % at which the bar turns brass */
 
+  /* v1.0.4 — the two dashboard attention thresholds (ToR 30 Aug). Both are
+     Admin-configurable in the real product, exactly like the stage thresholds
+     above; the demo ships the client's confirmed defaults. */
+  APPROVAL_WAIT_DAYS: 3,       /* a submitted record older than this needs approval */
+  PHASE_WARN_DAYS: 30,         /* an implementation phase ending inside this window */
+
   /* D-01 ladder — the client's original numbers, never renumbered */
   STATUS: {
     4: { key: 's4', label: '4 In Development', short: 'In development' },

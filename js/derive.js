@@ -869,6 +869,82 @@
     return 'Tracking flat against the ceiling';
   }
 
+  /* ================================================ v1.0.4 · dashboard =====
+     Four pure helpers behind the v1.0.4 Overview board. Every one of them takes
+     the project set it is asked about — never a country list, never a code — so
+     a seventh country arriving in the fixtures flows through untouched. */
+
+  /* The spend split across the D-01 ladder, in ladder order. Declined money is
+     NOT committed and is excluded, so s1 + s2 + s3 + s4 === total ===
+     D.committedTotal(projects) for the same set — which is what lets the
+     budgettrack header columns and its expanded rungs agree by construction. */
+  D.spendByStatus = function (projects) {
+    var out = { s1: 0, s2: 0, s3: 0, s4: 0, total: 0 };
+    (projects || []).forEach(function (p) {
+      if (p.status === 'declined') return;
+      var key = 's' + p.status;
+      if (out[key] === undefined) return;       /* an unknown rung is never invented */
+      var v = p.amount || 0;
+      out[key] += v;
+      out.total += v;
+    });
+    return out;
+  };
+
+  /* Records sitting at status 3 (submitted) longer than the configured wait.
+     Sorted longest first; ties break on the id so the order is deterministic. */
+  D.approvalRequired = function (projects) {
+    var wait = CBP.CONFIG.APPROVAL_WAIT_DAYS;
+    var out = [];
+    (projects || []).forEach(function (p) {
+      if (p.status !== 3 || !p.submitted_at) return;
+      var waited = D.daysSince(p.submitted_at);
+      if (waited === null || waited <= wait) return;
+      out.push({ p: p, waited: waited });
+    });
+    return out.sort(function (a, b) {
+      return (b.waited - a.waited) || (a.p.id < b.p.id ? -1 : a.p.id > b.p.id ? 1 : 0);
+    });
+  };
+
+  /* Implementation phases whose END falls between TODAY and TODAY + warnDays,
+     inclusive at both edges. A phase that has already ended is not a deadline
+     any more and drops out; only status-1 records carry a live timeline at all
+     (D.progress says so), so nothing earlier on the ladder is inspected.
+     Sorted soonest first. */
+  D.phaseDeadlines = function (projects, warnDays) {
+    var win = (typeof warnDays === 'number' && isFinite(warnDays))
+      ? warnDays : CBP.CONFIG.PHASE_WARN_DAYS;
+    var out = [];
+    (projects || []).forEach(function (p) {
+      if (p.status !== 1) return;
+      D.phases(p).forEach(function (ph) {
+        if (!ph.end) return;
+        var left = D.daysBetween(D.today(), D.parse(ph.end));
+        if (left === null || left < 0 || left > win) return;
+        out.push({ p: p, phase: ph, name: ph.phase, end: ph.end, daysLeft: left });
+      });
+    });
+    return out.sort(function (a, b) {
+      return (a.daysLeft - b.daysLeft) || (a.p.id < b.p.id ? -1 : a.p.id > b.p.id ? 1 : 0);
+    });
+  };
+
+  /* { countryCode: unreadCount } for one user, summed over the projects passed
+     in through D.unreadFor — so the per-country numbers decompose the single
+     D.unreadCount(user) figure exactly, as long as the caller passes that
+     user's visible projects. Every country represented in the set gets a key,
+     zero included, so a country with nothing new still renders a row. */
+  D.unreadByCountry = function (user, projects) {
+    var out = {};
+    if (!user) return out;
+    (projects || []).forEach(function (p) {
+      if (out[p.country] === undefined) out[p.country] = 0;
+      out[p.country] += D.unreadFor(user, p.id);
+    });
+    return out;
+  };
+
   /* ============================================== v1.0.1 · shared bar =======
      Every aligned-100% bar row shares ONE scale, so the 100% rule line sits at
      the same x down the whole column and an over-run visibly crosses it.

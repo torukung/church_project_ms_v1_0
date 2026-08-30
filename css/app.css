@@ -66,7 +66,8 @@ summary::marker{content:''}
 .topbar .rt{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .persona{display:flex;align-items:center;gap:8px}
 .persona label{font-size:12.5px;font-weight:600;color:var(--muted)}
-.sel{font-size:13px;font-weight:600;color:var(--ink);border:1px solid var(--line);
+.sel{font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);
+  border:1px solid var(--line);
   border-radius:var(--r);background:#fff;padding:7px 12px;white-space:nowrap;max-width:100%}
 .rolechip{font-size:11.5px;font-weight:600;color:var(--slate);background:#EDF0EC;
   border-radius:999px;padding:2px 9px;white-space:nowrap}
@@ -243,7 +244,10 @@ details.prj[open] .chev{transform:rotate(180deg)}
 /* ================================================= C-06 · gantt ========== */
 .gantt{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
 .gantt-scroll{overflow-x:auto}
-.gantt-inner{min-width:640px;position:relative}
+/* v1.0.4 — the today pill is absolutely positioned at the very top of the
+   inner block and would otherwise print over a month-group heading; the pad gives
+   it a lane of its own above the month row */
+.gantt-inner{min-width:640px;position:relative;padding-top:26px}
 .gm,.grow2{display:grid;grid-template-columns:var(--gantt-label) minmax(0,1fr)}
 .gm{border-bottom:1px solid var(--line);background:#FAFBFA}
 .gm .gl{border-right:1px solid var(--line);padding:7px 12px;font-size:12.5px;
@@ -434,7 +438,7 @@ details.prj[open] .chev{transform:rotate(180deg)}
 /* ============================================================================
    v1.0.3 · C-21 country identity palette
    ----------------------------------------------------------------------------
-   Client-approved deviation from design rule 4 ("no tinted cards"): the six
+   Client-approved deviation from design rule 4 ("no tinted cards"): the seven
    seeded countries carry a flag-derived pastel identity so a country band on P3
    and a country section on P11 read as the same object. Three tones per country,
    defined ONCE here and nowhere else:
@@ -461,13 +465,17 @@ details.prj[open] .chev{transform:rotate(180deg)}
   --cc-ind-bold:#FCE3C3; --cc-ind-light:#FDF6EC; --cc-ind-line:#9C6318;
   --cc-mmr-bold:#F6EBB8; --cc-mmr-light:#FCF9EA; --cc-mmr-line:#7F6F1A;
   --cc-lao-bold:#F5DBD5; --cc-lao-light:#FBF3F1; --cc-lao-line:#2C4E8A;
+  /* v1.0.4 · HKG. The flag is red and white, but red is already spoken for by
+     NPL crimson and LAO, so the identity comes from the bauhinia flower on the
+     flag instead: a violet family that stays its own colour beside both. */
+  --cc-hkg-bold:#E3DCF0; --cc-hkg-light:#F5F2FA; --cc-hkg-line:#5B4A8A;
   /* neutral fallback for any country the palette does not know */
   --cc-x-bold:#E4E7E3;   --cc-x-light:#F7F8F6;   --cc-x-line:#69747E;
 }
 
 /* The utility classes expose the trio under three generic names, so every page
    stylesheet writes var(--ccb) / var(--ccl) / var(--ccx) and stays completely
-   palette-agnostic — a seventh country is one line here and nothing else. */
+   palette-agnostic — an eighth country is one line here and nothing else. */
 .cc-x  {--ccb:var(--cc-x-bold);  --ccl:var(--cc-x-light);  --ccx:var(--cc-x-line)}
 .cc-bgd{--ccb:var(--cc-bgd-bold);--ccl:var(--cc-bgd-light);--ccx:var(--cc-bgd-line)}
 .cc-npl{--ccb:var(--cc-npl-bold);--ccl:var(--cc-npl-light);--ccx:var(--cc-npl-line)}
@@ -475,6 +483,7 @@ details.prj[open] .chev{transform:rotate(180deg)}
 .cc-ind{--ccb:var(--cc-ind-bold);--ccl:var(--cc-ind-light);--ccx:var(--cc-ind-line)}
 .cc-mmr{--ccb:var(--cc-mmr-bold);--ccl:var(--cc-mmr-light);--ccx:var(--cc-mmr-line)}
 .cc-lao{--ccb:var(--cc-lao-bold);--ccl:var(--cc-lao-light);--ccx:var(--cc-lao-line)}
+.cc-hkg{--ccb:var(--cc-hkg-bold);--ccl:var(--cc-hkg-light);--ccx:var(--cc-hkg-line)}
 
 /* the flag glyph: colour emoji, so it must never inherit a text colour or a
    tabular-numeral setting; sized to sit on the label baseline */

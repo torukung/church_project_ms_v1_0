@@ -61,7 +61,7 @@
      .cc-x swatch and no glyph, so a project in a country the palette has never
      heard of still renders a complete, legible row. */
   var FLAG = {
-    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦'
+    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦', HKG: '🇭🇰'
   };
 
   function ccOf(code) {

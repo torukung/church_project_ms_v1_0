@@ -68,7 +68,7 @@
 
       '<div class="p1-head">' +
         '<div class="p1-mark">Church Project-Budget Management Platform' +
-        '<small>Demo v1.0.3 · Asia Area · budget year ' + CBP.CONFIG.BUDGET_YEAR + '</small></div>' +
+        '<small>Demo v1.0.4 · Asia Area · budget year ' + CBP.CONFIG.BUDGET_YEAR + '</small></div>' +
       '</div>';
 
     if (unknown) {

@@ -69,7 +69,11 @@
       case 'review':       return p.status === 3 && !A.gateOpen(p);
       case 'gate':         return p.status === 3 && A.gateOpen(p);
       case 'markApproved': return A.readyToMark(p);
-      case 'start':        return p.status === 2;
+      /* S-08 — the Corporate Agreement is a gate inside status 2: it must be
+         sent out before 2 → 1. Guarded so the ladder still works with
+         contracts.js absent. */
+      case 'start':        return p.status === 2 &&
+                                  (!CBP.contracts || !CBP.contracts.gateMet || CBP.contracts.gateMet(p));
       default:             return D.can(user, action, p);
     }
   };
@@ -91,6 +95,10 @@
     kinds.forEach(function (k) {
       if (k === 'owner')       { if (p.owner)  ids.push(p.owner); }
       else if (k === 'backup') { if (p.backup) ids.push(p.backup); }
+      /* v1.2.0 WP1 (F10) — a named user id addresses that person directly, so
+         A-12 (question assigned to you) can route through A.send like every
+         other rule. Role keys are never user ids, so no v1.1.0 kind changes. */
+      else if (CBP.userById(k)) { ids.push(k); }
       else S().users.forEach(function (u) {
         if (u.role === k && inScope(u, p.country)) ids.push(u.id);
       });
@@ -109,19 +117,43 @@
       .join('\n');
   }
 
-  function send(rule, p, kinds, subject, lines) {
+  /* v1.2.0 WP1 (T-12, F5/F11) — every send still pushes exactly one row into
+     state.outbox; the row simply carries its bucket, its delivery state, the
+     optional immediate action buttons and the deep-link focus id. A digest row
+     additionally queues a line for the folded A-14 mail (A.runDigest). The
+     `actions` argument is optional and every v1.1.0 call site is unchanged. */
+  function send(rule, p, kinds, subject, lines, actions) {
     var ids = A.recipients(p, kinds);
     var names = ids.map(function (i) { return CBP.userName(i); });
-    S().outbox.push({
+    var bucket = (CBP.CONFIG.ALERT_BUCKET && CBP.CONFIG.ALERT_BUCKET[rule]) || 'immediate';
+    if (String(rule).indexOf('SYS-') === 0) bucket = 'immediate';   /* SYS-* always immediate */
+    var row = {
       rule: rule, to: names, to_ids: ids,
       subject: subject, body: bodyFor(p, lines),
-      at: TODAY(), project: p.id
-    });
+      at: TODAY(), project: p.id,
+      bucket: bucket, delivered: bucket === 'immediate',
+      actions: (bucket === 'immediate' && actions) ? actions : [],
+      focus_id: p.id
+    };
+    S().outbox.push(row);
+    if (bucket === 'digest') {
+      ids.forEach(function (uid) {
+        S().digestQueue.push({
+          user_id: uid, rule: rule, project_id: p.id,
+          subject: subject, line: subject, queued_on: TODAY()
+        });
+      });
+    }
     CBP.addLog(p.id, 'system',
       'Alert ' + rule + ' sent to ' + (names.join(', ') || 'no recipient — no owner set') +
       ' — ' + subject);
     return ids;
   }
+
+  /* v1.1.0 — the send helper is now public so egc.js (A-15/A-16) and
+     contracts.js (A-17…A-21) raise alerts in exactly this shape (CORE_API WP1).
+     Signature unchanged: send(rule, project, kinds, subject, lines[]). */
+  A.send = send;
 
   /* ===================================================== project records ===*/
 
@@ -302,13 +334,40 @@
       '. External gate opened — Decision Point and CHaS now tracked.' +
       (remark ? ' Remark: ' + remark : ''));
 
+    /* v1.1.0 (§2) — in Assisted and Auto mode the portal lodges the request
+       itself: one syncQueue op per non-manual gate system, and on a successful
+       op the *submitted* step is recorded with source 'portal' (S-03 — the
+       portal is authoritative for what it lodged). Manual mode is untouched, so
+       the A-02 text only grows when something was actually lodged. */
+    var lodged = [];
+    if (CBP.egc && A.enqueueSync) {
+      CBP.CONFIG.GATE_SYSTEMS.forEach(function (s) {
+        if (D.syncMode(s.key) === 'manual') return;
+        lodged.push(s);
+      });
+    }
+
     send('A-02', p, ['m2', 'owner'],
       '[Gate open] ' + p.id + ' — lodge in Decision Point and CHaS',
       ['Approved for the external gate on ' + D.fmtDateY(TODAY()) + ' by ' + CBP.userName(u.id) + '.',
        'Please lodge the request in Decision Point and in CHaS; each system is tracked ' +
-       'separately with its own day counter until it records an approval.']);
+       'separately with its own day counter until it records an approval.']
+      .concat(lodged.length
+        ? ['Lodged automatically by the portal to ' +
+           lodged.map(function (s) { return s.label; }).join(' and ') + '.']
+        : []));
 
-    return done({ id: id });
+    lodged.forEach(function (s) {
+      var row = A.enqueueSync(p, s.key, 'lodge', { project_id: p.id }, true);
+      if (row && row.status === 'ok') {
+        A.gateEvent(p, s.key, 'submitted', {
+          source: 'portal', confidence: 'authoritative', silent: true,
+          note: 'lodged by the portal at Process 3'
+        });
+      }
+    });
+
+    return done({ id: id, lodged: lodged.map(function (s) { return s.key; }) });
   };
 
   /* Process 3 · Return to Review → 3 → 4. Reason is mandatory (A-03). */
@@ -366,16 +425,69 @@
 
   /* ------------------------------------------- C-15 external gate (R-2) ---*/
 
-  /* One click-done action: system = decision_point ∣ chas, step = submitted ∣
-     approved. M1 only. Each click starts (or stops) that sub-step's counter. */
-  A.gateClick = function (id, system, step, remark) {
-    var u = me(), p = CBP.projectById(id);
-    if (!p) return fail('gate', 'Project ' + id + ' not found.');
-    if (!D.can(u, 'gate')) {
+  /* v1.1.0 (S-02) — every gate write, whoever caused it, is audited in the
+     append-only state.gateEvents ledger. Manual clicks land here too, so the
+     question "who said CHaS approved?" always has an answer. */
+  A.gateLog = function (p, system, step, meta) {
+    meta = meta || {};
+    var st = S();
+    st.gateEvents = st.gateEvents || [];
+    if (typeof st.gateEventSeq !== 'number') st.gateEventSeq = st.gateEvents.length;
+    var row = {
+      id: 'GE' + (++st.gateEventSeq),
+      project_id: p.id,
+      system: system,
+      step: step,
+      at: meta.at || TODAY(),
+      actor: meta.actor || me().id,
+      source: meta.source || 'manual',
+      confidence: meta.confidence || 'authoritative',
+      ref: meta.ref || null,
+      note: meta.note || null
+    };
+    st.gateEvents.push(row);
+    return row;
+  };
+
+  /* F9 — the readyToMark / A-07 block used to sit at the end of gateClick. It
+     is now the shared post-gate hook every write path calls (manual click,
+     confirmed proposal, inbound authoritative event). */
+  A.afterGate = function (p) {
+    if (A.readyToMark(p) && !p.ready_to_mark) {
+      p.ready_to_mark = true;
+      send('A-07', p, ['m1'],
+        '[Action needed] ' + p.id + ' — both gates approved, still at status 3',
+        ['Decision Point and CHaS have both recorded an approval.',
+         'Mark Approved (3 → 2) with both reference numbers to move the project on.']);
+      return true;
+    }
+    return false;
+  };
+
+  /* The gate WRITE path: validate, record on the one gate clock (S-01), append
+     the audit row, raise A-05, run the shared post-gate hook.
+
+     egc.js keeps this function as `A.gateApply` and puts the mode router in
+     front of it as `A.gateEvent` (manual / assisted / auto — see the matrix at
+     the top of egc.js). With egc.js absent, A.gateEvent IS this function, so
+     manual behaviour never depends on the connector being loaded.
+
+     meta: { source, confidence, ref, at, actor, note, remark, silent }. */
+  A.gateEvent = function (p, system, step, meta) {
+    var u = me();
+    meta = meta || {};
+    var source = meta.source || 'manual';
+    if (!p) return fail('gate', 'Project not found.');
+
+    /* guard order is v1.0.4's for a manual click, so every existing message
+       still comes back from the same situation */
+    if (source === 'manual' && !D.can(u, 'gate')) {
       return fail('gate', 'Gate clicks are recorded by the Regional Manager only (R-2).');
     }
     if (p.status !== 3) return fail('gate', 'The gate is tracked only while the project is at status 3.');
-    if (!A.gateOpen(p)) return fail('gate', 'Click Request approved first — the gate is not open yet.');
+    if (source === 'manual' && !A.gateOpen(p)) {
+      return fail('gate', 'Click Request approved first — the gate is not open yet.');
+    }
 
     var sys = CBP.CONFIG.GATE_SYSTEMS.filter(function (s) { return s.key === system; })[0];
     if (!sys) return fail('gate', 'Unknown external system.');
@@ -384,35 +496,59 @@
     p.gate = p.gate || {};
     var g = p.gate[system] = p.gate[system] || {};
 
-    if (step === 'approved' && !g.submitted_at) {
+    /* S-03 — the external system is authoritative for its own approval, so an
+       inbound approval is recorded even when nobody lodged the submitted step
+       in the portal. A manual click keeps the v1.0.4 order rule. */
+    if (step === 'approved' && !g.submitted_at && source === 'manual') {
       return fail('gate', 'Record the request as submitted to ' + sys.label + ' first.');
     }
     if (g[step === 'approved' ? 'approved_at' : 'submitted_at']) {
       return fail('gate', sys.label + ' is already marked ' + step + '.');
     }
 
-    remark = (remark || '').trim();
-    CBP.recordGate(id, system, step, remark || null);
+    var remark = (meta.remark === undefined || meta.remark === null ? '' : String(meta.remark)).trim();
+    var at = meta.at || TODAY();
+    /* R-4 — p.refs is written by Mark Approved alone. An inbound reference
+       lives on the audit row (D.gateSource().ref), which is what the Mark
+       Approved form pre-fills from. */
+    CBP.recordGate(p.id, system, step, remark || null, at);
+
+    A.gateLog(p, system, step, {
+      at: at, actor: meta.actor || u.id, source: source,
+      confidence: meta.confidence || 'authoritative',
+      ref: meta.ref || null, note: meta.note || (remark || null)
+    });
 
     var waited = (step === 'approved' && g.submitted_at)
-      ? D.daysBetween(g.submitted_at, TODAY()) : null;
+      ? D.daysBetween(g.submitted_at, at) : null;
 
+    /* A-05 gains the system, the source and the reference (CORE_API WP1) */
     send('A-05', p, ['owner', 'm2'],
       '[Gate] ' + p.id + ' — ' + sys.label + ' request ' + step,
-      [sys.label + ' recorded as ' + step + ' on ' + D.fmtDateY(TODAY()) + ' by ' +
-       CBP.userName(u.id) + '.' + (waited !== null ? ' That sub-step took ' + D.days(waited) + '.' : ''),
-       remark ? 'Remark: ' + remark : 'No remark recorded.']);
+      [sys.label + ' recorded as ' + step + ' on ' + D.fmtDateY(at) + ' by ' +
+       CBP.userName(meta.actor || u.id) +
+       '.' + (waited !== null ? ' That sub-step took ' + D.days(waited) + '.' : ''),
+       remark ? 'Remark: ' + remark : 'No remark recorded.',
+       'System: ' + sys.label + ' · source: ' + source +
+       ' · reference: ' + (meta.ref || (p.refs || {})[sys.ref_field || system] || 'not recorded yet')]);
 
-    /* A-07 — both systems cleared while the project is still at status 3 */
-    if (A.readyToMark(p) && !p.ready_to_mark) {
-      p.ready_to_mark = true;
-      send('A-07', p, ['m1'],
-        '[Action needed] ' + p.id + ' — both gates approved, still at status 3',
-        ['Decision Point and CHaS have both recorded an approval.',
-         'Mark Approved (3 → 2) with both reference numbers to move the project on.']);
-    }
+    A.afterGate(p);
 
-    return done({ id: id, system: system, step: step });
+    var out = { id: p.id, system: system, step: step, source: source, at: at };
+    if (meta.silent) { S().ui.err = null; out.ok = true; return out; }
+    return done(out);
+  };
+
+  /* One click-done action: system = decision_point ∣ chas, step = submitted ∣
+     approved. M1 only. Each click starts (or stops) that sub-step's counter.
+     v1.1.0 (S-04, F8) — a thin wrapper over the gate event router, so a manual
+     click is audited exactly like an inbound one. Signature unchanged. */
+  A.gateClick = function (id, system, step, remark) {
+    var p = CBP.projectById(id);
+    if (!p) return fail('gate', 'Project ' + id + ' not found.');
+    return A.gateEvent(p, system, step, {
+      source: 'manual', confidence: 'authoritative', remark: remark
+    });
   };
 
   /* Manual 3 → 2. Both reference numbers are mandatory free text (R-4). */
@@ -452,6 +588,14 @@
        'CHaS reference: ' + refCHaS,
        'Implementation progress starts once the project moves to status 1.']);
 
+    /* S-09 — the Corporate Agreement is drafted the moment the project is
+       approved. createFromProject is idempotent (F7), so an early CT6 draft is
+       never duplicated, and the whole step is skipped when contracts.js is not
+       loaded. */
+    if (CBP.contracts && CBP.contracts.createFromProject) {
+      CBP.contracts.createFromProject(p, { silent: true });
+    }
+
     return done({ id: id });
   };
 
@@ -459,6 +603,11 @@
   A.startImplementation = function (id) {
     var u = me(), p = CBP.projectById(id);
     if (!p) return fail('start', 'Project ' + id + ' not found.');
+    /* S-08 — the contract gate is checked before the role message, so the
+       reason the button is refused is the real one. */
+    if (CBP.contracts && CBP.contracts.gateMet && p.status === 2 && !CBP.contracts.gateMet(p)) {
+      return fail('start', 'Corporate Agreement must be sent out first');
+    }
     if (!A.can(u, 'start', p)) {
       return fail('start', 'Only the Regional Manager moves an approved project into implementation.');
     }
@@ -518,14 +667,12 @@
     S().activity.push(entry);
 
     if (type === 'question' && assigned) {
-      /* A-12 — question assigned to you */
-      S().outbox.push({
-        rule: 'A-12', to: [CBP.userName(assigned)], to_ids: [assigned],
-        subject: '[Question] ' + p.id + ' — ' + CBP.userName(u.id) + ' asked you a question',
-        body: bodyFor(p, [body]), at: TODAY(), project: p.id
-      });
-      CBP.addLog(p.id, 'system',
-        'Alert A-12 sent to ' + CBP.userName(assigned) + ' — question assigned.');
+      /* A-12 — question assigned to you. v1.2.0 WP1 (F10): routed through
+         A.send so the row carries bucket/delivered/actions/focus_id like every
+         other alert. Subject and body are byte-identical to v1.1.0. */
+      send('A-12', p, [assigned],
+        '[Question] ' + p.id + ' — ' + CBP.userName(u.id) + ' asked you a question',
+        [body]);
     }
 
     S().ui.draft = null;
@@ -781,6 +928,13 @@
     g[field] = value;
     CBP.addLog(p.id, 'system', CBP.userName(u.id) + ' edited the ' + sys.label + ' gate — ' +
       field.replace(/_/g, ' ') + ' → ' + (value === null ? 'cleared' : value));
+
+    /* S-02 — a correction is part of the gate's history too */
+    A.gateLog(p, system, 'corrected', {
+      at: TODAY(), source: 'manual', confidence: 'authoritative',
+      note: field.replace(/_/g, ' ') + ' → ' + (value === null ? 'cleared' : value)
+    });
+
     return done({ id: p.id, system: system, field: field, value: value });
   };
 
@@ -1179,6 +1333,98 @@
     var as = document.getElementById('actAssignee');
     if (as) draft().assigned_to = as.value;
   }
+
+  /* === v1.2.0 WP1 === clock, digest fold, alert prefs, inline return.
+     CORE_API_v1.2.0.md §6. HANDLERS stays frozen (R9): the Admin › Data and
+     P8 buttons that drive these are page-owned acts registered by WP3/WP4. */
+
+  function isoDay(iso) {
+    /* +1 calendar day, through D.parse/D.addDays; no Date.now() anywhere */
+    var d = D.addDays(D.parse(iso), 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  /* A.runDigest() — fold every undelivered digest row into ONE A-14 mail per
+     recipient (F21/F33). Only called from A.advanceDay or the P8 button, never
+     during a render. Rows are never diverted: the originals stay in the outbox
+     and are flipped delivered:true (F5/F11). */
+  A.runDigest = function () {
+    var s = S(), today = TODAY();
+    var pending = s.outbox.filter(function (m) {
+      return m.bucket === 'digest' && m.delivered === false;
+    });
+    if (!pending.length) return { ok: true, mails: 0 };
+
+    var order = [], byUser = {};
+    pending.forEach(function (m) {
+      (m.to_ids || []).forEach(function (uid) {
+        if (!byUser[uid]) { byUser[uid] = []; order.push(uid); }
+        byUser[uid].push(m);
+      });
+    });
+
+    order.forEach(function (uid) {
+      var rows = byUser[uid];
+      var lines = rows.map(function (m) {
+        var pj = m.project ? CBP.projectById(m.project) : null;
+        var rung = (pj && CBP.ui && CBP.ui.rungSublineText) ? CBP.ui.rungSublineText(pj) : '';
+        return m.subject + (rung ? ' — ' + rung : '') + ' — Open: #/home/' + (m.focus_id || m.project);
+      });
+      s.outbox.push({
+        rule: CBP.CONFIG.DIGEST_RULE || 'A-14',
+        to: [CBP.userName(uid)], to_ids: [uid],
+        subject: 'Daily digest — ' + today,
+        body: lines.join('\n'),
+        at: today, project: null,
+        bucket: 'digest', delivered: true, actions: [], focus_id: null
+      });
+    });
+
+    pending.forEach(function (m) { m.delivered = true; });
+    s.digestQueue = s.digestQueue.filter(function (q) { return !byUser[q.user_id]; });
+    return { ok: true, mails: order.length };
+  };
+
+  /* A.advanceDay(n) — admin only. One digest fold and one scheduled backup per
+     advanced day; CONFIG.TODAY moves in lockstep with state.clock (F22, F34). */
+  A.advanceDay = function (n) {
+    var u = me();
+    if (!D.can(u, 'advance_clock')) return fail('advance', 'Only Admin can move the demo clock.');
+    var days = parseInt(n, 10);
+    if (!days || days < 1) days = 1;
+
+    var s = S(), from = s.clock.today, i;
+    for (i = 0; i < days; i++) {
+      s.clock.today = isoDay(s.clock.today);
+      s.clock.advanced_days += 1;
+      CBP.CONFIG.TODAY = s.clock.today;
+      A.runDigest();
+      if (CBP.persist && CBP.persist.backupNow) {
+        try { CBP.persist.backupNow('scheduled'); } catch (e) {}
+      }
+    }
+    CBP.addLog(null, 'system',
+      'Demo clock advanced ' + days + ' day' + (days === 1 ? '' : 's') +
+      ' — ' + from + ' → ' + s.clock.today + '.');
+    return done({ today: s.clock.today, advanced_days: s.clock.advanced_days });
+  };
+
+  /* A.setAlertPref(user_id, field, value) — field 'digest_hour' | 'mute' */
+  A.setAlertPref = function (userId, field, value) {
+    if (field !== 'digest_hour' && field !== 'mute') return fail('alertpref', 'Unknown alert preference.');
+    var s = S();
+    var pref = s.alertPrefs[userId] = s.alertPrefs[userId] ||
+      { digest_hour: CBP.CONFIG.DIGEST_HOUR, mute: false };
+    pref[field] = field === 'digest_hour' ? parseInt(value, 10) : !!value;
+    return done({ pref: pref });
+  };
+
+  /* A.returnInline(id, reason) — the p6r-* inline composer's confirm path.
+     Same action as the P4/P6 modal return, under the name the inline pattern
+     calls (T-13, F29). */
+  A.returnInline = function (id, reason) { return A.returnToReview(id, reason); };
+
+  /* === end WP1 === */
 
   var HANDLERS = {
 

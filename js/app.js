@@ -32,10 +32,24 @@
        ever a count, because the read marks are a write the viewer cannot make. */
     var unread = D.unreadCount(state.user);
 
-    var counts = { approvals: awaiting, messages: unread };
+    /* v1.1.0 — the Approvals badge also carries the EGC sync proposals waiting
+       to be confirmed (D.proposalBadge), and the new Contracts item carries what
+       this persona owes on an agreement (D.contractBadge). Both engines are
+       guarded so the shell still boots if a connector file is missing. */
+    /* v1.2.0 — the "Needs you" badge is D.needsCount(user), the single count
+       behind the P6 list, the P14 header and this badge (F19: the NAV row and
+       its counter land together). Guarded, so the shell still boots if the
+       flow derive is missing. */
+    var counts = {
+      approvals: D.needsActionable ? D.needsActionable(state.user)
+                            : awaiting + (D.proposalBadge ? D.proposalBadge(state.user) : 0),
+      messages: unread,
+      contracts: D.contractBadge ? D.contractBadge(state.user) : 0
+    };
 
     var nav = CBP.CONFIG.NAV.map(function (n) {
       if (n.group) return '<div class="grp">' + e(n.group) + '</div>';
+      if (n.roles && n.roles.indexOf(state.user.role) === -1) return '';   /* v1.2.0 §7.3 */
       var on = state.ui.route === n.route ||
                (n.route === 'projects' && state.ui.route === 'project');
       var count = n.badge ? (counts[n.badge] || 0) : 0;
@@ -85,7 +99,7 @@
     var opts = order.map(function (id) {
       var u = CBP.userById(id);
       if (!u) return '';
-      var role = CBP.CONFIG.ROLE_LABEL[u.role].split(' · ')[0];
+      var role = (CBP.CONFIG.ROLE_LABEL[u.role] || u.role || '').split(' · ')[0];
       return '<option value="' + e(u.id) + '"' +
              (state.user.id === u.id ? ' selected' : '') + '>' +
              e(u.name + ' — ' + role) + '</option>';
@@ -114,10 +128,18 @@
 
   /* ------------------------------------------------------------ render -- */
 
+  /* v1.2.0 — U.requireRole redirects from inside a page render (F18): it sets
+     the notice and replaces the hash, which fires hashchange a moment later.
+     The hashchange handler clears the notice on every navigation, so without
+     this flag the explanation the guard just wrote would never be seen. */
+  var guardRedirect = false;
+
   CBP.render = function () {
     var state = CBP.state;
     var page = CBP.pages[state.ui.route] || CBP.pages[CBP.CONFIG.FALLBACK_ROUTE];
+    var hashBefore = location.hash;
     var body = page(state);
+    if (location.hash !== hashBefore) guardRedirect = true;
 
     document.body.classList.toggle('comfort', !!state.ui.comfort);
     document.body.classList.toggle('fullbleed', !!page.fullbleed);
@@ -132,8 +154,14 @@
     var notice = state.ui.notice
       ? '<div class="hintbar">' + e(state.ui.notice) + '</div>' : '';
 
+    /* v1.2.0 — the admin console (Alerts, Administration) is not a persona
+       home: it gets a tinted shell so the two are never mistaken for each
+       other at a glance (T-11). */
+    var adminShell = (state.ui.route === 'alerts' || state.ui.route === 'admin')
+      ? ' shell-admin' : '';
+
     document.getElementById('app').innerHTML =
-      '<div class="shell">' + sidebar(state) +
+      '<div class="shell' + adminShell + '">' + sidebar(state) +
       '<div style="min-width:0">' + topbar(state) +
       '<main class="main" id="page">' + body + notice + '</main></div></div>';
   };
@@ -145,17 +173,38 @@
     D = CBP.D; U = CBP.ui; e = CBP.ui.esc;
     CBP.initStore(window.CBP_DATA);
 
+    /* v1.2.0 — T-01: persistence restores BEFORE the first render, from inside
+       boot, and never blocks it: persist.boot() resolves on any storage error.
+       `?nopersist` on the URL query (not the hash) boots in memory (F25). */
+    var restoring = CBP.persist && !CBP.CONFIG.NOPERSIST;
+    if (restoring) {
+      document.getElementById('app').innerHTML = '<div class="restoring">Restoring…</div>';
+      var done = false, go = function () { if (!done) { done = true; start(); } };
+      try { CBP.persist.boot().then(go, go); } catch (err) { go(); }
+    } else {
+      if (CBP.persist && CBP.persist.disable) CBP.persist.disable();
+      start();
+    }
+  }
+
+  function start() {
     var r = readHash();
     CBP.state.ui.route = r.route;
     CBP.state.ui.param = r.param;
     if (r.unknown) CBP.state.ui.notice = 'Unknown route — showing sign in.';
+    CBP.state.ui.focusId = (r.route === 'home' && r.param) ? r.param : null;
     if (!location.hash) location.replace('#/' + CBP.CONFIG.DEFAULT_ROUTE);
 
     window.addEventListener('hashchange', function () {
       var h = readHash();
       CBP.state.ui.route = h.route;
       CBP.state.ui.param = h.param;
-      CBP.state.ui.notice = h.unknown ? 'Unknown route — showing sign in.' : null;
+      /* v1.2.0 — #/home/<id> pre-focuses a Needs-you row; consumed by P6/P10 and
+         cleared here on every navigation (F28) */
+      CBP.state.ui.focusId = (h.route === 'home' && h.param) ? h.param : null;
+      CBP.state.ui.notice = h.unknown ? 'Unknown route — showing sign in.'
+                          : (guardRedirect ? CBP.state.ui.notice : null);
+      guardRedirect = false;
       CBP.render();
     });
 

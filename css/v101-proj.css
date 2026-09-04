@@ -27,13 +27,13 @@
    treatment and is the one chip that never tints. Unselected chips stay white —
    six pastel chips in a row would read as a colour swatch, not a control. */
 .cchip .ccflag{margin-right:1px}
-.cselect .cchip[data-act="p4c-country"].on{
+.cselect .cchip[data-act="p4c-country"].on,.cselect .cchip.ccsel.on{
   background:var(--ccb,var(--glass));border-color:var(--ccx,var(--glass));
   color:var(--ink);box-shadow:inset 3px 0 0 var(--ccx,var(--glass))}
-.cselect .cchip[data-act="p4c-country"].on .n{
+.cselect .cchip[data-act="p4c-country"].on .n,.cselect .cchip.ccsel.on .n{
   background:rgba(34,48,59,.10);color:var(--slate)}
-.cselect .cchip[data-act="p4c-country"].on:hover{border-color:var(--ccx,var(--glass))}
-.cselect .cchip[data-act="p4c-country"].on:focus-visible{
+.cselect .cchip[data-act="p4c-country"].on:hover,.cselect .cchip.ccsel.on:hover{border-color:var(--ccx,var(--glass))}
+.cselect .cchip[data-act="p4c-country"].on:focus-visible,.cselect .cchip.ccsel.on:focus-visible{
   outline-color:var(--ccx,var(--glass))}
 .cselect .cshint{font-size:12.5px;color:var(--muted);flex:1 1 220px;min-width:0}
 

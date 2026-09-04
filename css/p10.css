@@ -117,3 +117,28 @@
   .p10-card{padding:12px}
   .p10-acts .btn{width:100%;flex:1 1 100%}
 }
+
+/* ================== v1.2.0 · the shared needs row inside the phone (T-13) ==
+   .p6-card is a three-column desktop grid (text · age · acts). Inside a 390px
+   frame there is only ever one column, so the row restacks here rather than
+   in p4p6.css, where it would change P6 for everybody. */
+.p10-phone .p6-card{grid-template-columns:minmax(0,1fr);gap:9px;
+  padding:13px 14px;margin-bottom:9px}
+.p10-phone .p6-age{text-align:left;display:flex;align-items:baseline;gap:8px}
+.p10-phone .p6-age .v{font-size:15px}
+.p10-phone .p6-age small{display:inline}
+.p10-phone .p6-acts{justify-content:flex-start}
+.p10-phone .p6-acts .btn{flex:1 1 auto;justify-content:center}
+.p10-phone .p6-who b{font-size:14px}
+
+/* the bullet bar is capped at 460px inside a card; the phone frame is narrower
+   than that, so it takes the whole width it has (WP2 hand-off note) */
+.p10-phone .p6-card .cbar-row{max-width:100%}
+
+/* the inline reason composer, sized for a thumb */
+.p10-phone .p6-inline{max-width:100%}
+.p10-phone .p6-iacts .btn{flex:1 1 auto;justify-content:center}
+
+@media(max-width:400px){
+  .p10-phone .p6-acts .btn{width:100%;flex:1 1 100%}
+}

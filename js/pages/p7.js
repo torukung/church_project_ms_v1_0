@@ -425,10 +425,10 @@
   }
 
   function printHead(state, scopeTxt) {
-    return '<div class="p7-print">' +
+    return U.printPack(   /* F27 — shared U.printPack */
       '<h2>Budget report — ' + e(CBP.CONFIG.BUDGET_YEAR) + '</h2>' +
       '<p>' + e(scopeTxt) + ' · prepared ' + e(D.fmtDateY(CBP.CONFIG.TODAY)) + ' · ' +
-      e(state.user.name) + '</p></div>';
+      e(state.user.name) + '</p>');
   }
 
   function countryName(state, code) {

@@ -471,17 +471,35 @@
     pinDecision:       { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 0 },
     setCeiling:        { admin: 1, m1: 1, m2: 0, m3: 0, viewer: 0 },
     manageUsers:       { admin: 1, m1: 0, m2: 0, m3: 0, viewer: 0 },
-    'export':          { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 1 },
+    'export':          { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 1, ogc: 1, finance: 1 },   /* v1.2.0 F32 */
     watch:             { admin: 1, m1: 1, m2: 1, m3: 1, viewer: 1 },
-    viewGantt:         { admin: 1, m1: 1, m2: 1, m3: 1, viewer: 1 }
+    viewGantt:         { admin: 1, m1: 1, m2: 1, m3: 1, viewer: 1 },
+    /* v1.1.0 — EGC + Contracts (S-16). ogc / finance are contract reviewers
+       only: every row above reads 0/undefined for them, so they get no project
+       controls anywhere. */
+    integrations:      { admin: 1, m1: 0, m2: 0, m3: 0, viewer: 0 },
+    gate_confirm:      { admin: 0, m1: 1, m2: 0, m3: 0, viewer: 0 },
+    contract_view:     { admin: 1, m1: 1, m2: 1, m3: 1, viewer: 1, ogc: 1, finance: 1 },
+    contract_edit:     { admin: 1, m1: 1, m2: 1, m3: 1, viewer: 0 },
+    contract_submit:   { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 0 },
+    contract_review:   { admin: 0, m1: 0, m2: 0, m3: 0, viewer: 0, ogc: 1, finance: 1 },
+    contract_approve_sig: { admin: 1, m1: 1, m2: 0, m3: 0, viewer: 0 },
+    contract_sign:     { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 0 },   /* narrowed by D.signerEligible */
+    contract_send:     { admin: 1, m1: 1, m2: 1, m3: 0, viewer: 0 },
+    contract_admin:    { admin: 1, m1: 0, m2: 0, m3: 0, viewer: 0 },
+    /* v1.2.0 — T-14: exactly these two new rows */
+    backup:            { admin: 1, m1: 0, m2: 0, m3: 0, viewer: 0 },
+    advance_clock:     { admin: 1, m1: 0, m2: 0, m3: 0, viewer: 0 }
   };
+  D.MATRIX = MATRIX;   /* v1.1.0 — exposed read-only for the P9 permission table and audits */
 
   D.can = function (user, action, project) {
     if (!user) return false;
     var row = MATRIX[action];
     if (!row) return false;
     if (!row[user.role]) return false;
-    if (user.read_only && action !== 'export' && action !== 'watch' && action !== 'viewGantt') {
+    if (user.read_only && action !== 'export' && action !== 'watch' && action !== 'viewGantt' &&
+        action !== 'contract_view') {
       return false;
     }
     if (!project) return true;
@@ -912,17 +930,25 @@
      any more and drops out; only status-1 records carry a live timeline at all
      (D.progress says so), so nothing earlier on the ladder is inspected.
      Sorted soonest first. */
-  D.phaseDeadlines = function (projects, warnDays) {
+  /* v1.2.0 · F38 — an OVERDUE branch: with opts.overdue the window opens
+     backwards too, so a phase whose end has already passed is escalated
+     (negative daysLeft, overdue:true, sorted first) instead of dropping out of
+     the list when the clock is advanced. The branch is opt-in because the day-0
+     output of every existing caller must stay byte-identical (T-15 / F25). */
+  D.phaseDeadlines = function (projects, warnDays, opts) {
     var win = (typeof warnDays === 'number' && isFinite(warnDays))
       ? warnDays : CBP.CONFIG.PHASE_WARN_DAYS;
+    var wantOverdue = !!(opts && opts.overdue);
     var out = [];
     (projects || []).forEach(function (p) {
       if (p.status !== 1) return;
       D.phases(p).forEach(function (ph) {
         if (!ph.end) return;
         var left = D.daysBetween(D.today(), D.parse(ph.end));
-        if (left === null || left < 0 || left > win) return;
-        out.push({ p: p, phase: ph, name: ph.phase, end: ph.end, daysLeft: left });
+        if (left === null || left > win) return;
+        if (left < 0 && !wantOverdue) return;
+        out.push({ p: p, phase: ph, name: ph.phase, end: ph.end, daysLeft: left,
+                   overdue: left < 0 });
       });
     });
     return out.sort(function (a, b) {
@@ -968,5 +994,764 @@
     });
     return Math.max(140, Math.ceil(max / 20) * 20);
   };
+
+  /* === v1.2.0 FLOW === =====================================================
+     WP2 · the flow derive layer: one rung model, one "needs you" list, one
+     chain, and the role-home data sets. Pure like the rest of this file — every
+     clock reads CONFIG.TODAY through D.daysSince / D.today, nothing is cached,
+     nothing here touches the DOM or mutates state. */
+
+  function CFG() { return CBP.CONFIG; }
+  function ACT() { return CBP.actions || {}; }
+
+  /* the v1.1.0 stage sub-line body, kept verbatim as sub[0] of every rung so
+     the P3 register row reads exactly what it read in v1.1.0 (F15) */
+  var baseSubLine = D.stageSubLine;
+
+  /* ------------------------------------------------------------ rungs ----- */
+
+  /* the four fixed rungs, top of the ladder first */
+  D.RUNGS = [4, 3, 2, 1];
+
+  D.rungLabel = function (n) { return (CFG().RUNG_LABELS || {})[n] || String(n); };
+
+  /* the rung a declined project died at: the status it left when it was
+     declined. state.events is the record of truth; an activity system line is
+     the fallback (a restored snapshot may carry the line and not the event),
+     then p.declined_from, then the ladder's own answer — a project is declined
+     out of review (F15). */
+  D.diedAt = function (p) {
+    if (!p) return 3;
+    var st = S();
+    var ev = ((st && st.events) || []).filter(function (x) {
+      return x.project_id === p.id && x.to === 'declined' && typeof x.from === 'number';
+    });
+    if (ev.length) return ev[ev.length - 1].from;
+
+    var lines = ((st && st.activity) || []).filter(function (a) {
+      return a.project === p.id && a.type === 'system';
+    });
+    for (var i = lines.length - 1; i >= 0; i--) {
+      var m = /Status\s+(\d)\s*(?:→|->)\s*[Dd]eclined/.exec(lines[i].body || '');
+      if (m) return +m[1];
+    }
+    if (typeof p.declined_from === 'number') return p.declined_from;
+    return 3;
+  };
+
+  /* the rung a live project is standing on */
+  D.rungNumber = function (p) {
+    if (!p) return 4;
+    if (p.status === 'declined') return D.diedAt(p);
+    return (typeof p.status === 'number' && D.RUNGS.indexOf(p.status) > -1) ? p.status : 4;
+  };
+
+  function divisionLabel(key) {
+    var d = (CFG().REVIEW_DIVISIONS || []).filter(function (x) { return x.key === key; })[0];
+    return d ? d.label : key;
+  }
+
+  /* one system's fragment of the Submitted sub-line */
+  function gateFragment(g) {
+    if (g.state === 'approved') {
+      return g.label + ' ✓' + (g.approved_at ? ' ' + D.fmtDate(g.approved_at) : ' cleared');
+    }
+    if (g.state === 'waiting') {
+      return 'with ' + g.label + ' since ' + D.fmtDate(g.submitted_at) + ', ' + D.days(g.days);
+    }
+    return g.label + ' not lodged';
+  }
+
+  /* the Approved rung reads the Corporate Agreement, nothing else */
+  function contractFragment(p) {
+    var cg = D.contractGate ? D.contractGate(p) : null;
+    if (!cg || cg.state === 'na') return null;
+    var c = cg.contract;
+    if (cg.state === 'todo') return { text: 'agreement not drafted yet', tone: 'warm' };
+    if (cg.state === 'drafting') return { text: 'agreement in drafting', tone: '' };
+    if (cg.state === 'review') {
+      var pend = [], settled = [];
+      ((c && c.reviews) || []).forEach(function (r) {
+        var lab = divisionLabel(r.division);
+        if (r.status === 'pending') pend.push(lab);
+        else if (r.status === 'approved') settled.push(lab + ' ✓');
+        else settled.push(lab + ' · ' + r.status);
+      });
+      var txt = pend.length ? 'agreement in review with ' + pend.join(' · ') : 'agreement in review';
+      if (settled.length) txt += ' · ' + settled.join(' · ');
+      return { text: txt, tone: 'warm' };
+    }
+    if (cg.state === 'signing') {
+      var sigs = (c && c.signatories) || [];
+      var signed = sigs.filter(function (s) { return s.status === 'signed'; }).length;
+      return { text: 'agreement signing · ' + signed + ' of ' + sigs.length + ' signatures',
+               tone: 'warm' };
+    }
+    if (cg.state === 'executed') return { text: 'agreement executed — not sent out yet', tone: 'warm' };
+    if (cg.state === 'sent') return { text: 'agreement sent out', tone: '' };
+    if (cg.state === 'active') return { text: 'agreement active', tone: '' };
+    if (cg.state === 'amending') return { text: 'agreement active · amending', tone: '' };
+    return null;
+  }
+
+  /* the Implementation rung reads the phase plan */
+  function phaseFragment(p) {
+    var ph = D.phases(p);
+    if (!ph.length) return { text: 'timeline not entered', tone: 'warm' };
+    var t = D.today(), idx = -1, i;
+    for (i = 0; i < ph.length; i++) {
+      if (t >= D.parse(ph[i].start) && t <= D.parse(ph[i].end)) { idx = i; break; }
+    }
+    if (idx === -1) {
+      for (i = 0; i < ph.length; i++) {
+        if (D.parse(ph[i].end) >= t) { idx = i; break; }
+      }
+    }
+    if (idx === -1) idx = ph.length - 1;
+    var left = D.daysBetween(t, D.parse(ph[idx].end));
+    return {
+      text: 'phase ' + (idx + 1) + ' of ' + ph.length + ' · ends ' + D.fmtDate(ph[idx].end),
+      tone: left !== null && left < 0 ? 'hot' : (left !== null && left <= CFG().PHASE_WARN_DAYS ? 'warm' : '')
+    };
+  }
+
+  /* THE single source for the rung and the lines under it (F15, T-08).
+     sub[0] is the v1.1.0 stage sub-line, byte for byte; sub[1..] carry the
+     v1.2.0 per-rung detail. `systems` on a gate line names the gate systems the
+     renderer should chip with U.gateStep — derive never builds that markup. */
+  D.rungOf = function (p) {
+    var declined = !!p && p.status === 'declined';
+    var n = D.rungNumber(p);
+    var sub = [baseSubLine(p)];
+
+    if (declined) {
+      sub.push({
+        text: 'declined at ' + D.rungLabel(n) +
+              (p.decline_reason ? ' · ' + p.decline_reason : ''),
+        tone: 'hot', chip: ''
+      });
+    } else if (n === 4) {
+      var bits = [];
+      bits.push(p.target_date ? 'target ' + D.fmtDate(p.target_date) : 'no target date');
+      bits.push('owner ' + (p.owner ? CBP.userName(p.owner) : 'unassigned'));
+      sub.push({ text: bits.join(' · '), tone: '', chip: '' });
+    } else if (n === 3) {
+      var gs = D.gate(p);
+      sub.push({
+        text: gs.map(gateFragment).join(' · '),
+        tone: gs.some(function (g) { return g.overdue; }) ? 'hot'
+            : (gs.some(function (g) { return g.state === 'waiting'; }) ? 'warm' : ''),
+        chip: '',
+        systems: gs.map(function (g) { return g.key; })
+      });
+    } else if (n === 2) {
+      var cf = contractFragment(p);
+      if (cf) sub.push({ text: cf.text, tone: cf.tone, chip: '' });
+    } else if (n === 1) {
+      var pf = phaseFragment(p);
+      sub.push({ text: pf.text, tone: pf.tone, chip: '' });
+    }
+
+    return {
+      n: n,
+      label: D.rungLabel(n),
+      declined: declined,
+      diedAt: declined ? n : null,
+      sub: sub
+    };
+  };
+
+  /* F15 — retained one release as the thin alias every P3 row still calls */
+  D.stageSubLine = function (p) { return D.rungOf(p).sub[0]; };
+
+  /* ------------------------------------------------------ waiting model --- */
+
+  /* what a row is waiting on and for how long. Promoted verbatim from the
+     private waiting() in p6.js so P6, P10 and the role homes share one clock
+     (WP3: switch p6.js to this and delete the private copy). */
+  D.waitingFor = function (p) {
+    var A = ACT();
+    if (!p) return { days: 0, at: '', tone: '' };
+    if (p.status === 4) {
+      return { days: D.daysInStage(p), at: 'In development', tone: '' };
+    }
+    var open = D.openGates(p);
+    if (open.length) {
+      var g = open.sort(function (a, b) { return b.days - a.days; })[0];
+      return { days: g.days, at: 'Gate · ' + g.label, tone: g.overdue ? 'hot' : 'warm' };
+    }
+    if (A.readyToMark && A.readyToMark(p)) {
+      var k = D.daysInStage(p);
+      return { days: k === null ? 0 : k, at: 'Both gates ✓', tone: 'warm' };
+    }
+    if (A.gateOpen && A.gateOpen(p)) {
+      return { days: D.daysSince(p.gate_opened_at) || 0, at: 'Gate · nothing lodged', tone: 'warm' };
+    }
+    var w = D.daysInStage(p);
+    return {
+      days: w === null ? 0 : w, at: 'Process 3 · review',
+      tone: (w !== null && w > CFG().REVIEW_THRESHOLD_DAYS) ? 'warm' : ''
+    };
+  };
+
+  /* ------------------------------------------------------------- chain ---- */
+
+  /* who did what, when — the audit line under a needs-you row. state.events is
+     seeded empty, so the chain is built from the three places history actually
+     lives: activity entries of type 'system', gate events, and the agreement's
+     own reviews and signatures (F16). */
+  D.chainFor = function (p) {
+    if (!p) return [];
+    var pid = p.id || p;
+    var st = S();
+    var out = [];
+
+    ((st && st.activity) || []).forEach(function (a) {
+      if (a.project !== pid || a.type !== 'system') return;
+      out.push({ who: CBP.userName(a.author), what: a.body || '', at: a.at || null });
+    });
+
+    ((st && st.gateEvents) || []).forEach(function (g) {
+      if (g.project_id !== pid) return;
+      var sys = (CFG().GATE_SYSTEMS || []).filter(function (s) { return s.key === g.system; })[0];
+      out.push({
+        who: CBP.userName(g.actor),
+        what: (sys ? sys.label : g.system) + ' — request ' + g.step +
+              (g.ref ? ' · ref ' + g.ref : ''),
+        at: g.at || null
+      });
+    });
+
+    var contracts = D.contractsFor ? D.contractsFor({ project: pid }) : [];
+    contracts.forEach(function (c) {
+      (c.reviews || []).forEach(function (r) {
+        if (!r.decided_at) return;
+        out.push({
+          who: r.assignee ? CBP.userName(r.assignee) : divisionLabel(r.division),
+          what: c.id + ' — ' + divisionLabel(r.division) + ' ' + r.status,
+          at: r.decided_at
+        });
+      });
+      (c.signatories || []).forEach(function (s) {
+        if (!s.signed_at) return;
+        out.push({
+          who: s.name || (s.user_id ? CBP.userName(s.user_id) : 'partner'),
+          what: c.id + ' — signed' + (s.party ? ' (' + s.party + ')' : ''),
+          at: s.signed_at
+        });
+      });
+    });
+
+    /* the activity system line and the gate event can be the same sentence
+       twice — one row per thing that happened, not per place it was recorded */
+    var seen = {};
+    return out.map(function (x, i) { return { x: x, i: i }; })
+      .sort(function (a, b) {
+        var da = a.x.at || '', db = b.x.at || '';
+        if (da !== db) return da < db ? -1 : 1;
+        return a.i - b.i;
+      })
+      .map(function (w) { return w.x; })
+      .filter(function (x) {
+        var k = x.who + '|' + x.what + '|' + x.at;
+        if (seen[k]) return false;
+        seen[k] = 1;
+        return true;
+      });
+  };
+
+  /* -------------------------------------------------------- needs you ----- */
+
+  var CONTRACT_KIND = {
+    draft: 'contract_draft', review: 'contract_review',
+    approve_sig: 'contract_approve_sig', sign: 'contract_sign', send: 'contract_send'
+  };
+
+  D.NEEDS_KINDS = ['review', 'gate', 'ready', 'proposal', 'mine_return', 'watching',
+                   'contract_draft', 'contract_review', 'contract_approve_sig',
+                   'contract_sign', 'contract_send'];
+
+  /* the chip a kind answers to (F6 keeps the v1.1.0 headings as chip labels) */
+  D.NEEDS_CHIPS = [
+    { key: 'all',       label: 'All',                    kinds: null },
+    { key: 'reviews',   label: 'Submissions awaiting review', kinds: ['review', 'mine_return'] },
+    { key: 'gates',     label: 'Open gate items',        kinds: ['gate'] },
+    { key: 'ready',     label: 'Ready to Mark Approved', kinds: ['ready'] },
+    { key: 'proposals', label: 'Sync proposals',         kinds: ['proposal'] },
+    { key: 'contracts', label: 'Contracts to complete',
+      kinds: ['contract_draft', 'contract_review', 'contract_approve_sig',
+              'contract_sign', 'contract_send'] },
+    { key: 'mine',      label: 'Mine',                   kinds: null, mine: true },
+    { key: 'watching',  label: 'Waiting on others',      kinds: ['watching'] }
+  ];
+
+  /* the overdue threshold each kind is measured against */
+  function overdueFor(kind, days) {
+    if (days === null || days === undefined) return false;
+    if (kind === 'review' || kind === 'mine_return') return days > CFG().REVIEW_THRESHOLD_DAYS;
+    if (kind === 'gate') return days > CFG().GATE_THRESHOLD_DAYS;
+    if (kind === 'contract_review') return days > CFG().REVIEW_SLA_DAYS;
+    if (kind === 'contract_sign') return days > CFG().SIGN_SLA_DAYS;
+    return false;
+  }
+
+  /* the money bullet on a row: the project against its country's ceiling */
+  function ceilingBarFor(p, scale) {
+    var st = S();
+    if (!p || !st) return { spent: 0, committed: 0, ceiling: 0, scale: scale || 140, byStatus: {} };
+    var mine = st.projects.filter(function (x) { return x.country === p.country; });
+    var c = st.countries.filter(function (x) { return x.code === p.country; })[0];
+    var by = D.spendByStatus(mine);
+    return {
+      spent: by.s1,                                   /* money already in implementation */
+      committed: by.total,
+      ceiling: c ? c.ceiling : 0,
+      scale: scale || 140,
+      byStatus: { 1: by.s1, 2: by.s2, 3: by.s3, 4: by.s4 }
+    };
+  }
+
+  function act(a, label, needs, brass) {
+    return { act: a, label: label, needs: needs || 'none', brass: !!brass };
+  }
+
+  /* has this status-4 project been sent back to the owner? */
+  D.wasReturned = function (p) {
+    if (!p || p.status !== 4) return false;
+    if (p.return_reason) return true;
+    var st = S();
+    var ev = ((st && st.events) || []).some(function (x) {
+      return x.project_id === p.id && x.to === 4 && x.from === 3;
+    });
+    if (ev) return true;
+    return ((st && st.activity) || []).some(function (a) {
+      return a.project === p.id && a.type === 'system' &&
+             /return/i.test(a.body || '');
+    });
+  };
+
+  /* T-09 · one derive, many surfaces. Composes the six v1.1.0 P6 section sets
+     plus D.contractsRequiringAction; every project appears once (a project that
+     is both a gate item and a watching row is a gate item), every proposal and
+     every owed contract action appears once. */
+  D.needsYou = function (user) {
+    if (!user) return [];
+    var st = S();
+    if (!st) return [];
+    var A = ACT();
+    var scoped = D.visibleProjects(user, st.projects, st.countries);
+    var canReview = D.can(user, 'review');
+    var canSubmit = D.can(user, 'submit');
+    var gateOpen = function (p) { return A.gateOpen ? A.gateOpen(p) : D.gateStarted(p); };
+    var bothApproved = function (p) {
+      return A.bothApproved ? A.bothApproved(p) : D.openGates(p).length === 0;
+    };
+    var readyToMark = function (p) { return A.readyToMark ? A.readyToMark(p) : false; };
+
+    var items = [];
+    var seenProject = {};
+    var seenKey = {};
+
+    function pushProject(p, kind, actions, extra) {
+      if (seenProject[p.id] || seenKey[p.id]) return;
+      seenProject[p.id] = 1;
+      seenKey[p.id] = 1;
+      var w = D.waitingFor(p);
+      var days = w.days === null ? 0 : w.days;
+      var it = {
+        key: p.id, id: p.id, kind: kind, project: p, contract: null,
+        waiting_days: days, waiting_at: w.at, tone: w.tone,
+        due_at: null, overdue: overdueFor(kind, days),
+        chain: D.chainFor(p), amount: p.amount || 0,
+        ceilingBar: ceilingBarFor(p), actions: actions || []
+      };
+      if (extra) Object.keys(extra).forEach(function (k) { it[k] = extra[k]; });
+      items.push(it);
+    }
+
+    /* (a) submissions awaiting review — p6.js:213 */
+    if (canReview) {
+      scoped.filter(function (p) { return p.status === 3 && !gateOpen(p); })
+        .forEach(function (p) {
+          pushProject(p, 'review', [
+            act('ask-approve', 'Request approved', 'none', true),
+            act('p6r-return', 'Return to Review', 'reason'),
+            act('p6r-reject', 'Reject', 'reason')
+          ]);
+        });
+
+      /* (b) open gate items — p6.js:214 */
+      scoped.filter(function (p) { return p.status === 3 && gateOpen(p) && !bothApproved(p); })
+        .forEach(function (p) {
+          pushProject(p, 'gate', [act('ask-gate', 'Update gate', 'none', true)]);
+        });
+
+      /* (c) ready to Mark Approved — p6.js:217 */
+      scoped.filter(function (p) { return readyToMark(p); })
+        .forEach(function (p) {
+          pushProject(p, 'ready', [act('ask-mark', 'Mark Approved', 'ref', true)],
+                      { reason: 'mark' });
+        });
+    }
+
+    /* (d) my projects ready to submit — p6.js:218. A returned record is the
+       same row wearing a different hat: it is called out as mine_return so the
+       owner can see it came back. */
+    if (canSubmit) {
+      scoped.filter(function (p) {
+        return p.status === 4 && (p.owner === user.id || p.backup === user.id);
+      }).forEach(function (p) {
+        var returned = D.wasReturned(p);
+        pushProject(p, returned ? 'mine_return' : 'ready',
+          [act('ask-submit', 'Request submitted', 'none', true)],
+          { reason: 'submit' });
+      });
+    }
+
+    /* (e) sync proposals — p6.js:224 */
+    var canConfirm = D.can(user, 'gate_confirm');
+    var canGateEdit = D.can(user, 'gate_edit');
+    (D.openProposals ? D.openProposals(user) : []).forEach(function (r) {
+      if (seenKey[r.id]) return;
+      seenKey[r.id] = 1;
+      var p = CBP.projectById(r.project_id);
+      var days = r.proposed_at ? D.daysSince(r.proposed_at) : 0;
+      var acts = [];
+      if (canConfirm) {
+        acts.push(act('p6x-confirm', 'Confirm', 'none', true));
+        acts.push(act('p6x-dismiss', 'Dismiss', 'reason'));
+        if (canGateEdit) acts.push(act('p6x-correct', 'Correct date', 'ref'));
+      }
+      items.push({
+        key: r.id, id: r.id, kind: 'proposal', project: p, contract: null,
+        proposal: r,
+        waiting_days: days === null ? 0 : days, waiting_at: 'Sync proposal',
+        tone: r.reason === 'conflict' ? 'hot' : '',
+        due_at: null, overdue: overdueFor('proposal', days),
+        chain: p ? D.chainFor(p) : [], amount: p ? (p.amount || 0) : 0,
+        ceilingBar: ceilingBarFor(p), actions: acts
+      });
+    });
+
+    /* (f) Corporate Agreements owed — p6.js:225, kinds mapped per F31 */
+    (D.contractsRequiringAction ? D.contractsRequiringAction(user) : []).forEach(function (r) {
+      var kind = CONTRACT_KIND[r.kind] || 'contract_draft';
+      var c = r.contract;
+      var ckey = c ? c.id : 'draft:' + r.project_id;
+      if (seenKey[ckey]) return;
+      seenKey[ckey] = 1;
+      var p = r.project || CBP.projectById(r.project_id);
+      var days = c ? D.contractAge(c) : (p && p.approved_at ? D.daysSince(p.approved_at) : 0);
+      if (days === null || days === undefined) days = 0;
+      items.push({
+        key: c ? c.id : 'draft:' + r.project_id, id: c ? c.id : r.project_id,
+        kind: kind, project: p, contract: c || null,
+        waiting_days: days, waiting_at: r.label || '', tone: r.overdue ? 'hot' : '',
+        due_at: r.due_at || null, overdue: overdueFor(kind, days),
+        chain: p ? D.chainFor(p) : [],
+        amount: c ? (c.amount_usd || 0) : (p ? (p.amount || 0) : 0),
+        ceilingBar: ceilingBarFor(p),
+        actions: [act('p6x-open-contract', c ? 'Open agreement' : 'Open Contracts', 'none', true)]
+      });
+    });
+
+    /* (g) waiting on others — p6.js:315. F20: a persona with no approval right
+       still sees the queue, read-only, so nobody lands on an empty page. */
+    if (!canReview) {
+      scoped.filter(function (p) { return p.status === 3; })
+        .forEach(function (p) { pushProject(p, 'watching', []); });
+    }
+
+    /* one shared bar scale down the list, or the 100% rule drifts row to row */
+    var scale = D.barScale(items.map(function (it) {
+      return it.ceilingBar.ceiling
+        ? it.ceilingBar.committed / it.ceilingBar.ceiling * 100 : 0;
+    }));
+    items.forEach(function (it) { it.ceilingBar.scale = scale; });
+
+    return items.sort(function (a, b) {
+      if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+      if ((b.waiting_days || 0) !== (a.waiting_days || 0)) {
+        return (b.waiting_days || 0) - (a.waiting_days || 0);
+      }
+      return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+    });
+  };
+
+  D.needsCount = function (user) { return D.needsYou(user).length; };
+  /* WP8 — the sidebar badge counts what the persona can ACT on; `watching` rows
+     keep the page from being empty (F20) but are not a call to action. */
+  D.needsActionable = function (user) {
+    return D.needsYou(user).filter(function (it) { return it.kind !== 'watching'; }).length;
+  };
+
+  /* which chip a row answers to — used by the P6 filter strip */
+  D.needsChipOf = function (item) {
+    var hit = null;
+    D.NEEDS_CHIPS.forEach(function (c) {
+      if (!hit && c.kinds && c.kinds.indexOf(item.kind) > -1) hit = c.key;
+    });
+    return hit || 'all';
+  };
+
+  D.needsFiltered = function (user, chip) {
+    var items = D.needsYou(user);
+    if (!chip || chip === 'all') return items;
+    if (chip === 'mine') {
+      return items.filter(function (it) {
+        var p = it.project;
+        return !!p && (p.owner === user.id || p.backup === user.id);
+      });
+    }
+    var row = D.NEEDS_CHIPS.filter(function (c) { return c.key === chip; })[0];
+    if (!row || !row.kinds) return items;
+    return items.filter(function (it) { return row.kinds.indexOf(it.kind) > -1; });
+  };
+
+  /* ---------------------------------------------------- worker task list -- */
+
+  /* the Worker home's per-project checklist. Status vocabulary is closed:
+     done | todo | blocked | na. */
+  D.projectTaskList = function (p) {
+    if (!p) return [];
+    var href = '#/project/' + p.id;
+    var A = ACT();
+    var declined = p.status === 'declined';
+    var n = D.rungNumber(p);
+    var past = function (rung) { return !declined && n < rung; };   /* the ladder counts down */
+
+    var rows = [];
+    rows.push({ key: 'details', label: 'Project details',
+      status: (p.name && p.country && p.owner) ? 'done' : 'todo', href: href });
+    rows.push({ key: 'budget', label: 'Budget',
+      status: (p.amount > 0) ? 'done' : 'todo', href: href });
+    rows.push({ key: 'phases', label: 'Phases and timeline',
+      status: D.phases(p).length ? 'done' : (declined ? 'na' : 'todo'), href: href });
+    rows.push({ key: 'partner', label: 'Partner details',
+      status: p.primary_implementer ? 'done' : 'todo', href: href });
+    rows.push({ key: 'submit', label: 'Submit for review',
+      status: declined ? 'na' : (p.status === 4
+        ? ((p.amount > 0 && p.owner) ? 'todo' : 'blocked')
+        : 'done'), href: href });
+    rows.push({ key: 'gates', label: 'External gate',
+      status: declined ? 'na' : (past(3) ? 'done'
+        : (p.status === 3 ? (D.openGates(p).length ? 'todo'
+            : (D.gateStarted(p) ? 'done' : 'todo')) : 'blocked')), href: href });
+
+    var cg = D.contractGate ? D.contractGate(p) : null;
+    rows.push({ key: 'contract', label: 'Corporate Agreement',
+      status: (!cg || cg.state === 'na') ? 'na'
+        : (cg.met ? 'done' : (n > 2 ? 'blocked' : 'todo')), href: href });
+
+    rows.push({ key: 'start', label: 'Start implementation',
+      status: declined ? 'na'
+        : (p.status === 1 ? 'done'
+          : (p.status === 2
+              ? ((A.can && A.can(CBP.state.user, 'start', p)) ? 'todo' : 'blocked')
+              : 'blocked')), href: href });
+
+    return rows;
+  };
+
+  /* ------------------------------------------------------- portfolio ------ */
+
+  function exceptionsFor(rows) {
+    var out = [];
+    rows.forEach(function (r) {
+      if (r.over > 0) {
+        out.push({ text: r.name + ' is ' + D.money(r.over) + ' over its ceiling',
+                   tone: 'hot', project_id: null, code: r.code });
+      }
+      r.projects.forEach(function (p) {
+        D.openGates(p).forEach(function (g) {
+          if (!g.overdue) return;
+          out.push({ text: p.id + ' — ' + g.label + ' waiting ' + D.days(g.days),
+                     tone: 'hot', project_id: p.id, code: r.code });
+        });
+        var late = D.pastTarget(p);
+        if (late) {
+          out.push({ text: p.id + ' — target passed ' + D.days(late),
+                     tone: 'warm', project_id: p.id, code: r.code });
+        }
+        if (!p.owner && p.status !== 'declined') {
+          out.push({ text: p.id + ' — no owner assigned', tone: 'warm',
+                     project_id: p.id, code: r.code });
+        }
+      });
+    });
+    return out;
+  }
+
+  D.PORTFOLIO_SORTS = ['coverage', 'committed', 'headroom', 'name', 'queue'];
+
+  D.portfolio = function (user) {
+    var st = S();
+    if (!user || !st) return [];
+    var codes = D.visibleCountries(user, st.countries);
+    var scoped = D.visibleProjects(user, st.projects, st.countries);
+    var rows = D.countryRollup(scoped, st.countries, codes);
+    var sort = (st.ui && st.ui.portfolioSort) || 'coverage';
+
+    var out = rows.map(function (r) {
+      var by = D.spendByStatus(r.projects);
+      var counts = D.statusRollups(r.projects);
+      return {
+        code: r.code, name: r.name, ceiling: r.ceiling,
+        spent: by.s1, committed: r.committed, coverage: r.coverage,
+        cls: D.coverageClass(r.coverage),
+        headroom: r.headroom, over: r.over, queue: r.queue, count: r.count,
+        byStatus: { 1: by.s1, 2: by.s2, 3: by.s3, 4: by.s4 },
+        counts: { s1: counts[1] || 0, s2: counts[2] || 0, s3: counts[3] || 0,
+                  s4: counts[4] || 0, declined: counts.declined || 0 },
+        projects: r.projects,
+        exceptions: exceptionsFor([r])
+      };
+    });
+
+    var scale = D.barScale(out.map(function (r) { return r.coverage || 0; }));
+    out.forEach(function (r) { r.scale = scale; });
+
+    return out.sort(function (a, b) {
+      if (sort === 'name') return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);
+      if (sort === 'committed') return (b.committed || 0) - (a.committed || 0);
+      if (sort === 'headroom') return (a.headroom || 0) - (b.headroom || 0);
+      if (sort === 'queue') return (b.queue || 0) - (a.queue || 0);
+      return (b.coverage || 0) - (a.coverage || 0);
+    });
+  };
+
+  /* ------------------------------------------------------ country home ---- */
+
+  D.countryHome = function (user, code) {
+    var st = S();
+    if (!user || !st) return null;
+    var codes = D.visibleCountries(user, st.countries);
+    if (!code) code = (st.ui && st.ui.homeCountry) || codes[0] || null;
+    if (!code || codes.indexOf(code) === -1) code = codes[0] || null;
+    if (!code) return null;
+
+    var country = st.countries.filter(function (c) { return c.code === code; })[0] || null;
+    var scoped = st.projects.filter(function (p) { return p.country === code; });
+    var rollup = D.countryRollup(scoped, st.countries, [code])[0] || null;
+
+    var needs = D.needsYou(user).filter(function (it) {
+      return it.project && it.project.country === code;
+    });
+
+    var waiting = scoped.filter(function (p) {
+      return p.status === 3 || p.status === 2;
+    }).map(function (p) {
+      var w = D.waitingFor(p);
+      return { project: p, days: w.days === null ? 0 : w.days, at: w.at, tone: w.tone };
+    }).sort(function (a, b) {
+      return (b.days - a.days) || (a.project.id < b.project.id ? -1 : 1);
+    });
+
+    return {
+      code: code, country: country, rollup: rollup, needs: needs,
+      exceptions: rollup ? exceptionsFor([rollup]) : [],
+      waiting: waiting
+    };
+  };
+
+  /* ----------------------------------------------------- reviewer queue --- */
+
+  var ATTESTATIONS = [
+    { key: 'supplements_local',   label: 'Supplements local resources' },
+    { key: 'no_dependency',       label: 'Creates no dependency' },
+    { key: 'not_primary_support', label: 'Church is not the primary support' },
+    { key: 'partner_verified',    label: 'Partner verified' }
+  ];
+
+  D.contractAttestations = function (c) {
+    var past = !!c && c.status !== 'draft';
+    var att = (c && c.attestations) || null;
+    return ATTESTATIONS.map(function (a) {
+      return {
+        key: a.key, label: a.label,
+        ok: att ? !!att[a.key] : past
+      };
+    });
+  };
+
+  D.contractScreening = function (c) {
+    if (!c) return { text: 'No screening recorded', ok: false };
+    var s = c.screening || null;
+    var dd = c.due_diligence || null;
+    if (!s && !dd) {
+      var past = c.status !== 'draft';
+      return { text: past ? 'Sanctions screening ✓ · due diligence ✓'
+                          : 'Screening not started', ok: past };
+    }
+    var scr = s && s.result === 'clear';
+    var dil = dd === 'verified';
+    return {
+      text: 'Sanctions screening ' + (scr ? '✓' : '· ' + ((s && s.result) || 'pending')) +
+            (s && s.date ? ' ' + D.fmtDate(s.date) : '') +
+            ' · due diligence ' + (dil ? '✓' : '· ' + (dd || 'pending')),
+      ok: scr && dil
+    };
+  };
+
+  D.contractVersions = function (c) {
+    if (!c) return [];
+    if (c.versions && c.versions.length) {
+      return c.versions.map(function (v) {
+        return { no: v.no, at: v.at,
+                 author: v.author ? CBP.userName(v.author) : '',
+                 summary: v.summary || '' };
+      });
+    }
+    /* no version list: one row per status transition in the log */
+    return (c.history || []).map(function (h, i) {
+      return { no: i + 1, at: h.at,
+               author: h.actor ? CBP.userName(h.actor) : '',
+               summary: (h.from ? h.from + ' → ' : '') + h.to };
+    });
+  };
+
+  D.reviewerQueue = function (user) {
+    return D.needsYou(user)
+      .filter(function (it) { return it.kind === 'contract_review'; })
+      .map(function (it) {
+        var c = it.contract;
+        it.versions = D.contractVersions(c);
+        it.attestations = D.contractAttestations(c);
+        it.screening = D.contractScreening(c);
+        return it;
+      });
+  };
+
+  /* -------------------------------------------------------- viewer -------- */
+
+  /* Read-only by construction: nothing in this object is an action, an act
+     name or a permission (DoD 6). */
+  D.viewerSummary = function (user) {
+    var st = S();
+    if (!user || !st) return null;
+    var codes = D.visibleCountries(user, st.countries);
+    var ctx = (CBP.W && CBP.W.ctx) ? CBP.W.ctx(st, codes) : null;
+    var scoped = D.visibleProjects(user, st.projects, st.countries);
+    var counts = D.statusRollups(scoped);
+    var rows = D.countryRollup(scoped, st.countries, codes);
+    var ex = exceptionsFor(rows);
+
+    var committed = D.committedTotal(scoped);
+    var ceiling = rows.reduce(function (a, r) { return a + r.ceiling; }, 0);
+    var cov = D.coverage(committed, ceiling);
+
+    return {
+      ctx: ctx,
+      headline: D.money(committed) + ' committed of ' + D.money(ceiling) + ' ceiling · ' +
+                D.pct(cov) + ' coverage · ' + scoped.length + ' projects',
+      counts: { s1: counts[1] || 0, s2: counts[2] || 0, s3: counts[3] || 0,
+                s4: counts[4] || 0, declined: counts.declined || 0, all: scoped.length },
+      coverage: cov, committed: committed, ceiling: ceiling,
+      topExceptions: ex.slice(0, 6),
+      countries: D.portfolio(user)
+    };
+  };
+
+  /* === end FLOW === */
 
 })();

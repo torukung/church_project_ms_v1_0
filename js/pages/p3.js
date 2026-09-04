@@ -15,30 +15,11 @@
   CBP.pages = CBP.pages || {};
 
   /* ------------------------------------------------- v1.0.3 · country identity
-     The flag glyph and the palette class are the two halves of the country
-     identity system (palette defined once in css/app.css, C-21). Both are
-     resolved from the country CODE only, so an unseeded code degrades to the
-     neutral .cc-x swatch and an empty flag rather than throwing or printing
-     "undefined". The demo runs on macOS, where the regional-indicator pairs
-     below render as flags natively — no image files, so file:// stays clean. */
-  var FLAG = {
-    BGD: '🇧🇩', NPL: '🇳🇵', KHM: '🇰🇭', IND: '🇮🇳', MMR: '🇲🇲', LAO: '🇱🇦', HKG: '🇭🇰'
-  };
-
-  function flagOf(code) { return FLAG[String(code || '').toUpperCase()] || ''; }
-
-  /* '' → the palette class for this code, or the neutral fallback */
-  function ccOf(code) {
-    var k = String(code || '').toUpperCase();
-    return FLAG[k] ? 'cc-' + k.toLowerCase() : 'cc-x';
-  }
-
-  /* the glyph as markup — aria-hidden, because the country NAME is always
-     printed beside it and a screen reader must not hear the flag twice */
-  function flagMark(code) {
-    var f = flagOf(code);
-    return f ? '<span class="ccflag" aria-hidden="true">' + f + '</span>' : '';
-  }
+     v1.1.0 (S-12) — the flag glyph and the palette class were triplicated
+     across p3.js, p11.js and widgets.js. They now live once in ui.js as
+     U.ccOf / U.flagMark, and this page calls them. The chip markup below stays
+     P3's own: it keeps its own state key (ui.p3Countries) and its own data-act
+     namespace, which is exactly what F13 asked for. */
 
   /* ------------------------------------------------ country selection ----
      ui.p3Countries — null (or anything unusable) means "every country in
@@ -137,7 +118,7 @@
       });
       /* the palette class rides on the section, so the band header (--ccb) and
          the project-card area (--ccl) both resolve from one declaration */
-      var cc = ccOf(r.code);
+      var cc = U.ccOf(r.code);
       html += '<section class="cgrp ' + cc + '">' + countryBand(r, cc) +
         '<div class="cbody">' +
         rows.map(function (p) { return projectRow(p, state); }).join('') +
@@ -197,10 +178,10 @@
       var c = state.countries.filter(function (x) { return x.code === code; })[0];
       var n = scoped.filter(function (p) { return p.country === code; }).length;
       var on = !all && sel.indexOf(code) > -1;
-      return '<button class="cchip ' + ccOf(code) + (on ? ' on' : '') +
+      return '<button class="cchip ' + U.ccOf(code) + (on ? ' on' : '') +
         '" data-act="p4c-country" ' +
         'data-c="' + e(code) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-        flagMark(code) + e(c ? c.name : code) +
+        U.flagMark(code) + e(c ? c.name : code) +
         ' <span class="n num">' + n + '</span></button>';
     }).join('');
 
@@ -216,7 +197,7 @@
   function countryBand(r, cc) {
     var over = r.over > 0;
     return '<header class="cband ' + cc + '">' +
-      '<div class="cbtitle">' + flagMark(r.code) + '<b>' + e(r.name) + '</b>' +
+      '<div class="cbtitle">' + U.flagMark(r.code) + '<b>' + e(r.name) + '</b>' +
         '<span class="cnt num">' + r.count + ' project' + (r.count === 1 ? '' : 's') + '</span>' +
       '</div>' +
       '<div class="cbfig">' +
@@ -322,6 +303,17 @@
 
   /* action controls, each gated by can() — the viewer renders none of them */
   function rowActions(p, user) {
+    /* v1.1.0 — the sixth pill in the stepper above says a Corporate Agreement
+       is owed or in flight; this is the way straight to it. It is a link, not
+       an approval control, so every persona in scope sees it. */
+    var cg = D.contractGate ? D.contractGate(p) : null;
+    var contract = '';
+    if (cg && ['todo', 'drafting', 'review', 'signing', 'executed'].indexOf(cg.state) > -1 &&
+        D.can(user, 'contract_view')) {
+      contract = '<button class="btn sm" data-act="p6x-open-contract" data-id="' +
+        e(cg.contract ? cg.contract.id : '') + '">Contract</button>';
+    }
+
     var acts = [
       '<a class="btn sm" href="#/project/' + e(p.id) + '">Open project detail</a>',
       '<button class="btn sm" data-act="p4c-comments" data-id="' + e(p.id) + '">Open comments</button>',
@@ -329,7 +321,8 @@
       U.action(user, 'review', p, 'Request approved', { sm: true, brass: true }),
       U.action(user, 'review', p, 'Return to Review', { sm: true }),
       U.action(user, 'gate', p, 'Update gate', { sm: true }),
-      U.action(user, 'markApproved', p, 'Mark Approved', { sm: true, brass: true })
+      U.action(user, 'markApproved', p, 'Mark Approved', { sm: true, brass: true }),
+      contract
     ].filter(Boolean);
     return acts.length ? '<span class="r">' + acts.join('') + '</span>' : '';
   }

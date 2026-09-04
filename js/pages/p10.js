@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  var D = CBP.D, A = CBP.actions, P4 = CBP.p4, e = CBP.ui.esc;
+  var D = CBP.D, U = CBP.ui, A = CBP.actions, P4 = CBP.p4, e = CBP.ui.esc;
   CBP.pages = CBP.pages || {};
 
   var PERIODS = [
@@ -110,8 +110,12 @@
         '</div>';
     }
 
-    /* -------------------------------------------------- (c) approvals ---- */
-    html += approvals(state, user, scoped);
+    /* -------------------------------------------------- (c) approvals ----
+       v1.2.0 (T-13): one list, the same D.needsYou P6 reads, drawn by the same
+       U.needsRow in its compact form. The three v1.1.0 duplicates — queues(),
+       card() and the two read-only "To confirm" / "To sign" lists — are gone;
+       what the phone lost is a second copy of the rules, not an action. */
+    html += approvals(state, user);
 
     /* ---------------------------------------------------- (d) updates ---- */
     html += updates(state, s, scoped);
@@ -124,50 +128,14 @@
     return html + '</div></div>' + P4.modal(state);
   };
 
-  /* =============================================== (c) approvals section == */
-
-  /* The same four queues P6 builds, from the same helpers — read only, never a
-     second copy of the rules. */
-  function queues(user, scoped) {
-    return {
-      reviews: scoped.filter(function (p) { return p.status === 3 && !A.gateOpen(p); }),
-      gates: scoped.filter(function (p) {
-        return p.status === 3 && A.gateOpen(p) && !A.bothApproved(p);
-      }),
-      ready: scoped.filter(function (p) { return A.readyToMark(p); }),
-      mine: scoped.filter(function (p) {
-        return p.status === 4 && (p.owner === user.id || p.backup === user.id);
-      })
-    };
-  }
-
-  function waitLine(p) {
-    var open = D.openGates(p);
-    if (open.length) {
-      var g = open.sort(function (a, b) { return b.days - a.days; })[0];
-      return { days: g.days, at: 'Gate · ' + g.label, tone: g.overdue ? 'hot' : 'warm' };
-    }
-    if (A.readyToMark(p)) return { days: D.daysInStage(p), at: 'Both gates ✓', tone: 'warm' };
-    if (p.status === 4) return { days: D.daysInStage(p), at: 'In development', tone: '' };
-    var w = D.daysInStage(p);
-    return { days: w, at: 'Process 3 · review',
-             tone: (w !== null && w > CBP.CONFIG.REVIEW_THRESHOLD_DAYS) ? 'warm' : '' };
-  }
-
-  function card(p, acts) {
-    var w = waitLine(p);
-    return '<article class="p10-card">' +
-      '<div class="p10-cardhd">' +
-        '<a class="p10-id num" href="#/project/' + e(p.id) + '">' + e(p.id) + '</a>' +
-        '<span class="p10-age ' + w.tone + ' num">' +
-          e(w.days === null ? '—' : D.days(w.days)) + '</span>' +
-      '</div>' +
-      '<b class="p10-name">' + e(p.name) + '</b>' +
-      '<div class="p10-meta">' + e(P4.countryName(p.country)) + ' · ' +
-        '<span class="num">' + e(D.money(p.amount)) + '</span> · ' + e(w.at) + '</div>' +
-      (acts.length ? '<div class="p10-acts">' + acts.join('') + '</div>' : '') +
-      '</article>';
-  }
+  /* =============================================== (c) approvals section ==
+     One derive, one row renderer. The groups below are D.NEEDS_CHIPS in its
+     frozen order, so the phone and the desktop cannot disagree about what is
+     owed or what it is called; the row itself is U.needsRow in compact mode —
+     no bullet bar, no chain, no rung sub-line, the same acts. Return, Reject
+     and Dismiss open the inline composer that p6.js's document-level listener
+     answers, so the phone never opens the refs modal except for Mark Approved,
+     where two mandatory reference numbers are not a one-line answer (R-4). */
 
   function group(title, cards) {
     if (!cards.length) return '';
@@ -175,51 +143,53 @@
       '<span class="n num">' + cards.length + '</span></h3>' + cards.join('') + '</div>';
   }
 
-  function approvals(state, user, scoped) {
-    var canReview = D.can(user, 'review');
-    var canSubmit = D.can(user, 'submit');
-    var q = queues(user, scoped);
+  /* the phone's one-tap way into the agreement: the row's own "Open agreement"
+     control routes to #/contracts/<id>, where the detail view opens and CT3 is
+     one control away — so there is nothing to add here beyond the shared row.
+     CBP.p6.needsRow is U.needsRow with the page-level composer masking P6 and
+     P10 both need; the fallback keeps the phone rendering if p6.js is absent. */
+  function rowHtml(item) {
+    return (CBP.p6 && CBP.p6.needsRow)
+      ? CBP.p6.needsRow(item, { compact: true })
+      : U.needsRow(item, { compact: true });
+  }
 
-    /* (e) viewers and M3 hold no approval queue — a read-only note, then the feed */
-    if (!canReview && !canSubmit) {
-      var waiting = scoped.filter(function (p) { return p.status === 3; }).length;
+  function approvals(state, user) {
+    var items = D.needsYou(user);
+    var owed = items.filter(function (it) {
+      return it.kind !== 'watching' && (it.actions || []).length > 0;
+    });
+
+    /* (e) viewers and M3 hold no approval queue — the same read-only note as
+       v1.1.0, with the rows they may still follow underneath it */
+    var watching = items.filter(function (it) { return it.kind === 'watching'; });
+    if (!owed.length) {
       return '<section class="p10-sec"><h2>Approvals</h2>' +
         '<div class="p10-readonly"><b>Nothing actionable for you</b>' +
         '<span>No approval action is yours to take in this role (permission matrix · RD/RM-3). ' +
-        (waiting
-          ? waiting + ' record' + (waiting === 1 ? ' is' : 's are') +
-            ' at status 3 in your scope; follow them in the updates below.'
+        (watching.length
+          ? watching.length + ' record' + (watching.length === 1 ? ' is' : 's are') +
+            ' at status 3 in your scope, listed below read-only.'
           : 'Nothing in your scope is at status 3.') +
-        '</span></div></section>';
+        '</span></div>' +
+        watching.map(rowHtml).join('') +
+        '</section>';
     }
 
-    var body = '';
-    if (canReview) {
-      body += group('Awaiting your review', q.reviews.map(function (p) {
-        return card(p, [
-          P4.btn('Request approved', 'ask-approve', p.id, { brass: true }),
-          P4.btn('Return to Review', 'ask-return', p.id)
-        ]);
-      }));
-      body += group('Open gate items', q.gates.map(function (p) {
-        return card(p, [P4.btn('Update gate', 'ask-gate', p.id, { brass: true })]);
-      }));
-      body += group('Ready to Mark Approved', q.ready.map(function (p) {
-        return card(p, [P4.btn('Mark Approved', 'ask-mark', p.id, { brass: true })]);
-      }));
-    }
-    if (canSubmit) {
-      body += group('Ready to submit', q.mine.map(function (p) {
-        return card(p, [P4.btn('Request submitted', 'ask-submit', p.id, { brass: true })]);
-      }));
-    }
-
-    var n = (canReview ? q.reviews.length + q.gates.length + q.ready.length : 0) +
-            (canSubmit ? q.mine.length : 0);
+    var body = D.NEEDS_CHIPS.filter(function (c) {
+      return !!c.kinds;                      /* 'all' and 'mine' are not groups */
+    }).map(function (c) {
+      return group(c.label, items.filter(function (it) {
+        return c.kinds.indexOf(it.kind) > -1;
+      }).map(rowHtml));
+    }).join('');
 
     return '<section class="p10-sec">' +
-      '<h2>Approvals<span class="n num">' + n + '</span></h2>' +
+      '<h2>Needs you<span class="n num">' + owed.length + '</span></h2>' +
       (body || '<div class="p10-empty">Nothing is waiting on you right now.</div>') +
+      '<p class="p10-note">A reason is typed on the row itself. Mark Approved opens the ' +
+      'reference form, and an agreement opens in the register, where the signing ceremony ' +
+      'needs the whole document scrolled before a signature is taken.</p>' +
       '</section>';
   }
 

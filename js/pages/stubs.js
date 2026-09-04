@@ -6,6 +6,11 @@
   CBP.pages = CBP.pages || {};
 
   var SPEC = {
+    contracts: {
+      title: 'Contracts',
+      lead: 'Corporate Agreement register: draft, review (OGC ∥ Finance), sign, send out — the last gate before Implementation.',
+      items: ['CT1 register with country chips', 'CT2 agreement detail', 'CT3 signing ceremony', 'CT4 templates', 'CT5 signature management', 'CT6 new agreement from a project']
+    },
     dashboard: {
       title: 'Dashboard',
       lead: 'Multiple user-arranged dashboards from a widget library, with one global country ' +
@@ -72,6 +77,14 @@
               'SSO button present, not wired',
               'Mobile toggle → #/mobile']
     },
+    /* v1.2.0 — D4 role homes. Real pages p13–p17 load AFTER this file and
+       overwrite these entries (F30). */
+    home: { title: 'Home', lead: 'Dispatches to the role home page: Worker, Country Head, Portfolio, Reviewer or Viewer.', items: ['Route `home` reads the persona role', '#/home/<id> pre-focuses a Needs-you row'] },
+    worker: { title: 'My projects', lead: 'P13 Worker home: a task list per project with country headroom and a returned-to-you strip.', items: ['D.projectTaskList rows', 'GOV.UK task-list grammar'] },
+    country: { title: 'Country home', lead: 'P14 Country Head home: Needs you on top, budget track for the scope, exceptions and waiting list.', items: ['D.needsYou', 'budgettrack widget ctx'] },
+    portfolio: { title: 'Portfolio', lead: 'P15 Regional Head home: countries as an ordered bar list → country → project.', items: ['D.portfolio', 'two clicks to a project'] },
+    reviews: { title: 'My reviews', lead: 'P16 Reviewer home: money on the left, versions + attestations + screening on the right.', items: ['D.reviewerQueue', 'Approve / Return inline'] },
+    viewer: { title: 'Summary', lead: 'P17 Viewer home: curated read-only summary with one Export.', items: ['D.viewerSummary', 'U.printPack'] },
     mobile: {
       title: 'Mobile quick view',
       lead: 'Device-detected mode showing approvals and updates only, with period chips and a ' +

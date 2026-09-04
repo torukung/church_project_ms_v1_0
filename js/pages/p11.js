@@ -185,6 +185,7 @@
     }
 
     html += rail(state, user, mayWrite);
+    html += alertPanel(state, user, mayWrite);
     html += controls(state, ui, user, mayWrite, unreadShown, searched.length, unreadAll);
     html += list;
 
@@ -250,6 +251,58 @@
     }).join('');
 
     return U.card('Pinned projects', '<div class="p11-pins">' + cards + '</div>');
+  }
+
+  /* ============================================ v1.2.0 · (a2) My alerts ====
+     T-12 — the two preferences a person actually holds over their own mail:
+     what hour the daily digest lands, and whether it lands at all. Both are
+     per-user (state.alertPrefs[user.id]) and both go through A.setAlertPref, so
+     the rule catalogue on P8 stays the Admin's surface and this stays theirs.
+
+     The viewer sees the same panel read-only rather than not at all: a
+     read-only account still receives mail, and hiding the control would leave
+     them unable to see when it arrives. */
+
+  function alertPanel(state, user, mayWrite) {
+    var pref = (state.alertPrefs || {})[user.id] ||
+      { digest_hour: CBP.CONFIG.DIGEST_HOUR, mute: false };
+    var hour = (pref.digest_hour === undefined || pref.digest_hour === null)
+      ? CBP.CONFIG.DIGEST_HOUR : pref.digest_hour;
+    var muted = !!pref.mute;
+
+    function hh(n) { return (n < 10 ? '0' + n : String(n)) + ':00'; }
+
+    var body;
+    if (!mayWrite) {
+      body = '<div class="p4-fields">' +
+        '<div class="p4-field"><span>Daily digest arrives at</span><b class="num">' +
+          e(hh(hour)) + '</b></div>' +
+        '<div class="p4-field"><span>Alert mail</span><b>' +
+          (muted ? 'muted' : 'on') + '</b></div>' +
+        '</div>' +
+        '<p class="p4-note">Read-only for your role — these are the settings your account ' +
+        'carries today.</p>';
+    } else {
+      var opts = '';
+      for (var h = 0; h < 24; h++) {
+        opts += '<option value="' + h + '"' + (h === hour ? ' selected' : '') + '>' +
+          e(hh(h)) + '</option>';
+      }
+      body = '<div class="p4-fields p6-alerts">' +
+        '<label class="p4-field" for="p11digest"><span>Daily digest arrives at</span>' +
+          '<select class="sel sm" id="p11digest" data-act="p11-pref" data-f="digest_hour">' +
+          opts + '</select></label>' +
+        '<label class="p4-field" for="p11mute"><span>Mute my alert mail</span>' +
+          '<input type="checkbox" id="p11mute" data-act="p11-pref" data-f="mute"' +
+          (muted ? ' checked' : '') + '></label>' +
+        '</div>' +
+        '<p class="p4-note">Digest rules wait in the queue and are folded into one ' +
+        e(CBP.CONFIG.DIGEST_RULE) + ' mail at the hour above; immediate rules are never held ' +
+        'back, because a return or a rejection is not news that can wait. Muting stops the ' +
+        'mail, not the record: everything still lands on the project and in this hub.</p>';
+    }
+
+    return U.card('My alerts', body);
   }
 
   /* ====================================================== (b) controls ==== */
@@ -535,6 +588,20 @@
         refocus('p11reply');
       }
     }
+  });
+
+  /* the two alert preferences — a change, not a click, and the write goes
+     through A.setAlertPref like every other mutation on this page */
+  document.addEventListener('change', function (ev) {
+    if (!on11()) return;
+    var t = ev.target;
+    if (!t || !t.getAttribute || t.getAttribute('data-act') !== 'p11-pref') return;
+    var f = t.getAttribute('data-f');
+    var user = CBP.state.user;
+    if (!D.can(user, 'comment')) return;          /* the viewer's panel is read-only */
+    /* A.setAlertPref renders itself (WP1) — a second render here would be one
+       save too many */
+    CBP.actions.setAlertPref(user.id, f, f === 'mute' ? t.checked : t.value);
   });
 
   /* typing: one state mutation, one render pass, caret restored */

@@ -489,3 +489,114 @@ details.prj[open] .chev{transform:rotate(180deg)}
    tabular-numeral setting; sized to sit on the label baseline */
 .ccflag{font-style:normal;font-size:14px;line-height:1;flex:none;
   font-variant-numeric:normal;letter-spacing:0}
+
+/* ================================ v1.1.0 · gate step (U.gateStep · C-15b) ==
+   One fragment, four surfaces (P3 panel, P4 tracker, P6 inbox, P10). Chips
+   reuse the pill grammar already in this file — no new colours, no new
+   family, nothing that a page stylesheet has to know about. */
+.gs{min-width:0}
+.gs-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.gs-hd b{font-size:13px;font-weight:600}
+.gs-mode{font-size:11.5px;font-weight:600;color:var(--muted)}
+.gs-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}
+.gs-sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.gs-sub b{color:var(--slate);font-weight:600}
+.gs-src{font-size:11.5px;font-weight:600;color:var(--slate);background:#EFF1EE;
+  border:1px solid var(--line);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.gs-src.adv{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.gs-ref{font-size:12px;color:var(--muted)}
+.gs-sync{font-size:11.5px;font-weight:600;border:1px solid var(--line);border-radius:999px;
+  padding:1px 9px;color:var(--muted);white-space:nowrap}
+.gs-sync.ok{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.gs-sync.queued{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.gs-sync.failed{color:var(--rose);border-color:#E5C6C4;background:var(--rose-bg)}
+.gs-link{font-size:12px;font-weight:600;color:var(--glass);text-decoration:none;white-space:nowrap}
+.gs-link:hover{text-decoration:underline}
+
+/* --------- v1.1.0 · P10 quick-view rows for proposals and contracts -------
+   The two new lists reuse .p10-card exactly (css/p10.css); what they add is a
+   card that is itself the link, which a <button> needs spelling out. Kept here
+   rather than in p10.css so the whole v1.1.0 UI delta sits in one file. */
+.p10-link{display:block;width:100%;text-align:left;text-decoration:none;color:inherit}
+.p10-link:hover{border-color:var(--brass)}
+
+/* ======================================================= v1.2.0 FLOW =====
+   WP2 · the four-rung stepper's new parts, plus the shared list grammars the
+   needs-you row, the worker task list, the chain line and the portfolio bar
+   row are drawn with. Nothing above this fence is touched. */
+.sl.sl-cur{box-shadow:0 0 0 2px rgba(0,0,0,.045)}
+.sl.sl-dead{border-color:#E3C2BF;color:var(--rose);background:#FCF6F5}
+.sl.sl-dead s{text-decoration:line-through;opacity:.75}
+.sl-tag{font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
+  color:#fff;background:var(--rose);border-radius:999px;padding:1px 7px;margin-left:2px}
+.sl-sub{display:block;margin-top:6px;font-size:12.5px;color:var(--muted)}
+/* audit G2 — the four-rung ladder inside Needs-you rows (P6, P10, P14) */
+.p6-inline-step{margin-top:8px}
+.p6-inline-step .stepline{row-gap:4px}
+.p6-inline-step .sl{padding:2px 7px;font-size:11px}
+.p6-inline-step .conn{width:8px;min-width:8px}
+.p6-inline-step .sl small{display:none}
+.p6-inline-step .sl-sub{margin-top:4px;font-size:12px}
+.p6-inline-step.compact .sl-sub{display:none}
+.p6-inline-step.compact .sl{padding:1px 6px;font-size:11px}
+.p6-inline-step.compact .conn{width:6px}
+.sl-line{display:block;font-variant-numeric:tabular-nums}
+.sl-line.warm{color:#8E5C59}
+.sl-line.hot{color:var(--rose);font-weight:600}
+.sl-gates{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+
+/* ---- worker task list (GOV.UK grammar: whole row, sentence-case tag) ---- */
+.tasklist{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line)}
+.tasklist li{border-bottom:1px solid var(--line)}
+.tasklist a{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 4px;text-decoration:none;color:var(--ink);font-size:13px}
+.tasklist a:hover{background:rgba(0,0,0,.02)}
+.tasklist .tl-lab{font-weight:600}
+.tasklist .tl-tag{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;
+  border:1px solid var(--line);color:var(--slate);background:#fff;white-space:nowrap}
+.tasklist .tl-tag.tl-done{border-color:#B9D2C9;color:var(--verd);background:var(--verd-bg)}
+.tasklist .tl-tag.tl-blocked{border-style:dashed;color:var(--muted)}
+.tasklist .tl-tag.tl-na{border-style:dashed;color:var(--muted)}
+.tasklist li.tl-done .tl-lab{color:var(--muted);font-weight:500}
+
+/* ---- who did what, when ---- */
+.chain{list-style:none;margin:6px 0 0;padding:0;font-size:12px;color:var(--muted)}
+.chain li{display:flex;gap:8px;align-items:baseline;padding:1px 0}
+.chain b{color:var(--slate);font-weight:600;flex:none}
+.chain span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain time{flex:none;font-variant-numeric:tabular-nums}
+
+/* ---- bullet bar row (needs-you row + portfolio ordered list) ---- */
+.cbar-row{display:flex;align-items:center;gap:14px;padding:9px 4px;text-decoration:none;
+  color:var(--ink);border-bottom:1px solid var(--line)}
+.cbar-row:hover{background:rgba(0,0,0,.02)}
+.cbar-name{flex:0 0 200px;display:flex;flex-direction:column;font-size:13px}
+.cbar-name small{color:var(--muted);font-size:11.5px}
+.cbar-bar{flex:1 1 auto;min-width:120px}
+.cbar-fig{flex:0 0 170px;text-align:right;display:flex;flex-direction:column}
+.cbar-fig small{color:var(--muted);font-size:11.5px}
+.p6-card .cbar-row{display:block;border-bottom:0;padding:2px 0 0;max-width:460px}
+.p6-card .cbar-row .p2-bwrap{padding:18px 0 0}
+.p6-card .cbar-row .p2-bar{height:12px}
+
+/* ---- the inline reason composer (T-10 · p6r-*) ---- */
+.p6-inline{margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:var(--r);
+  background:#fff}
+.p6-inline textarea{width:100%;min-height:44px;font:inherit;font-size:12.5px}
+.p6-iacts{display:flex;gap:8px;margin-top:6px}
+.p6-inline-step{margin-top:4px}
+.p6-card.is-focused{box-shadow:0 0 0 2px var(--glass)}
+
+/* ====================================================== v1.2.0 SHELL =====
+   WP4 · exactly two shell-level additions: the tint that tells the admin
+   console apart from a persona home (T-11), and the pre-render placeholder
+   app.js paints while persistence restores (T-01). Nothing above this fence
+   is touched. */
+.shell-admin .topbar{background:linear-gradient(180deg,#FBF8F1 0%,#F7F3E9 100%);
+  border-bottom-color:#E4D9BE}
+.shell-admin .side{background:#FAF8F2;border-right-color:#E7DFCB}
+.shell-admin .side a.on{box-shadow:inset 3px 0 0 var(--brass);background:#F2EDDF}
+.shell-admin .main{box-shadow:inset 0 3px 0 -1px rgba(154,120,51,.28)}
+
+.restoring{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  font-size:14px;color:var(--muted);letter-spacing:.01em}

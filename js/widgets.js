@@ -571,6 +571,9 @@
      entry for it — the same mapping store.js and actions.js use */
   W.defaultSpan = function (id) {
     var w = W.byId(id);
+    /* v1.1.0 — a widget may state its own default span; no widget registered
+       before this release carries one, so every existing answer is unchanged */
+    if (w && w.span) return w.span;
     return (w && !w.bare && w.size !== 'full') ? 1 : 3;
   };
 
@@ -1425,6 +1428,81 @@
         ' countries and an over-run crosses it with the hatch. 2024 and 2025 are the ' +
         'seeded budget history, ' + e(CBP.CONFIG.BUDGET_YEAR) + ' sums the live ' +
         'commitments, and 2027 is the plan marker (◆) from the Forecasting tab.</p>';
+    }
+  });
+
+  /* ------------------------------------ v1.1.0 · corporate agreements ----
+     Catalogue-only (S-15 / open item 6): the widget is registered so it can be
+     added from Edit layout, but it is deliberately NOT seeded onto any board,
+     so the RD-2 digest and the P2 attention headline stay byte-identical to
+     v1.0.4 on the v1.0.4 fixture set. W.exceptionSet is untouched.
+
+     Two halves, both derived: the counts by status as small stat tiles in the
+     .p2 grammar, and the agreements that are actually waiting on the person
+     looking at the board, each tinted with its country's C-21 identity. */
+  reg({
+    id: 'contracts',
+    title: 'Corporate agreements',
+    blurb: 'Agreements by status across the scope, and the drafting, review, ' +
+           'signature and send-out steps owed to the signed-in user.',
+    size: 'half',
+    span: 2,                 /* two of the three tracks: tiles + a readable list */
+    more: 'Open contracts →',
+    moreHref: '#/contracts',
+    render: function (state, codes, ctx) {
+      ctx = ctx || W.ctx(state, codes);
+      if (!CBP.contracts || !D.contractRollups) {
+        return W.empty('The Corporate Agreement register is not loaded.');
+      }
+
+      var inScope = {};
+      ctx.projects.forEach(function (p) { inScope[p.id] = true; });
+
+      var all = D.contractsFor({ user: state.user }).filter(function (c) {
+        return codes.indexOf(c.country) > -1;
+      });
+
+      var byStatus = {};
+      all.forEach(function (c) { byStatus[c.status] = (byStatus[c.status] || 0) + 1; });
+
+      /* only the rungs that carry something, plus the two the ToR always wants
+         visible (draft and sent) so the tile row keeps its shape on a quiet day */
+      var keep = CBP.CONFIG.CONTRACT_STATUS_ORDER.filter(function (k) {
+        return byStatus[k] || k === 'draft' || k === 'sent';
+      });
+
+      var tiles = keep.map(function (k) {
+        var row = CBP.CONFIG.CONTRACT_STATUS[k];
+        var n = byStatus[k] || 0;
+        return '<div class="p12w-tile t-' + e(row.tone) + (n ? '' : ' zero') + '">' +
+          '<span class="v num">' + n + '</span>' +
+          '<span class="k">' + e(row.label) + '</span></div>';
+      }).join('');
+
+      var owed = D.contractsRequiringAction(state.user).filter(function (r) {
+        return r.project ? codes.indexOf(r.project.country) > -1 : true;
+      });
+
+      var list = owed.length
+        ? '<div class="p12w-list">' + owed.map(function (r) {
+            var code = r.project ? r.project.country : (r.contract ? r.contract.country : null);
+            var name = r.contract ? r.contract.id : (r.project ? r.project.id : '');
+            var href = r.contract ? '#/contracts/' + r.contract.id : '#/contracts';
+            return '<a class="p12w-row ' + W.ccOf(code) + '" href="' + e(href) + '">' +
+              U.attentionPill(r.overdue ? 'overdue' : r.kind, r.overdue ? 'rose' : 'brass') +
+              '<span class="p12w-tx"><b>' + e(name + ' · ' + r.label) + '</b>' +
+              '<span>' + W.flagMark(code) + e(W.countryName(state, code) +
+                (r.project ? ' · ' + r.project.name : '') +
+                (r.due_at ? ' · due ' + D.fmtDate(r.due_at) : '')) + '</span></span></a>';
+          }).join('') + '</div>'
+        : W.empty('No agreement in this scope is waiting on you — nothing to draft, review, ' +
+                  'sign or send out.');
+
+      return '<div class="p12w-tiles">' + tiles + '</div>' + list +
+        '<p class="p2-note">' + e(W.plural(all.length, 'agreement') + ' in ' +
+          W.scopeTitle(state, codes) + '. An agreement is required at or above ' +
+          D.money(CBP.CONFIG.CONTRACT_THRESHOLD_USD) + ' and must reach “Sent out” before ' +
+          'implementation can start.') + '</p>';
     }
   });
 

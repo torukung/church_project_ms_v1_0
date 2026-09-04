@@ -15,12 +15,13 @@
 
   /* where each role lands after signing in — the first screen on which that
      role has something to do */
+  /* v1.2.0 — every role lands on `home`, which dispatches to its role page
+     (T-11). The v1.1.0 per-role targets are kept only as a comment for
+     the record: m1 approvals · m2/m3 projects · viewer/admin dashboard ·
+     ogc/finance contracts. */
   var LANDING = {
-    m1:     'approvals',
-    m2:     'projects',
-    m3:     'projects',
-    viewer: 'dashboard',
-    admin:  'dashboard'
+    m1: 'home', m2: 'home', m3: 'home', viewer: 'home', admin: 'home',
+    ogc: 'home', finance: 'home'
   };
 
   CBP.landingFor = function (user) {
@@ -30,7 +31,7 @@
   };
 
   /* the five demo accounts, in the order the walkthrough uses them */
-  var CARDS = ['anik', 'daniel', 'priya', 'santoso', 'admin'];
+  var CARDS = ['anik', 'daniel', 'priya', 'elena', 'santoso', 'admin'];
 
   function scopeLine(u, state) {
     var codes = D.visibleCountries(u, state.countries);

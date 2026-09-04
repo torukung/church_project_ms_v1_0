@@ -1,7 +1,8 @@
 /* pages/p8.js — Alert centre, route #/alerts (build-plan item 7).
-   Four surfaces: the outbox that stands in for real sending, the A-01…A-14 rule
+   Four surfaces: the outbox that stands in for real sending, the A-01…A-21 rule
    catalogue with per-rule on/off, the C-14 template editor with a live preview
-   (one rule fully editable — A-08), and the RD-2 director exception digest.
+   (A-08 and every v1.1.0 rule fully editable), and the RD-2 director exception
+   digest.
 
    Nothing here sends anything: state.outbox is filled by CBP.actions during the
    demo walk and this page only renders it. The digest is built from
@@ -16,7 +17,7 @@
   var D = CBP.D, U = CBP.ui, W = CBP.W, e = CBP.ui.esc;
   CBP.pages = CBP.pages || {};
 
-  /* ------------------------------------------ A-01…A-14, from docs/05 ---- */
+  /* ------------- A-01…A-14 from docs/05, A-15…A-21 added in v1.1.0 -------- */
   var RULES = [
     { id: 'A-01', trigger: 'Request submitted (4→3) by M2', to: 'M1, owner',
       timing: 'Immediate', kind: 'Approval stage' },
@@ -48,14 +49,46 @@
     { id: 'A-13', trigger: 'Country coverage crosses 100%', to: 'M2, M1, Admin',
       timing: 'Immediate, once per year per country', kind: 'Budget visibility' },
     { id: 'A-14', trigger: 'Weekly digest', to: 'Per user preference',
-      timing: 'Monday 07:00 local', kind: 'Digest' }
+      timing: 'Monday 07:00 local', kind: 'Digest' },
+
+    /* v1.1.0 · F1 EGC — the two rules the connector raises */
+    { id: 'A-15', trigger: 'Sync failed — outbound op to CHaS / Decision Point failed after retries',
+      to: 'Admin, M1', timing: 'Immediate', kind: 'Integration', editable: true },
+    { id: 'A-16', trigger: 'Gate proposal awaiting confirmation',
+      to: 'M1', timing: 'Immediate', kind: 'Integration', editable: true },
+
+    /* v1.1.0 · F2 Corporate Agreement — the five rules of the contract gate */
+    { id: 'A-17', trigger: 'Corporate Agreement drafting required — project Marked Approved',
+      to: 'Owner, M2', timing: 'Immediate', kind: 'Contract', editable: true },
+    { id: 'A-18', trigger: 'Contract review due — OGC / Finance',
+      to: 'Reviewer', timing: 'At submit, then at the review SLA', kind: 'Contract', editable: true },
+    { id: 'A-19', trigger: 'Signature due',
+      to: 'Signatory', timing: 'At signing start, then at the signature SLA',
+      kind: 'Contract', editable: true },
+    { id: 'A-20', trigger: 'Contract idle 14 d',
+      to: 'Owner, M2', timing: 'Derived, repeating', kind: 'Contract', editable: true },
+    { id: 'A-21', trigger: 'Agreement sent out — Implementation may start',
+      to: 'Owner, M1, M2', timing: 'Immediate', kind: 'Contract', editable: true }
   ];
 
   /* ids CBP.actions emits that sit outside the numbered catalogue */
   var SYSTEM_RULES = {
     'SYS-approved': 'Marked Approved 3 → 2 — resolves the A-07 prompt',
-    'SYS-implementation': 'Implementation started 2 → 1'
+    'SYS-implementation': 'Implementation started 2 → 1',
+    /* v1.2.0 — the four contract system lines (audit F13); all immediate */
+    'SYS-contract-returned': 'Corporate Agreement returned by a reviewer',
+    'SYS-contract-cleared': 'Corporate Agreement cleared review — approved for signature',
+    'SYS-contract-executed': 'Corporate Agreement executed — all signatures in',
+    'SYS-contract-declined': 'Corporate Agreement declined'
   };
+  /* v1.2.0 — bucket per rule from CONFIG (T-12); SYS-* are always immediate.
+     CATALOGUE_ONLY rows are never raised by any code path (F12). */
+  function bucketOf(id) {
+    if (/^SYS-/.test(id)) return 'immediate';
+    return (CBP.CONFIG.ALERT_BUCKET || {})[id] || 'immediate';
+  }
+  function catalogueOnly(id) { return (CBP.CONFIG.ALERT_CATALOGUE_ONLY || []).indexOf(id) > -1; }
+  RULES.forEach(function (r) { r.bucket = bucketOf(r.id); r.raised = !catalogueOnly(r.id); });
 
   var TOKENS = [
     { t: '{{project.id}}',   d: 'record id' },
@@ -63,7 +96,15 @@
     { t: '{{country}}',      d: 'country name' },
     { t: '{{days}}',         d: 'days in the current stage' },
     { t: '{{owner}}',        d: 'owner name' },
-    { t: '{{threshold}}',    d: 'stage threshold in days' }
+    { t: '{{threshold}}',    d: 'stage threshold in days' },
+    /* v1.1.0 — the EGC and Corporate Agreement merge fields. Same double-brace
+       grammar as every token above, so one merge() serves the whole palette. */
+    { t: '{{system}}',       d: 'external system name' },
+    { t: '{{source}}',       d: 'how the portal learned it' },
+    { t: '{{ref}}',          d: 'external reference number' },
+    { t: '{{contract_no}}',  d: 'Corporate Agreement number' },
+    { t: '{{division}}',     d: 'reviewing division' },
+    { t: '{{signer}}',       d: 'the signatory now due' }
   ];
 
   var DEFAULT_TPL = {
@@ -73,6 +114,64 @@
       '{{days}} days, past the {{threshold}}-day threshold for this stage.\n\n' +
       'Please review the record and move it on, or record why it is held.\n\n' +
       'Open the project: #/project/{{project.id}}'
+  };
+
+  /* v1.1.0 — one editable template per new rule, in the same shape. The editor
+     picks which rule it is editing; A-08 stays the one it opens on. */
+  var TEMPLATES = {
+    'A-08': DEFAULT_TPL,
+
+    'A-15': {
+      subject: '[Sync failed] {{project.id}} — {{system}} did not answer',
+      body: 'The portal could not reach {{system}} for {{project.name}} ({{project.id}}, ' +
+        '{{country}}).\n\nNothing is blocked: the approval ladder does not depend on the ' +
+        'connector. Record the step directly in {{system}} using the deep link on the project, ' +
+        'and retry the operation from Administration › Integrations once the connector is ' +
+        'healthy again.\n\nOpen the project: #/project/{{project.id}}'
+    },
+    'A-16': {
+      subject: '{{system}} reported a gate step on {{project.id}} — please confirm',
+      body: 'Hello,\n\n{{system}} reported a gate step for {{project.name}} ({{project.id}}, ' +
+        '{{country}}), learned {{source}}, reference {{ref}}.\n\nThe portal has not written it ' +
+        'onto the gate: in this mode an inbound event waits for you. Confirm it in Approvals to ' +
+        'record it with its own date and source, or dismiss it with a reason.\n\n' +
+        'Open Approvals: #/approvals'
+    },
+    'A-17': {
+      subject: '{{project.id}} is approved — the Corporate Agreement is now needed',
+      body: 'Hello {{owner}},\n\n{{project.name}} ({{project.id}}, {{country}}) has been marked ' +
+        'approved, so agreement {{contract_no}} has been opened as a draft.\n\nImplementation ' +
+        'cannot start until the agreement has been reviewed, signed and sent out. Please ' +
+        'complete the draft and submit it for review.\n\nOpen Contracts: #/contracts'
+    },
+    'A-18': {
+      subject: '{{division}} review due — {{contract_no}} ({{project.id}})',
+      body: 'Hello,\n\nAgreement {{contract_no}} for {{project.name}} ({{project.id}}, ' +
+        '{{country}}) is waiting on the {{division}} review.\n\nOGC and Finance review in ' +
+        'parallel: a return sends the agreement back to draft with your comment, which is ' +
+        'mandatory.\n\nOpen Contracts: #/contracts'
+    },
+    'A-19': {
+      subject: 'Signature due — {{contract_no}} ({{project.id}})',
+      body: 'Hello {{signer}},\n\nAgreement {{contract_no}} for {{project.name}} ' +
+        '({{project.id}}, {{country}}) has been approved for signature and is waiting on you.\n\n' +
+        'Signatures are taken in order, and only within your signing authority for this amount ' +
+        'and country.\n\nOpen Contracts: #/contracts'
+    },
+    'A-20': {
+      subject: '{{contract_no}} has not moved for {{days}} days',
+      body: 'Hello {{owner}},\n\nNothing has moved on agreement {{contract_no}} for ' +
+        '{{project.name}} ({{project.id}}, {{country}}) for {{days}} days.\n\n' +
+        'While it is unsent, {{project.id}} cannot start implementation. Please move it on, or ' +
+        'record on the project why it is held.\n\nOpen Contracts: #/contracts'
+    },
+    'A-21': {
+      subject: '{{contract_no}} has been sent out — {{project.id}} may start',
+      body: 'Hello,\n\nAgreement {{contract_no}} for {{project.name}} ({{project.id}}, ' +
+        '{{country}}) has been sent out to the partner, so the contract gate is met and ' +
+        'implementation may now be started by the Regional Manager.\n\n' +
+        'Open the project: #/project/{{project.id}}'
+    }
   };
 
   var TABS = [
@@ -87,20 +186,49 @@
   function ensure(state) {
     var s = state.ui.p8;
     if (!s) {
-      var on = {};
-      RULES.forEach(function (r) { on[r.id] = true; });   /* default: all on */
       s = state.ui.p8 = {
         tab: 'outbox',
         ruleFilter: 'all',
-        on: on,
-        tpl: { subject: DEFAULT_TPL.subject, body: DEFAULT_TPL.body },
+        on: {},
+        tpls: {},             /* rule id → { subject, body } */
+        tplRule: 'A-08',      /* which rule the editor is open on */
         field: 'body',        /* which editor field last held the caret */
         caret: null,          /* and where in it — token insertion needs this */
         saved: false,
         open: {}              /* outbox entry index → expanded */
       };
     }
+
+    /* F22 — every call fills the ids it does not yet hold, so a rule added in a
+       later pack (A-15…A-21 in this one) defaults ON and carries its template
+       without a state migration. An id switched off by hand stays off.
+
+       The two maps are re-established here rather than only at creation: a
+       ui.p8 that arrives from anywhere else — a demo script setting
+       {tab:'digest'}, a future store seed — must not be able to make the
+       catalogue throw on the first rule it reads. */
+    if (!s.on || typeof s.on !== 'object') s.on = {};
+    if (!s.tpls || typeof s.tpls !== 'object') s.tpls = {};
+    if (typeof s.tab !== 'string') s.tab = 'outbox';
+    if (typeof s.ruleFilter !== 'string') s.ruleFilter = 'all';
+    if (!s.open || typeof s.open !== 'object') s.open = {};
+    if (!s.tplRule) s.tplRule = 'A-08';
+
+    RULES.forEach(function (r) {
+      if (s.on[r.id] === undefined) s.on[r.id] = true;
+      if (!s.tpls[r.id] && TEMPLATES[r.id]) {
+        s.tpls[r.id] = { subject: TEMPLATES[r.id].subject, body: TEMPLATES[r.id].body };
+      }
+    });
+    if (!TEMPLATES[s.tplRule]) s.tplRule = 'A-08';
     return s;
+  }
+
+  /* the template the editor is currently on */
+  function tplOf(s) {
+    s.tpls[s.tplRule] = s.tpls[s.tplRule] ||
+      { subject: TEMPLATES[s.tplRule].subject, body: TEMPLATES[s.tplRule].body };
+    return s.tpls[s.tplRule];
   }
 
   function isAdmin(user) { return D.can(user, 'manageUsers'); }
@@ -165,9 +293,72 @@
     return id + (SYSTEM_RULES[id] ? ' · system' : '');
   }
 
+  /* the bucket a sent row belongs to — written by A.send, defaulted here for a
+     row that predates the field so an old snapshot still renders */
+  function rowBucket(m) {
+    if (m.bucket) return m.bucket;
+    return bucketOf(m.rule);
+  }
+
+  /* T-12 — an immediate mail carries its own action buttons when the call site
+     passed them. Where it did not, P8 DERIVES the obvious ones from the rule:
+     this is rendering, not sending — nothing here writes to state, and the
+     buttons are links to the recipient's own home, never a second action path. */
+  var DEFAULT_ACTIONS = {
+    'A-01': [{ label: 'Approve', act: 'ask-approve' }, { label: 'Return', act: 'p6r-return' }],
+    'A-16': [{ label: 'Confirm', act: 'p6x-confirm' }],
+    'A-18': [{ label: 'Review', act: 'p6x-open-contract' }],
+    'A-19': [{ label: 'Sign', act: 'p6x-open-contract' }]
+  };
+
+  function actionsOf(m) {
+    if (m.actions && m.actions.length) return m.actions;
+    if (rowBucket(m) !== 'immediate' || !m.project) return [];
+    var id = m.focus_id || m.project;
+    return (DEFAULT_ACTIONS[m.rule] || []).map(function (a) {
+      return { label: a.label, act: a.act, id: id };
+    });
+  }
+
+  /* F4 — #/home/<id> is the only routable deep link (a query string is not in
+     the hash), and it is a real anchor: one click lands the persona on their
+     own home with the row already focused. */
+  function actionBar(m) {
+    var acts = actionsOf(m);
+    if (!acts.length) return '';
+    return '<div class="p8-macts">' + acts.map(function (a, i) {
+      return '<a class="btn sm' + (i === 0 ? ' brass' : '') + '" data-p8="mailact" href="#/home/' +
+        e(a.id) + '">' + e(a.label) + '</a>';
+    }).join('') + '<span class="p8-mnote">opens the recipient\'s home with this row in view</span>' +
+      '</div>';
+  }
+
+  function deliveryChip(m) {
+    var b = rowBucket(m);
+    var delivered = m.delivered !== false;
+    return '<span class="p8-bchip b-' + e(b) + (delivered ? '' : ' queued') + '">' +
+      e(b === 'digest' ? (delivered ? 'digest · delivered' : 'digest · queued')
+                       : (delivered ? 'immediate' : 'immediate · queued')) + '</span>';
+  }
+
+  /* T-12 · F21 — the digest is folded by the clock (A.advanceDay) or by hand,
+     here, and nowhere else: a render path must never send anything. The control
+     lives ON the sent log, which is the surface it changes. */
+  function digestControl(state, admin) {
+    if (!admin) return '';
+    var queued = (state.digestQueue || []).length;
+    return '<div class="p8-drun">' +
+      '<button class="btn" data-p8="digest-run">Run daily digest</button>' +
+      '<span class="p8-qn">' + (queued
+        ? e(W.plural(queued, 'queued line')) + ' waiting — folding them writes one ' +
+          e(CBP.CONFIG.DIGEST_RULE) + ' mail per person and moves no clock'
+        : 'Nothing queued right now. Digest rules queue as they are raised; ' +
+          'Advance day on Admin › Data folds them on its own.') + '</span></div>';
+  }
+
   function outbox(state, s, rows, admin) {
     if (!rows.length) {
-      return U.card('Sent log',
+      return U.card('Sent log', digestControl(state, admin) +
         '<div class="p8-empty"><b>No alerts yet in this session</b>' +
         '<span>Actions in this session generate alerts — submit a request, tick an ' +
         'external gate or assign a question, and every send lands here. ' +
@@ -193,8 +384,9 @@
       return s.ruleFilter === 'all' || x.m.rule === s.ruleFilter;
     });
 
-    var list = shown.map(function (x) {
+    function mailRow(x) {
       var m = x.m, open = !!s.open[x.i];
+      /* the folded A-14 row spans projects and carries project: null (F33) */
       var p = m.project ? CBP.projectById(m.project) : null;
       var head = '<button class="p8-mailhd" data-p8="mail" data-i="' + x.i +
         '" aria-expanded="' + open + '">' +
@@ -206,28 +398,56 @@
         '<span>' + e((m.to && m.to.length ? m.to.join(', ') : 'no recipient — no owner set') +
           (p ? ' · ' + W.countryName(state, p.country) : '') +
           ' · ' + D.fmtDateY(m.at)) + '</span></span>' +
+        deliveryChip(m) +
         '<span class="p8-chev">' + (open ? '▴' : '▾') + '</span></button>';
 
       var body = open
         ? '<div class="p8-mail">' +
             '<div class="p8-meta"><span>Rule</span><b>' + e(ruleLabel(m.rule)) + '</b></div>' +
+            '<div class="p8-meta"><span>Bucket</span><b>' + e(rowBucket(m)) +
+              (m.delivered === false ? ' · queued for the daily digest' : ' · delivered') +
+              '</b></div>' +
             '<div class="p8-meta"><span>To</span><b>' +
               e(m.to && m.to.length ? m.to.join(', ') : '—') +
               (m.to_ids && m.to_ids.length
                 ? ' <small>(' + e(m.to_ids.join(', ')) + ')</small>' : '') + '</b></div>' +
             (p ? '<div class="p8-meta"><span>Project</span><b><a href="#/project/' +
-                 e(p.id) + '">' + e(p.id + ' · ' + p.name) + '</a></b></div>' : '') +
+                 e(p.id) + '">' + e(p.id + ' · ' + p.name) + '</a></b></div>'
+               : '<div class="p8-meta"><span>Project</span><b>several — one line per record ' +
+                 'in the body</b></div>') +
             '<div class="p8-meta"><span>Subject</span><b>' + e(m.subject) + '</b></div>' +
             '<pre class="p8-body">' + e(m.body) + '</pre>' +
+            actionBar(m) +
           '</div>'
         : '';
 
       return '<div class="p8-row' + (open ? ' open' : '') + '">' + head + body + '</div>';
+    }
+
+    /* T-12 — grouped by bucket, so what was sent the moment it happened and
+       what waited for the digest read as two different things on the page. */
+    var GROUPS = [
+      { k: 'immediate', label: 'Sent immediately',
+        note: 'Raised and delivered in the same pass.' },
+      { k: 'digest', label: 'Daily digest',
+        note: 'Queued when raised; folded into one ' + CBP.CONFIG.DIGEST_RULE +
+              ' mail per person by Run daily digest or Advance day.' }
+    ];
+
+    var list = GROUPS.map(function (g) {
+      var mine = shown.filter(function (x) { return rowBucket(x.m) === g.k; });
+      if (!mine.length) return '';
+      var nq = mine.filter(function (x) { return x.m.delivered === false; }).length;
+      return '<div class="p8-bgroup"><h4>' + e(g.label) +
+        '<span class="n num">' + mine.length + '</span>' +
+        (nq ? '<span class="p8-bchip b-' + e(g.k) + ' queued">' + nq + ' queued</span>' : '') +
+        '<small>' + e(g.note) + '</small></h4>' +
+        '<div class="p8-list">' + mine.map(mailRow).join('') + '</div></div>';
     }).join('');
 
     return U.card('Sent log — newest first',
-      chips +
-      (shown.length ? '<div class="p8-list">' + list + '</div>'
+      digestControl(state, admin) + chips +
+      (shown.length ? list
                     : '<div class="p8-empty"><b>Nothing under this rule</b></div>') +
       '<p class="p8-note">Demo sends render here rather than to real mail. Every send also ' +
       'writes a System entry on the project naming its recipients, so email never becomes ' +
@@ -249,11 +469,18 @@
 
       /* p8-nw is what keeps "A-01" on one line — the id is a capsule of text in
          a fixed-width column, never a wrapping phrase (v1.0.3 defect fix) */
-      return '<tr><td class="p8-id num p8-nw">' + e(r.id) + '</td>' +
+      /* F12 — a rule that no code path raises is marked as such rather than
+         quietly listed beside the eight that fire. */
+      return '<tr' + (r.raised ? '' : ' class="p8-cat"') + '>' +
+        '<td class="p8-id num p8-nw">' + e(r.id) + '</td>' +
         '<td class="p8-trig">' + e(r.trigger) +
-        (r.editable ? ' <span class="p8-tag">template editable</span>' : '') + '</td>' +
+        (r.editable ? ' <span class="p8-tag">template editable</span>' : '') +
+        (r.raised ? '' : ' <span class="p8-tag p8-only">catalogue only — not raised ' +
+          'in this demo</span>') + '</td>' +
         '<td class="p8-to">' + e(r.to) + '</td>' +
         '<td class="p8-when">' + e(r.timing) + '</td>' +
+        '<td class="p8-nw p8-buck"><span class="p8-bchip b-' + e(r.bucket) + '">' +
+          e(r.bucket) + '</span></td>' +
         '<td class="p8-kind">' + e(r.kind) + '</td>' +
         '<td class="r p8-stat">' + toggle + '</td></tr>';
     }).join('');
@@ -264,9 +491,10 @@
        classes as their cells, which is what pins the column balance */
     var head = '<tr><th class="p8-nw">#</th><th class="p8-trig">Trigger</th>' +
       '<th class="p8-to">Recipients</th><th class="p8-when">Timing</th>' +
+      '<th class="p8-nw p8-buck">Bucket</th>' +
       '<th class="p8-kind">Type</th><th class="r p8-stat">Status</th></tr>';
 
-    return U.card('Alert rules — A-01 to A-14',
+    return U.card('Alert rules — A-01 to A-' + RULES[RULES.length - 1].id.slice(2),
       '<div class="tblwrap"><table class="tbl"><thead>' + head +
       '</thead><tbody>' + body + '</tbody></table></div>' +
       '<p class="p8-note">' +
@@ -275,7 +503,12 @@
       'Every rule is a templated email with merge tokens; a <b>24-hour dedupe guard</b> ' +
       'runs per rule, project and recipient, so a repeating rule cannot flood one inbox. ' +
       (offs ? offs + ' rule' + (offs === 1 ? ' is' : 's are') + ' currently off. ' : '') +
-      'A-14 carries the weekly digest machinery that RD-2 extends.</p>');
+      'A-14 carries the weekly digest machinery that RD-2 extends; A-15 and A-16 belong to the ' +
+      'external gate connector, and A-17 to A-21 to the Corporate Agreement. ' +
+      'The <b>bucket</b> is a property of the RULE, not of the recipient: an immediate rule ' +
+      'is delivered the moment it is raised, a digest rule waits in the queue and is folded ' +
+      'into one ' + CBP.CONFIG.DIGEST_RULE + ' mail per person at ' +
+      CBP.CONFIG.DIGEST_HOUR + ':00 (T-12).</p>');
   }
 
   /* ================================= (c) C-14 template editor — one rule == */
@@ -294,13 +527,31 @@
 
   /* token values are DERIVED from the record, never typed in */
   function values(state, p) {
+    /* v1.1.0 — the EGC and contract fields come from the same derivations the
+       pages read, so a preview cannot promise a value the mail would not carry */
+    var sys = CBP.CONFIG.GATE_SYSTEMS[1] || CBP.CONFIG.GATE_SYSTEMS[0];
+    var src = D.gateSource ? (D.gateSource(p, sys.key, 'approved') ||
+                              D.gateSource(p, sys.key, 'submitted')) : null;
+    var c = D.primaryContract ? D.primaryContract(p) : null;
+    var next = (c && CBP.contracts && CBP.contracts.nextSignatory)
+      ? CBP.contracts.nextSignatory(c) : null;
+
     return {
       '{{project.id}}': p.id,
       '{{project.name}}': p.name,
       '{{country}}': W.countryName(state, p.country),
       '{{days}}': String(D.daysInStage(p)),
       '{{owner}}': p.owner ? CBP.userName(p.owner) : 'unassigned',
-      '{{threshold}}': String(threshold(p))
+      '{{threshold}}': String(threshold(p)),
+      '{{system}}': (D.integration ? (D.integration(sys.key).label || sys.label) : sys.label),
+      '{{source}}': src ? ('from a ' + src.source + ' event') : 'from a manual entry',
+      '{{ref}}': (p.refs || {})[sys.ref_field || sys.key] ||
+                 (src && src.ref) || 'not recorded yet',
+      '{{contract_no}}': c ? c.id : 'no agreement yet',
+      '{{division}}': (CBP.CONFIG.REVIEW_DIVISIONS[0] || {}).label || 'OGC',
+      '{{signer}}': next
+        ? (next.user_id ? CBP.userName(next.user_id) : (next.name || 'the next signatory'))
+        : 'the next signatory'
     };
   }
 
@@ -315,7 +566,17 @@
   function editor(state, s) {
     var p = sample(state);
     var vals = values(state, p);
-    var rule = RULES.filter(function (r) { return r.id === 'A-08'; })[0];
+    var rule = RULES.filter(function (r) { return r.id === s.tplRule; })[0] || RULES[7];
+    var tpl = tplOf(s);
+
+    /* v1.1.0 — eight rules now ship a template, so the editor names which one
+       it is on rather than hard-coding A-08 in its own heading. */
+    var picker = '<div class="p8-chips">' + RULES.filter(function (r) {
+        return !!TEMPLATES[r.id];
+      }).map(function (r) {
+        return '<button class="chip' + (s.tplRule === r.id ? ' on' : '') +
+          '" data-p8="tplrule" data-r="' + e(r.id) + '">' + e(r.id) + '</button>';
+      }).join('') + '</div>';
 
     var palette = '<div class="p8-tokens">' + TOKENS.map(function (t) {
       return '<button class="p8-token" data-p8="token" data-t="' + e(t.t) + '" title="' +
@@ -325,14 +586,15 @@
     var form =
       '<div class="p8-field"><label for="p8subject">Subject</label>' +
       '<input id="p8subject" class="p8-input" type="text" data-p8="tpl" data-f="subject" ' +
-      'autocomplete="off" value="' + e(s.tpl.subject) + '"></div>' +
+      'autocomplete="off" value="' + e(tpl.subject) + '"></div>' +
       '<div class="p8-field"><label for="p8body">Body</label>' +
       '<textarea id="p8body" class="p8-input p8-area" rows="10" data-p8="tpl" ' +
-      'data-f="body">' + e(s.tpl.body) + '</textarea></div>' +
+      'data-f="body">' + e(tpl.body) + '</textarea></div>' +
       '<div class="p8-acts">' +
         '<button class="btn brass" data-p8="save">Save template</button>' +
         '<button class="btn" data-p8="reset">Reset to default</button>' +
-        (s.saved ? '<span class="p8-saved">Saved — A-08 previews use this template.</span>' : '') +
+        (s.saved ? '<span class="p8-saved">Saved — ' + e(s.tplRule) +
+          ' previews use this template.</span>' : '') +
       '</div>';
 
     var preview =
@@ -340,19 +602,20 @@
         '<div class="p8-prevhd"><span>To</span><b>' +
           e(previewRecipients(state, p)) + '</b></div>' +
         '<div class="p8-prevhd"><span>Subject</span><b>' +
-          e(merge(s.tpl.subject, vals)) + '</b></div>' +
-        '<pre class="p8-body">' + e(merge(s.tpl.body, vals)) + '</pre>' +
+          e(merge(tpl.subject, vals)) + '</b></div>' +
+        '<pre class="p8-body">' + e(merge(tpl.body, vals)) + '</pre>' +
       '</div>';
 
-    var others = RULES.filter(function (r) { return !r.editable; }).map(function (r) {
+    var others = RULES.filter(function (r) { return !TEMPLATES[r.id]; }).map(function (r) {
       return '<li><b>' + e(r.id) + '</b><span>' + e(r.trigger) + '</span>' +
         '<em>editable in full product</em></li>';
     }).join('');
 
     return '<div class="p8-editor">' +
-      U.card('A-08 · stage threshold exceeded — template',
-        '<p class="p8-lead">' + e(rule.trigger) + ' · recipients ' + e(rule.to) +
-        ' · ' + e(rule.timing) + '</p>' +
+      U.card('Template editor',
+        '<div class="p8-flabel">Rule</div>' + picker +
+        '<p class="p8-lead"><b>' + e(rule.id) + '</b> · ' + e(rule.trigger) +
+        ' · recipients ' + e(rule.to) + ' · ' + e(rule.timing) + '</p>' +
         '<div class="p8-flabel">Token palette — click to insert at the caret</div>' +
         palette + form) +
       U.card('Live preview — rendered against ' + p.id,
@@ -365,8 +628,9 @@
         }).join('') + '</div>') +
       U.card('Every other rule',
         '<ul class="p8-others">' + others + '</ul>' +
-        '<p class="p8-note">The demo ships one rule fully editable, per the build plan. ' +
-        'The remaining thirteen use the same token palette and preview in the full product.</p>') +
+        '<p class="p8-note">The demo ships the approval-threshold rule and every v1.1.0 rule ' +
+        '(A-15 to A-21) fully editable. The rest use the same token palette and the same live ' +
+        'preview in the full product.</p>') +
       '</div>';
   }
 
@@ -405,6 +669,17 @@
         .map(function (c) { return { code: c, name: W.countryName(state, c), items: by[c] }; });
     }
 
+    /* F10 · S-15 (audit D-1) — the footer and the lead are derived from what
+       was actually BUILT, never from a hard-coded "of 4". The four v1.0.4
+       groups are always weighed; a v1.1.0 group joins the tally only when it
+       has something to say, so on a quiet week this mail reads exactly as it
+       did in v1.0.4, down to the byte. */
+    var CONSIDERED = [
+      'over-ceiling countries',
+      'gate items past threshold',
+      'overdue reviews',
+      'unowned projects'
+    ];
     var sections = [];
 
     if (x.over.length) {
@@ -463,6 +738,67 @@
       });
     }
 
+    /* F11 · S-15 — the two v1.1.0 groups. They are built HERE, from state, and
+       never extend W.exceptionSet (that derivation is the P2 attention widget's
+       and is byte-identical to v1.0.4 on the v1.0.4 fixture set). Each counts
+       only when it is non-empty, exactly like the four above. */
+
+    var failed = (state.syncQueue || []).filter(function (r) {
+      if (r.status !== 'failed') return false;
+      var p = CBP.projectById(r.project_id);
+      return p && codes.indexOf(p.country) > -1;
+    }).map(function (r) {
+      var p = CBP.projectById(r.project_id);
+      var sys = D.integration ? (D.integration(r.system).label || r.system) : r.system;
+      return { country: p.country, project: p, row: r, system: sys };
+    });
+
+    if (failed.length) {
+      CONSIDERED.push('failed synchronisations');
+      sections.push({
+        title: 'Failed synchronisations',
+        n: failed.length,
+        groups: group(failed).map(function (g) {
+          return { name: g.name, lines: g.items.map(function (i) {
+            return { lead: i.row.attempts + ' of ' + CBP.CONFIG.SYNC_RETRY_MAX, tone: 'hot',
+                     text: i.project.id + ' · ' + i.project.name + ' — ' + i.system +
+                           ' could not ' + i.row.op.replace(/_/g, ' ') +
+                           '. The ladder is not blocked; record it by hand and retry.',
+                     href: '#/project/' + i.project.id };
+          }) };
+        })
+      });
+    }
+
+    var idle = (D.contractsFor && D.contractIdle)
+      ? D.contractsFor().filter(function (c) {
+          return codes.indexOf(c.country) > -1 && D.contractIdle(c);
+        }).map(function (c) {
+          var p = CBP.projectById(c.project_id);
+          return { country: c.country, contract: c, project: p, days: D.contractAge(c) };
+        })
+      : [];
+
+    if (idle.length) {
+      CONSIDERED.push('idle Corporate Agreements');
+      sections.push({
+        title: 'Corporate Agreements with no movement for ' +
+               CBP.CONFIG.CONTRACT_IDLE_DAYS + ' days',
+        n: idle.length,
+        groups: group(idle).map(function (g) {
+          return { name: g.name, lines: g.items.map(function (i) {
+            var st = (CBP.CONFIG.CONTRACT_STATUS[i.contract.status] || {}).label ||
+                     i.contract.status;
+            return { lead: D.days(i.days), tone: 'hot',
+                     text: i.contract.id + ' · ' + (i.project ? i.project.id + ' ' : '') +
+                           (i.contract.partner || '') + ' — ' + st +
+                           ', and implementation waits until it is sent out.',
+                     href: '#/contracts' };
+          }) };
+        })
+      });
+    }
+
     var scopeText = codes.length === state.countries.length
       ? 'all ' + codes.length + ' seeded countries'
       : codes.map(function (c) { return W.countryName(state, c); }).join(', ');
@@ -490,17 +826,18 @@
 
     return U.card('RD-2 · Director exception digest — preview',
       '<p class="p8-lead">Weekly, Monday 07:00, per director scope. Exceptions only — ' +
-      'over-ceiling countries, gate items past threshold, overdue reviews and unowned ' +
-      'projects. Empty sections are omitted, so a quiet week is a short email.</p>' +
+      e(CONSIDERED.slice(0, -1).join(', ') + ' and ' + CONSIDERED[CONSIDERED.length - 1]) +
+      '. Empty sections are omitted, so a quiet week is a short email.</p>' +
       '<div class="p8-digest">' +
         '<div class="p8-prevhd"><span>To</span><b>' + e(user.name) + ' · ' +
           e(CBP.CONFIG.ROLE_LABEL[user.role]) + '</b></div>' +
         '<div class="p8-prevhd"><span>Scope</span><b>' + e(scopeText) + '</b></div>' +
         '<div class="p8-prevhd"><span>Subject</span><b>' + e(subject) + '</b></div>' +
         '<div class="p8-digestbody">' + mail + '</div>' +
-        '<p class="p8-foot">' + e(sections.length + ' of 4 sections carried content; ' +
-          (4 - sections.length) + ' omitted. A record already listed at the external gate ' +
-          'is not repeated under overdue reviews.') + '</p>' +
+        '<p class="p8-foot">' + e(sections.length + ' of ' + CONSIDERED.length +
+          ' sections carried content; ' + (CONSIDERED.length - sections.length) +
+          ' omitted. A record already listed at the external gate is not repeated under ' +
+          'overdue reviews.') + '</p>' +
       '</div>' +
       '<p class="p8-note">Built on A-14’s digest machinery with a scope filter, from the same ' +
       'derived exception set as the dashboard’s attention widget — the numbers here and there ' +
@@ -528,6 +865,19 @@
       ev.preventDefault();
       s.tab = t.getAttribute('data-k');
       CBP.render();
+
+    } else if (act === 'digest-run') {
+      /* F21 — the ONLY places A.runDigest is called are A.advanceDay and this
+         button. It folds the queue without moving the clock. */
+      ev.preventDefault();
+      if (!isAdmin(state.user)) return;
+      CBP.actions.runDigest();
+      CBP.render();
+
+    } else if (act === 'mailact') {
+      /* a real anchor: let it navigate. The hash sets ui.focusId, the home page
+         scrolls the row into view (F4/F28) — one click, no interception. */
+      return;
 
     } else if (act === 'rulefilter') {
       ev.preventDefault();
@@ -558,8 +908,16 @@
 
     } else if (act === 'reset') {
       ev.preventDefault();
-      s.tpl = { subject: DEFAULT_TPL.subject, body: DEFAULT_TPL.body };
+      var def = TEMPLATES[s.tplRule] || DEFAULT_TPL;
+      s.tpls[s.tplRule] = { subject: def.subject, body: def.body };
       s.saved = false;
+      CBP.render();
+
+    } else if (act === 'tplrule') {
+      ev.preventDefault();
+      s.tplRule = t.getAttribute('data-r');
+      s.saved = false;
+      s.caret = null;
       CBP.render();
     }
   });
@@ -573,7 +931,7 @@
     var s = CBP.state.ui.p8;
     var f = t.getAttribute('data-f');
     var caret = t.selectionStart;
-    s.tpl[f] = t.value;
+    tplOf(s)[f] = t.value;
     s.field = f;
     s.saved = false;
     CBP.render();
@@ -628,10 +986,11 @@
   /* a token lands at the remembered caret of whichever field was last focused */
   function insertToken(s, token) {
     var f = s.field === 'subject' ? 'subject' : 'body';
-    var cur = s.tpl[f] || '';
+    var tpl = tplOf(s);
+    var cur = tpl[f] || '';
     var at = (typeof s.caret === 'number' && s.caret >= 0 && s.caret <= cur.length)
       ? s.caret : cur.length;
-    s.tpl[f] = cur.slice(0, at) + token + cur.slice(at);
+    tpl[f] = cur.slice(0, at) + token + cur.slice(at);
     s.caret = at + token.length;
     s.saved = false;
     CBP.render();

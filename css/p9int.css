@@ -1,0 +1,83 @@
+/* ============================================================================
+   p9int.css — Admin › Integrations (v1.1.0 · F1 EGC console, WP2)
+
+   Namespaced .p9i- and built entirely on the tokens and the card anatomy in
+   css/app.css: one family (Source Sans 3), the pill grammar from .p9-pill, the
+   same --pad / --gap rhythm as every other admin tab. Nothing here introduces
+   a colour, a font or a shadow that the design system does not already carry.
+   ========================================================================= */
+
+/* ------------------------------------------------------------ head line -- */
+.p9i-head{font-size:12.5px;color:var(--slate);background:var(--card);
+  border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:var(--gap)}
+.p9i-head a{color:var(--glass);font-weight:600}
+
+/* ------------------------------------------------- rail + focused system -- */
+.p9i{display:grid;grid-template-columns:252px minmax(0,1fr);gap:var(--gap);
+  align-items:start;margin-bottom:var(--gap)}
+.p9i-body{min-width:0}
+.p9i-body .card + .card{margin-top:var(--gap)}
+
+.p9i-rail{min-width:0;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:8px}
+.p9i-sys{display:block;width:100%;text-align:left;padding:9px 11px;border-radius:var(--r);
+  border:1px solid transparent;min-width:0}
+.p9i-sys:hover{background:#F1F3F0}
+.p9i-sys.on{background:#EDF0EC;border-color:var(--line);box-shadow:inset 3px 0 0 var(--brass)}
+.p9i-syst{display:flex;align-items:center;gap:8px;min-width:0}
+.p9i-syst b{font-size:13px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.p9i-sys small{display:block;font-size:12px;color:var(--muted);margin-top:2px;padding-left:15px}
+.p9i-rail .p9-note{padding:6px 11px 2px;margin-top:4px;border-top:1px solid var(--line2)}
+
+.p9i-dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--s4)}
+.p9i-dot.ok{background:var(--verd)}
+.p9i-dot.warn{background:var(--brass)}
+.p9i-dot.failed{background:var(--rose)}
+.p9i-dot.off{background:var(--line);border:1px solid var(--s4)}
+
+/* ------------------------------------------------ mode segmented control -- */
+.p9i-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;
+  background:#fff}
+.p9i-segb{font-size:12.5px;font-weight:600;color:var(--muted);padding:4px 13px;
+  border-right:1px solid var(--line2);white-space:nowrap}
+.p9i-segb:last-child{border-right:none}
+.p9i-segb:hover{color:var(--slate);background:#F5F7F4}
+.p9i-segb.on{color:#fff;background:var(--brass)}
+.p9i-mean{display:block;font-size:12px;color:var(--muted);margin-top:6px;font-weight:400}
+
+/* ------------------------------------------------------ inline field row -- */
+.p9i-inline{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;
+  justify-content:flex-end;min-width:0}
+.p9i-inline .fld{min-width:0;flex:1 1 220px;max-width:100%}
+.p9i-thr{display:inline-flex;gap:6px;align-items:center}
+.p9i-thr .fld{width:130px;text-align:right}
+
+/* a row whose control is wider than a value: the label keeps its line and the
+   control drops underneath it, left-aligned, instead of squeezing the label */
+.p9-kv.p9i-wide{grid-template-columns:minmax(0,1fr)}
+.p9-kv.p9i-wide > span{white-space:normal}
+.p9-kv.p9i-wide > b{grid-column:1/-1;text-align:left;font-weight:400;margin-top:5px;min-width:0}
+.p9-kv.p9i-wide .sel,.p9-kv.p9i-wide .fld{max-width:100%}
+.p9-kv.p9i-wide .sel{width:100%}
+.p9-kv.p9i-wide .p9i-inline{display:flex;width:100%;justify-content:flex-start;flex-wrap:nowrap}
+.p9-kv.p9i-wide .p9i-inline .fld{flex:1 1 auto;min-width:0}
+.p9i-card .p9-kv b{min-width:0;overflow-wrap:anywhere}
+
+/* --------------------------------------------------- simulator / import --- */
+.p9i-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.p9i-lab{display:block;min-width:0;font-size:12.5px;font-weight:600;color:var(--slate)}
+.p9i-lab .fld,.p9i-lab .sel{display:block;width:100%;margin-top:4px;font-weight:400}
+.p9i-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--gap)}
+
+/* ------------------------------------------------------------ responsive -- */
+@media (max-width:1100px){
+  .p9i{grid-template-columns:minmax(0,1fr)}
+  .p9i-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .p9i-form{grid-template-columns:minmax(0,1fr)}
+  .p9i-inline{justify-content:flex-start}
+  .p9i-seg{flex-wrap:wrap;border-radius:var(--r)}
+  .p9i-acts .btn{flex:1 1 auto}
+}

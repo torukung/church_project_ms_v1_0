@@ -94,7 +94,8 @@
       activity: activity,   /* log_entry    { id, project, type, body, author, at, … } */
       log: activity,        /* alias of activity — same array, older name */
       entrySeq: 0,          /* counter behind generated log_entry ids */
-      outbox: [],           /* rendered alert emails { rule, to[], subject, body, at } */
+      outbox: [],           /* rendered alert emails { rule, to[], to_ids[], subject, body, at, project }
+                               v1.2.0 rows also carry { bucket, delivered, actions[], focus_id } (T-12) */
 
       /* v1.0.1 — comments (conversation) alongside the activity audit stream */
       comments: comments,
@@ -109,10 +110,39 @@
       dashSyncedAt: null,
       widgetMeta: {},       /* { widgetId: { desc } } — demo-level dataset definitions */
 
+      /* v1.1.0 — F1 External Gate Connector (S-02, S-04, S-06). All in-memory,
+         all clocks from CONFIG.TODAY. gateEvents is append-only. */
+      integrations: clone(data.integrations || {}),
+      gateEvents: clone(data.gate_events_seed || []),
+      gateEventSeq: (data.gate_events_seed || []).length,
+      gateProposals: [],    /* { id, project_id, system, step, proposed_at, proposed_ref, proposed_date, source, reason, status, decided_by, decided_at } */
+      proposalSeq: 0,
+      syncQueue: [],        /* { id, project_id, system, op, status, attempts, at, err } */
+      syncSeq: 0,
+
+      /* v1.1.0 — F2 Contracts (S-08…S-11). Contract log entries live in
+         state.activity (type 'contract'); c.log_ids is a projection (F26). */
+      contracts: clone(data.contracts || []),
+      contractSeq: data.contract_seq || 1,
+      contractTemplates: clone(data.contract_templates || []),
+      signingAuthority: clone(data.signing_authority || []),
+      signingDelegations: clone(data.signing_delegations || []),   /* NOT state.delegations (RD-5) */
+
       /* RM-4 — the five seeded demo dashboards behind the P2 tab strip. This is
          the single authoritative seed: names are the blueprint's tab names and
          `widgets` are CBP.W.registry ids, consumed verbatim by pages/p2.js.
          Boards a user adds carry custom:true and live alongside these. */
+      /* v1.2.0 — demo clock, alert preferences, digest queue (T-04, T-12).
+         state.clock.today feeds CONFIG.TODAY through persist.boot()/A.advanceDay;
+         backup_seq lives here so backup names never collide across a reload
+         (F34). state.backups is METADATA ONLY, mirrored from the IDB `backups`
+         store for rendering — persist.listBackups() is the source of truth and
+         this key is never part of the snapshot (F23). */
+      clock: { today: data.TODAY, advanced_days: 0, backup_seq: 0 },
+      alertPrefs: {},        /* { user_id: { digest_hour, mute } } → user_alert_pref */
+      digestQueue: [],       /* { user_id, rule, project_id, subject, line, queued_on } */
+      backups: [],           /* mirror of IDB store rows { id, name, saved_at, actor, bytes, checksum, kind } */
+
       dashboards: [
         /* v1.0.4 — the Overview board leads with the country budget track
            (ToR 30 Aug: "move to the top"), then the headline figures, then the
@@ -193,7 +223,27 @@
 
         /* P5 / P9 (Phase C) */
         p5Group: 'country',     /* cross-project Gantt grouping: country ∣ status ∣ owner */
-        p9Tab: 'users',         /* administration tab */
+        p9Tab: 'users',         /* administration tab (v1.1.0 adds the value 'integrations') */
+        /* v1.1.0 */
+        p6Section: null,        /* approvals inbox: focused section */
+        p12View: 'list',        /* contracts: list ∣ detail ∣ sign ∣ templates ∣ signatures ∣ new (CT3 is a view, not a 3rd hash segment) */
+        p12Filter: 'all',       /* CT1 status filter */
+        p12Search: '',
+        p12Countries: null,     /* CT1 country chips (null = all), own key per S-12 */
+        p12Tab: 'document',     /* CT2 tab: document ∣ details ∣ reviews ∣ signatures ∣ obligations ∣ log */
+        p12Modal: null,
+        ctDraft: null,          /* CT6 wizard draft */
+        ctReviewReason: '',
+        signScrolled: false,    /* CT3 scroll-to-end gate */
+        signIntent: false,      /* CT3 intent checkbox */
+        p9IntSys: 'chas',       /* Admin › Integrations focused system */
+
+        /* v1.2.0 — flow pass (T-09…T-11) */
+        p6Filter: 'all',        /* Needs-you chip: all ∣ reviews ∣ gates ∣ ready ∣ proposals ∣ contracts ∣ mine ∣ watching */
+        p6Inline: null,         /* { id, act } — the row whose inline reason composer is open */
+        focusId: null,          /* set from #/home/<id>; consumed by P6/P10, cleared on hashchange (F28) */
+        homeCountry: null,      /* Regional drill: the country P14 shows for M2 */
+        portfolioSort: 'coverage',
 
         /* P1 (Phase D) */
         mobileSim: false,       /* simulated device detection → sign in lands on P10 */
@@ -209,6 +259,14 @@
        other board still derives one from the widget sizes. */
     CBP.state.dashboards.forEach(function (b) {
       b.layout = b.layout || defaultLayout(b.widgets || []);
+    });
+
+    /* v1.1.0 — primary_contract_id is derived once from the contracts seed: the
+       first non-amendment agreement of each project (S-09). */
+    CBP.state.contracts.forEach(function (c) {
+      if (c.parent_contract_id) return;
+      var p = CBP.state.projects.filter(function (x) { return x.id === c.project_id; })[0];
+      if (p && !p.primary_contract_id) p.primary_contract_id = c.id;
     });
 
     return CBP.state;
@@ -287,12 +345,14 @@
   };
 
   /* external gate click (M1 only, R-2). Starts that sub-step's own counter. */
-  CBP.recordGate = function (id, system, step, remark) {
+  /* v1.1.0 — 5th arg `at` (ISO date) lets an inbound EGC event carry its own
+     date (F3); defaults to TODAY so every v1.0.4 caller is unchanged. */
+  CBP.recordGate = function (id, system, step, remark, at) {
     var p = CBP.projectById(id);
     if (!p) return null;
     p.gate = p.gate || {};
     p.gate[system] = p.gate[system] || {};
-    p.gate[system][step === 'approved' ? 'approved_at' : 'submitted_at'] = CBP.CONFIG.TODAY;
+    p.gate[system][step === 'approved' ? 'approved_at' : 'submitted_at'] = at || CBP.CONFIG.TODAY;
     if (remark) p.gate[system].remark = remark;
     CBP.addLog(id, 'system', (system === 'chas' ? 'CHaS' : 'Decision Point') +
       ' — request ' + step + (remark ? ' · ' + remark : ''));

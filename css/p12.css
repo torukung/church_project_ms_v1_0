@@ -1,0 +1,419 @@
+/* ============================================================================
+   p12.css — v1.1.0 · P12 Corporate agreements (CT1…CT6).
+   Tokens come from app.css only (--paper --card --ink --slate --muted --line
+   --line2 --brass --verd --glass --rose --rose-bg --brass-bg --verd-bg --s1…
+   --sx --r --pad --gap --shadow) and the C-21 country palette (--ccb/--ccl/
+   --ccx through the .cc-* utility classes). One family, sentence-case labels,
+   tabular-nums on every money and count, every grid track minmax(0,1fr).
+
+   Responsive contract: the register collapses from a table to stacked cards
+   under 768px, and CT3 (the signing ceremony) stays usable at 390px because
+   mobile signing is allowed with the same scroll + intent gate.
+   ========================================================================= */
+
+/* ==================================================== shared furniture ==== */
+
+/* Font-stack integrity. A bare form control (a checkbox, a date input, a
+   select) does not inherit the page family: the UA gives it its own, which
+   renders as Arial here and breaks the one-family rule. Every control this
+   section emits is pulled back onto the inherited stack. Only the FAMILY is
+   inherited — size and weight stay with .btn / .inp, which already set them —
+   so no existing control changes shape. */
+.p12-body input,.p12-body textarea,.p12-body select,.p12-body button,
+.p12-sign input,.p12-sign textarea,.p12-sign select,.p12-sign button,
+.p12-form input,.p12-form textarea,.p12-form select,.p12-form button,
+.p12-modal input,.p12-modal textarea,.p12-modal select,.p12-modal button,
+.p12-check input,.p12-filters input,.p12-switch button,.p12-acts button,
+.p12-formacts button,.p12-signacts button,.p12-tabs button,.p12-steps button,
+.p12-ptab-acts button,.p12-ptab-head button{font-family:inherit}
+
+.p12-empty{font-size:13.5px;color:var(--muted);background:#FBFCFA;
+  border:1px dashed var(--line);border-radius:var(--r);padding:18px 16px;margin:var(--gap) 0}
+
+.p12-err{font-size:13px;font-weight:600;color:var(--rose);background:var(--rose-bg);
+  border:1px solid #E5C6C4;border-left:3px solid var(--rose);border-radius:var(--r);
+  padding:9px 14px;margin:var(--gap) 0}
+
+.p12-sub{display:block;font-size:12px;color:var(--muted);font-weight:400;
+  font-variant-numeric:normal}
+.p12-over{color:var(--rose);font-weight:600}
+.p12-hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+.p12-hint.neg{color:var(--rose);font-weight:600}
+.p12-h3{font-size:13px;font-weight:600;color:var(--slate);margin:calc(var(--gap) * 1.6) 0 8px}
+
+.p12-cc{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;
+  color:var(--ink);background:var(--ccl,var(--cc-x-light));
+  border:1px solid var(--ccb,var(--cc-x-bold));
+  box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line));
+  border-radius:999px;padding:2px 10px 2px 12px;white-space:nowrap}
+
+/* view switch — Register ∣ Templates ∣ Signature management */
+.p12-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;
+  background:#fff;overflow:hidden}
+.p12-sw{font-size:12.5px;font-weight:600;color:var(--slate);padding:6px 14px;
+  border-right:1px solid var(--line2);white-space:nowrap}
+.p12-sw:last-child{border-right:none}
+.p12-sw:hover{background:#F1F3F0}
+.p12-sw.on{background:var(--ink);color:#fff}
+.p12-sw:focus-visible{outline:2px solid var(--glass);outline-offset:-2px}
+
+.p12-filters .chip.zero{color:var(--muted);border-style:dashed}
+.p12-filters .chip.zero.on{color:#fff;border-style:solid}
+
+/* =============================================== CT1 · the register ======= */
+
+.p12-tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+  background:#fff;box-shadow:var(--shadow);margin-top:var(--gap)}
+.p12-tblwrap .tbl{min-width:0}
+.p12-tblwrap .tbl th{padding:11px 12px}
+.p12-tblwrap .tbl th:first-child,.p12-tblwrap .tbl td:first-child{padding-left:16px}
+.p12-tblwrap .tbl th:last-child,.p12-tblwrap .tbl td:last-child{padding-right:16px}
+.p12-tbl{min-width:1040px}
+/* the same table inside the narrow P4 Contracts tab: it wraps rather than
+   forcing a sideways scroll inside a column that is only half the page */
+.p12-tbl.narrow{min-width:0}
+.p12-tbl.narrow th,.p12-tbl.narrow td{padding-left:8px;padding-right:8px}
+.p12-tblwrap .p12-tbl.narrow th:first-child,.p12-tblwrap .p12-tbl.narrow td:first-child{padding-left:12px}
+.p12-tblwrap .p12-tbl.narrow th:last-child,.p12-tblwrap .p12-tbl.narrow td:last-child{padding-right:12px}
+
+.p12-row{cursor:pointer}
+.p12-row:hover{background:#F7F9F7}
+.p12-row:focus-visible{outline:2px solid var(--glass);outline-offset:-2px}
+.p12-row a{color:var(--glass);font-weight:600;text-decoration:none}
+.p12-row a:hover{text-decoration:underline}
+.p12-tbl tr.on{background:var(--verd-bg)}
+
+/* the six-dot stage stepper: draft → review → signature → signing →
+   executed → sent. A dead end drops the ladder and names itself instead. */
+.p12-mini{display:inline-flex;align-items:center;gap:3px}
+.p12-mini i{width:9px;height:9px;border-radius:50%;background:#E4E7E3;
+  border:1px solid var(--line);display:block}
+.p12-mini i.done{background:var(--verd);border-color:var(--verd)}
+.p12-mini i.now{background:var(--brass);border-color:var(--brass);
+  box-shadow:0 0 0 3px rgba(154,120,51,.18)}
+.p12-mini i.todo{background:#fff;border-style:dashed}
+.p12-mini.dead{font-size:12px;font-weight:600;color:var(--rose)}
+
+/* =============================================== CT2 · detail header ====== */
+
+.p12-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 0;
+  background:var(--line2);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;margin-top:var(--gap)}
+.p12-hf{background:#fff;padding:11px 16px;min-width:0}
+.p12-hf .k{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.p12-hf .v{display:block;font-size:13.5px;color:var(--ink);margin-top:2px;
+  overflow-wrap:break-word}
+.p12-hf .v a{color:var(--glass);font-weight:600;text-decoration:none}
+.p12-hf .v a:hover{text-decoration:underline}
+
+.p12-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--gap)}
+.p12-acts.none{font-size:12.5px;color:var(--muted);background:#FBFCFA;
+  border:1px dashed var(--line);border-radius:var(--r);padding:10px 14px}
+
+.p12-tabs{display:flex;gap:2px;flex-wrap:wrap;margin-top:calc(var(--gap) * 1.4);
+  border-bottom:1px solid var(--line)}
+.p12-tab{font-size:13px;font-weight:600;color:var(--muted);padding:9px 15px;
+  border:1px solid transparent;border-bottom:none;border-radius:var(--r) var(--r) 0 0;
+  margin-bottom:-1px;white-space:nowrap}
+.p12-tab:hover{color:var(--slate);background:#F1F3F0}
+.p12-tab.on{color:var(--ink);background:#fff;border-color:var(--line);
+  border-bottom:1px solid #fff;box-shadow:inset 0 3px 0 var(--brass)}
+.p12-tab:focus-visible{outline:2px solid var(--glass);outline-offset:-2px}
+
+.p12-body{background:#fff;border:1px solid var(--line);border-top:none;
+  border-radius:0 0 var(--r) var(--r);padding:var(--pad);box-shadow:var(--shadow);
+  min-width:0}
+.p12-body > .p12-tblwrap:first-child{margin-top:0}
+
+/* ================================================ CT2 · the document ====== */
+
+.p12-doc{min-width:0}
+.p12-sheet{border:1px solid var(--line);border-left:3px solid var(--brass);
+  border-radius:var(--r);background:var(--brass-bg);padding:14px 16px}
+.p12-sheet h3{font-size:13px;font-weight:700;color:var(--brass);margin-bottom:10px}
+.p12-sheetgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:9px 18px}
+.p12-sf{min-width:0}
+.p12-sf .k{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.p12-sf .v{display:block;font-size:13.5px;color:var(--ink);
+  font-variant-numeric:tabular-nums;overflow-wrap:break-word}
+
+.p12-docbody{margin-top:var(--pad);max-width:76ch}
+.p12-docbody h3{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.p12-lead{font-size:13.5px;color:var(--slate);margin:6px 0 var(--gap)}
+.p12-clause{padding:10px 0;border-top:1px solid var(--line2)}
+.p12-clause h4{font-size:13.5px;font-weight:600;color:var(--ink)}
+.p12-clause h4 .num{color:var(--muted);font-weight:600;margin-right:4px}
+.p12-clause p{font-size:13.5px;color:var(--slate);margin-top:3px}
+
+.p12-tokens{margin-top:var(--pad);border-top:1px solid var(--line2);padding-top:12px}
+.p12-tokens h4{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px}
+.p12-token{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;
+  border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:0 6px 6px 0;
+  background:#FBFCFA;color:var(--slate)}
+.p12-token b{color:var(--brass);font-weight:600}
+
+/* ================================================== CT2 · details form ==== */
+
+.p12-form{min-width:0}
+.p12-fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:var(--gap)}
+.p12-field{display:block;min-width:0}
+.p12-field .k{display:block;font-size:12px;font-weight:600;color:var(--muted);
+  margin-bottom:4px}
+.inp{font:inherit;font-size:13.5px;color:var(--ink);width:100%;
+  border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:7px 11px}
+.inp:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px rgba(154,120,51,.12)}
+.inp[disabled]{background:#F7F8F6;color:var(--slate)}
+textarea.inp{resize:vertical;line-height:1.5}
+select.inp{appearance:none;background-image:none}
+
+.p12-atts{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;
+  margin-top:var(--gap)}
+.p12-atts legend{font-size:12px;font-weight:600;color:var(--muted);padding:0 6px}
+.p12-check{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;
+  color:var(--slate);padding:5px 0}
+.p12-check input{margin-top:3px;flex:none;width:15px;height:15px;accent-color:var(--brass)}
+.p12-check.big{font-size:13.5px;background:#FBFCFA;border:1px solid var(--line);
+  border-radius:var(--r);padding:11px 13px;margin:var(--gap) 0}
+
+.p12-formacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--gap)}
+
+.p12-gaps{margin-top:var(--gap);font-size:13px;color:var(--slate);
+  background:var(--brass-bg);border:1px solid #E2D3B4;border-left:3px solid var(--brass);
+  border-radius:var(--r);padding:11px 14px}
+.p12-gaps.ok{background:var(--verd-bg);border-color:#B9D2C9;border-left-color:var(--verd)}
+.p12-gaps ul{margin:6px 0 0 18px}
+.p12-gaps li{margin-top:2px}
+
+/* ==================================================== CT2 · reviews ======= */
+
+.p12-rvs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--gap)}
+.p12-rv{border:1px solid var(--line);border-left:3px solid var(--line);
+  border-radius:var(--r);padding:13px 15px;background:#fff;min-width:0}
+.p12-rv.pending{border-left-color:var(--brass);background:#FDFCF8}
+.p12-rv.approved{border-left-color:var(--verd)}
+.p12-rv.returned{border-left-color:var(--rose);background:var(--rose-bg)}
+.p12-rvhd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.p12-rvhd b{font-size:14px}
+.p12-rvmeta{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);
+  margin-top:7px}
+.p12-rvmeta b{color:var(--slate);font-weight:600}
+.p12-rvc{font-size:13px;color:var(--slate);margin-top:8px;padding-left:11px;
+  border-left:2px solid var(--line)}
+.p12-rvacts{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-top:10px}
+.p12-rvacts textarea{flex:1 1 100%}
+
+/* ================================================= CT2 · signatures ======= */
+
+.p12-sigs{display:grid;gap:10px}
+.p12-sig{display:grid;grid-template-columns:34px minmax(0,1.2fr) minmax(0,2fr) auto;
+  gap:12px;align-items:center;border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 14px;background:#fff;min-width:0}
+.p12-sig.next{border-color:var(--brass);background:#FDFCF8;
+  box-shadow:inset 3px 0 0 var(--brass)}
+.p12-sig.signed{background:#FBFDFC}
+.p12-sig.declined{border-color:#E5C6C4;background:var(--rose-bg)}
+.p12-signo{font-size:13px;font-weight:700;color:var(--muted);text-align:center;
+  border:1px solid var(--line);border-radius:50%;width:26px;height:26px;line-height:24px}
+.p12-sigwho{min-width:0}
+.p12-sigwho b{display:block;font-size:14px;font-weight:600}
+.p12-sigwho small{display:block;font-size:12px;color:var(--muted)}
+.p12-sigmeta{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);
+  min-width:0}
+.p12-sigmeta b{color:var(--slate);font-weight:600}
+.p12-sigacts{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
+.p12-sig .p12-rvc{grid-column:1 / -1}
+
+/* ======================================================== CT2 · log ======= */
+
+.p12-log{list-style:none;min-width:0}
+.p12-logrow{display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--line2);align-items:baseline}
+.p12-logrow:last-child{border-bottom:none}
+.p12-logat{font-size:12.5px;color:var(--muted)}
+.p12-logtx{font-size:13.5px;color:var(--slate);min-width:0;overflow-wrap:break-word}
+.p12-logtx b{color:var(--ink);font-weight:600}
+.p12-logrow.status .p12-logtx{color:var(--glass);font-weight:600}
+
+/* ============================================ CT3 · the signing ceremony == */
+
+/* Two columns from 1024 up, one column (document first, then the panel, not
+   sticky) below it — see the breakpoints at the foot of this file. Both tracks
+   are minmax(0,…) so a long clause can never push its column wider than the
+   grid and spill over its neighbour.
+
+   The document is NOT clipped into an inner scroll box: the page itself is the
+   scroll surface, and the read-to-end gate watches the end marker come into
+   view. An inner overflow pane looked right but left every off-screen clause
+   with a bounding box outside the pane, which is a real overlap with whatever
+   is beside it and only invisible because the pane clipped the paint. */
+.p12-sign{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);
+  gap:var(--gap);margin-top:var(--gap);align-items:start}
+
+.p12-signdoc{min-width:0;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.p12-scroll{padding:var(--pad);min-width:0}
+.p12-endmark{margin-top:var(--pad);padding:14px 16px;text-align:center;
+  font-size:12.5px;font-weight:600;color:var(--verd);background:var(--verd-bg);
+  border:1px dashed #B9D2C9;border-radius:var(--r)}
+.p12-scrollnote{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  border-top:1px solid var(--line);background:#FBFCFA;padding:10px 16px;
+  font-size:12.5px;color:var(--muted)}
+.p12-scrollnote .ok{color:var(--verd);font-weight:600}
+
+.p12-signpanel{background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:var(--pad);min-width:0}
+@media(min-width:1024px){
+  .p12-signpanel{position:sticky;top:var(--gap)}
+}
+.p12-signpanel h3{font-size:13px;font-weight:600;color:var(--slate)}
+.p12-signwho{margin:8px 0 var(--gap);padding:10px 12px;border:1px solid var(--line);
+  border-left:3px solid var(--glass);border-radius:var(--r);background:#FAFBFD}
+.p12-signwho b{display:block;font-size:15px}
+.p12-signwho small{display:block;font-size:12px;color:var(--muted)}
+
+.p12-gates{list-style:none;margin-bottom:var(--gap)}
+.p12-gate{display:flex;gap:10px;align-items:flex-start;font-size:13px;
+  color:var(--muted);padding:6px 0}
+.p12-gate .mk{flex:none;width:20px;height:20px;line-height:18px;text-align:center;
+  border:1px solid var(--line);border-radius:50%;font-size:12px;font-weight:700}
+.p12-gate.ok{color:var(--verd)}
+.p12-gate.ok .mk{border-color:var(--verd);background:var(--verd-bg)}
+
+.p12-signacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--gap)}
+
+/* ==================================================== CT6 · the wizard ==== */
+
+.p12-steps{list-style:none;display:flex;gap:8px;flex-wrap:wrap;margin:var(--gap) 0}
+.p12-step{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;
+  color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 14px;
+  background:#fff}
+.p12-step .mk{width:19px;height:19px;line-height:17px;text-align:center;font-size:11.5px;
+  font-weight:700;border:1px solid var(--line);border-radius:50%}
+.p12-step.on{color:var(--ink);border-color:var(--brass);background:var(--brass-bg);
+  font-weight:600}
+.p12-step.on .mk{border-color:var(--brass);color:var(--brass)}
+.p12-step.done{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+
+.p12-preview{margin-top:var(--gap);border:1px solid var(--line);border-radius:var(--r);
+  background:#FBFCFA;padding:13px 16px}
+.p12-preview h4{font-size:13px;font-weight:600;color:var(--slate)}
+.p12-preview ol{margin:8px 0 0 20px;font-size:13px;color:var(--slate);
+  columns:2;column-gap:24px}
+.p12-preview li{margin-top:2px;break-inside:avoid}
+
+/* ========================================================= the modal ====== */
+
+.p12-modal{max-width:640px}
+.p12-modal .p12-field + .p12-field{margin-top:var(--gap)}
+.p12-modal .p12-fgrid{margin-bottom:var(--gap)}
+
+/* ============================================ P4 hooks (chip + tab) ======= */
+
+.p12-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+  border-radius:999px;padding:2px 11px;border:1px solid var(--line);background:#fff;
+  color:var(--slate);white-space:nowrap;text-decoration:none}
+.p12-chip.na{color:var(--muted);border-style:dashed}
+.p12-chip.todo{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.p12-chip.work{color:var(--glass);border-color:#C6D3E8;background:#F4F7FC}
+.p12-chip.ok{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
+.p12-chip:hover{border-color:var(--muted)}
+
+.p12-ptab-head{display:flex;gap:var(--gap);align-items:flex-start;flex-wrap:wrap;
+  font-size:13px;color:var(--slate);background:#FBFCFA;border:1px solid var(--line);
+  border-radius:var(--r);padding:11px 14px}
+.p12-ptab-head > span:first-child{flex:1 1 320px;min-width:0}
+.p12-ptab-acts{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+
+/* ================================= P2 · the corporate agreements widget === */
+
+.p12w-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:8px;margin-bottom:var(--gap)}
+.p12w-tile{border:1px solid var(--line);border-left:3px solid var(--line);
+  border-radius:var(--r);padding:9px 11px;background:#fff;min-width:0}
+.p12w-tile .v{display:block;font-size:20px;font-weight:700;line-height:1.15;
+  font-variant-numeric:tabular-nums}
+.p12w-tile .k{display:block;font-size:12px;color:var(--muted);margin-top:2px;
+  overflow-wrap:break-word}
+.p12w-tile.t-s1{border-left-color:var(--s1)}
+.p12w-tile.t-s2{border-left-color:var(--s2)}
+.p12w-tile.t-s3{border-left-color:var(--s3)}
+.p12w-tile.t-s4{border-left-color:var(--s4)}
+.p12w-tile.t-sx{border-left-color:var(--sx)}
+.p12w-tile.zero .v{color:var(--muted)}
+
+.p12w-list{min-width:0}
+.p12w-row{display:flex;gap:11px;align-items:flex-start;padding:9px 11px;
+  border-radius:var(--r);text-decoration:none;
+  background:var(--ccl,var(--cc-x-light));
+  box-shadow:inset 3px 0 0 var(--ccx,var(--cc-x-line))}
+.p12w-row + .p12w-row{margin-top:6px}
+.p12w-row:hover b{color:var(--glass)}
+.p12w-tx{min-width:0}
+.p12w-tx b{display:block;font-size:13.5px;font-weight:600;line-height:1.35}
+.p12w-tx span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+
+/* ========================================================== responsive ==== */
+
+@media(max-width:1279px){
+  .p12-head{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* CT3 below 1024: one column, document first, signature panel after it and
+   never sticky — reading to the end of the document IS the way to the panel. */
+@media(max-width:1023px){
+  .p12-sign{grid-template-columns:minmax(0,1fr)}
+  .p12-signpanel{position:static;top:auto}
+}
+
+@media(max-width:768px){
+  /* the register stops being a table and becomes one card per agreement:
+     every cell keeps its heading through the data-label attribute so nothing
+     loses its meaning on the way down. */
+  .p12-tblwrap.p12-cards{border:none;background:transparent;box-shadow:none;overflow:visible}
+  .p12-tbl{min-width:0}
+  .p12-cards .p12-tbl{display:block}
+  /* the head is removed outright rather than visually hidden: a 1px clipped
+     thead still occupies the top-left corner of the card and every heading
+     lands on top of every other heading and on the first card's own text */
+  .p12-cards .p12-tbl thead{display:none}
+  .p12-cards .p12-tbl tbody{display:block}
+  .p12-cards .p12-tbl tr{display:block;background:#fff;border:1px solid var(--line);
+    border-radius:var(--r);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px}
+  /* one row per cell: its label in the left column, its value in the right */
+  .p12-cards .p12-tbl td{display:grid;grid-template-columns:92px minmax(0,1fr);
+    gap:0 12px;align-items:baseline;border:none;padding:3px 0;text-align:left}
+  .p12-cards .p12-tbl td.r{text-align:left}
+  .p12-cards .p12-tbl td:before{content:attr(data-label);grid-column:1;grid-row:1;
+    font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:normal}
+  /* every element in the cell belongs to the value column; a sub-line simply
+     takes the next row of it, so nothing can land under the label */
+  .p12-cards .p12-tbl td > *{grid-column:2}
+  /* the agreement id is the card's title, full width, with no label */
+  .p12-cards .p12-tbl td:first-child{display:block;font-size:15px;
+    padding:0 0 8px;margin-bottom:5px;border-bottom:1px solid var(--line2)}
+  .p12-cards .p12-tbl td:first-child:before{display:none}
+  .p12-cards .p12-tbl td:first-child > *{grid-column:auto}
+
+  .p12-head{grid-template-columns:minmax(0,1fr)}
+  .p12-sig{grid-template-columns:28px minmax(0,1fr)}
+  .p12-sigmeta{grid-column:1 / -1}
+  .p12-sig .pill{grid-column:2}
+  .p12-rvs{grid-template-columns:minmax(0,1fr)}
+  .p12-preview ol{columns:1}
+  .p12-body{padding:var(--gap)}
+}
+
+@media(max-width:520px){
+  .p12-switch{width:100%}
+  .p12-sw{flex:1 1 auto;text-align:center;padding:6px 8px}
+  .p12-tabs{gap:0;overflow-x:auto;flex-wrap:nowrap}
+  .p12-tab{padding:8px 12px}
+  .p12-scroll{padding:var(--gap)}
+  .p12-signpanel{padding:var(--gap)}
+  .p12-logrow{grid-template-columns:minmax(0,1fr)}
+  .p12-logat{font-size:12px}
+  .p12-signacts .btn,.p12-formacts .btn{flex:1 1 auto;justify-content:center}
+  .p12-sheetgrid{grid-template-columns:minmax(0,1fr)}
+}

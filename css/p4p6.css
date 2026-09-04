@@ -45,9 +45,15 @@
 .p4-two .card + .card{margin-top:0}
 
 /* ------------------------------------------------------------- tabs ----- */
-.p4-tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);
+/* Seven tabs since v1.1.0 (Contracts). Same rule as the admin strip: one row
+   at every width, scrolled sideways rather than wrapped into three rows on a
+   phone. Only this row scrolls; the page does not. */
+.p4-tabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;
+  border-bottom:1px solid var(--line);
   margin-bottom:var(--gap)}
-.p4-tab{font-size:13px;font-weight:600;color:var(--muted);padding:8px 13px;
+.p4-tabs::-webkit-scrollbar{display:none}
+.p4-tab{flex:none;font-size:13px;font-weight:600;color:var(--muted);padding:8px 13px;
   border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .p4-tab:hover{color:var(--slate)}
 .p4-tab.on{color:var(--ink);border-bottom-color:var(--brass)}
@@ -227,7 +233,7 @@ textarea.p4-input{resize:vertical;line-height:1.5}
 .p6-id:hover{text-decoration:underline}
 .p6-who b{display:block;font-size:14px;font-weight:600;line-height:1.35}
 .p6-meta{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.p6-gates{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.p6-gates{display:flex;gap:6px 18px;flex-wrap:wrap;margin-top:6px}
 .p6-gp{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 9px;
   border:1px solid var(--line);color:var(--slate);white-space:nowrap}
 .p6-gp.ok{color:var(--verd);border-color:#B9D2C9;background:var(--verd-bg)}
@@ -270,4 +276,81 @@ textarea.p4-input{resize:vertical;line-height:1.5}
   .p6-age{text-align:left}
   .p4-pin{padding:12px 14px;flex-wrap:wrap}
   .p4-pinact{margin-left:0}
+}
+
+/* ==================== v1.1.0 · P6 sync proposals + contracts owed (WP2) ====
+   Both new sections reuse the .p6-card grid, the .p6-gp chip and the .p4-input
+   field already defined above — only the inline control rows are new. */
+.p6-prop .p6-who{min-width:0}
+.p6-pwhy{font-size:12.5px;color:var(--slate);margin-top:6px}
+.p6-pnote{font-size:12.5px;color:var(--muted);margin-top:8px}
+.p6-pacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px}
+.p6-pinline{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.p6-pinline .p4-input{width:190px;max-width:100%}
+.p6-pinline .p4-input[type=date]{width:150px}
+.p6-prop .p6-age .v{font-size:13px;font-weight:600;color:var(--muted)}
+@media (max-width:720px){
+  .p6-pinline{flex:1 1 100%}
+  .p6-pinline .p4-input{flex:1 1 auto;width:auto}
+}
+
+/* =========================== v1.1.0 · P4 gate tracker + activity kinds =====
+   The gate row is now U.gateStep (styles in app.css); what is left here is the
+   mode note beside the manual buttons and the two new activity kinds. */
+.p4-gwait{font-size:12.5px;color:var(--slate);background:var(--brass-bg);
+  border:1px solid #E2D3B4;border-radius:var(--r);padding:8px 10px;margin-top:8px}
+.p4-gwait a{color:var(--glass);font-weight:600}
+.p4-gmode{font-size:12px;color:var(--muted);margin-top:6px}
+.p4-warn.ok{color:var(--verd);background:var(--verd-bg);border-color:#B9D2C9}
+.act-entry.t-contract{border-left-color:#E2D3B4}
+.act-entry.t-sync{border-left-color:var(--line2)}
+.act-type.t-contract{color:var(--brass);border-color:#E2D3B4;background:var(--brass-bg)}
+.act-type.t-sync{color:var(--glass);border-color:#C8D5EA;background:#F2F5FA}
+.p6-gates .gs{margin-top:2px}
+.p6-gates .gs-hd b{font-size:12.5px}
+
+/* ============================== v1.2.0 · P6 "Needs you" — one list (T-09) ==
+   The section headings of v1.1.0 became chips; what is left to style is the
+   strip, the refusal line the inline composer has nowhere else to show, and
+   the small print the shared .p6-card row now carries inside it. */
+.p6-chips{display:flex;gap:7px;flex-wrap:wrap;margin:var(--gap) 0 12px}
+.p6-chips .chip{white-space:nowrap}
+.p6-chip0{color:var(--muted)}
+.p6-chip0 .n{color:var(--muted)}
+.p6-list{margin-top:2px}
+.p6-err{font-size:12.5px;color:var(--rose);background:var(--rose-bg);
+  border:1px solid #E5C6C4;border-left:3px solid var(--rose);border-radius:var(--r);
+  padding:9px 12px;margin-top:var(--gap)}
+.p6-card .sl-sub{margin-top:5px}
+.p6-card .chain{margin-top:6px}
+.p6-card .p6-inline{max-width:520px}
+@media(max-width:760px){
+  .p6-card .p6-inline{max-width:100%}
+}
+
+/* ---- P4 · the rung line in the record header (T-08) ---- */
+.p4-hstep{margin-top:10px}
+.p4-hstep .sl-sub{margin-top:7px}
+.p4-appr .sl-sub{margin:0 0 10px}
+.p4-cg{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;
+  color:var(--muted);margin-top:2px}
+.p4-cg b{font-size:13px;font-weight:600;color:var(--ink)}
+
+/* ---- P11 "My alerts" panel (T-12) — the two per-user mail preferences.
+   It reuses .p4-fields/.p4-field rather than growing a rail grammar of its own
+   in v101-msg.css, which this work package does not own. */
+.p6-alerts .p4-field{align-items:center}
+.p6-alerts .sel{font-size:12.5px;padding:4px 9px}
+.p6-alerts input[type=checkbox]{width:16px;height:16px;accent-color:var(--brass)}
+
+/* ---- WP8 (Fable probe) — room for the four-rung ladder inside the row:
+   the age column narrows, the bullet bar gets breathing space under the gate
+   line, and its ceiling tick label stops colliding with the text above. */
+.p6-card{grid-template-columns:minmax(0,1fr) 96px auto}
+.p6-card .p6-inline-step .stepline{margin-top:2px}
+.p6-card .cbar-row{margin-top:10px;max-width:520px}
+.p6-card .cbar-row .p2-bwrap{padding-top:22px}
+.p6-card .cbar-row .p2-ticklbl{font-size:11px}
+@media(max-width:1100px){
+  .p6-card{grid-template-columns:minmax(0,1fr) auto}
 }

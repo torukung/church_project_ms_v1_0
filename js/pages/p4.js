@@ -16,10 +16,21 @@
     { k: 'timeline', label: 'Timeline' },
     { k: 'comments', label: 'Comments' },
     { k: 'activity', label: 'Activity' },
+    /* v1.1.0 — this project's Corporate Agreements. The tab is WP2's; the panel
+       inside it is CBP.p12.projectTab, which WP4 owns. */
+    { k: 'contracts', label: 'Contracts' },
     { k: 'files',    label: 'Files' }
   ];
 
-  var TYPE_LABEL = { note: 'Note', question: 'Question', decision: 'Decision', system: 'System' };
+  var TYPE_LABEL = { note: 'Note', question: 'Question', decision: 'Decision', system: 'System',
+                     contract: 'Contract', sync: 'Sync' };
+
+  /* v1.1.0 — the short form of each contract-gate state, for the header chip
+     and the sixth step of the approval panel */
+  var CONTRACT_CHIP = {
+    todo: 'Draft required', drafting: 'Draft', review: 'In review', signing: 'Signing',
+    executed: 'Executed', sent: 'Sent out', active: 'Active', amending: 'Amending'
+  };
 
   /* ------------------------------------------------------------ helpers -- */
 
@@ -122,6 +133,21 @@
                  e(g.label) + ' gate · waiting ' + D.days(g.days) + '</span>';
     }
 
+    /* v1.1.0 — the Corporate Agreement chip. WP4 owns the real one (it knows
+       what CT2 shows); until it is loaded the header still tells the truth
+       from D.contractGate rather than showing nothing. */
+    var contractChip = '';
+    if (CBP.p12 && typeof CBP.p12.headerChip === 'function') {
+      contractChip = CBP.p12.headerChip(p, state) || '';
+    } else if (D.contractGate) {
+      var cg = D.contractGate(p);
+      if (cg.state !== 'na') {
+        contractChip = '<span class="p4-warn' + (cg.met ? ' ok' : '') + '">Agreement · ' +
+          e(CONTRACT_CHIP[cg.state] || cg.state) +
+          (cg.contract ? ' · ' + e(cg.contract.id) : '') + '</span>';
+      }
+    }
+
     var acts = [];
     if (A.can(user, 'edit', p) && !state.ui.p4Edit) {
       acts.push(btn('Edit record', 'p4-edit', p.id, { sm: false }));
@@ -140,7 +166,7 @@
           '<h1>' + e(p.name) + '</h1>' +
           '<div class="p4-tags">' + U.statusPill(p.status) +
             tag(countryName(p.country)) + tag(p.primary_implementer) +
-            tag(p.strategic_priority) + gatePill +
+            tag(p.strategic_priority) + gatePill + contractChip +
           '</div>' +
         '</div>' +
         (acts.length ? '<div class="p4-hacts">' + acts.join('') + '</div>' : '') +
@@ -152,7 +178,12 @@
         (D.daysInStage(p) !== null
           ? '<span>In current stage <b class="num">' + D.days(D.daysInStage(p)) + '</b></span>' : '') +
         '<span class="p4-hprog">Progress ' + U.progressBar(p) + '</span>' +
-      '</div>';
+      '</div>' +
+      /* T-08 — the four rungs and their sub-line, from the one helper P3, P6
+         and P10 read. The record's own ladder used to be written out again in
+         the approval panel; now the panel keeps only what is unique to it (the
+         gate controls, the reference form and the action rows). */
+      '<div class="p4-hstep">' + U.stepper(p) + '</div>';
   }
 
   /* ------------------------------------- v1.0.1 · return + unread strips -- */
@@ -232,6 +263,7 @@
       case 'timeline': return timelineTab(p, state);
       case 'comments': return commentsTab(p, state);
       case 'activity': return activityTab(p, state);
+      case 'contracts': return contractsTab(p, state);
       case 'files':    return filesTab(p, state);
       default:         return overviewTab(p, state);
     }
@@ -398,6 +430,27 @@
       'scope for the demo.</p>');
   }
 
+  /* ---------------------------------------------------------- contracts ---*/
+
+  /* WP4 renders the agreements themselves (it owns CT1–CT6 and their markup);
+     this page only owns the tab and the guard, so the record is never a blank
+     panel if the contracts UI has not loaded. */
+  function contractsTab(p, state) {
+    if (CBP.p12 && typeof CBP.p12.projectTab === 'function') {
+      return CBP.p12.projectTab(p, state);
+    }
+    var cg = D.contractGate ? D.contractGate(p) : { state: 'na' };
+    return U.card('Contracts section loading',
+      '<p>The Corporate Agreements for this project are rendered by the Contracts section. ' +
+      'Open <a href="#/contracts">Contracts</a> for the full register.</p>' +
+      (cg.state === 'na'
+        ? '<p class="p4-note">This project sits below the ' +
+          e(D.money(CBP.CONFIG.CONTRACT_THRESHOLD_USD)) + ' threshold, so no Corporate ' +
+          'Agreement is required before implementation.</p>'
+        : '<p class="p4-note">Gate state: <b>' + e(CONTRACT_CHIP[cg.state] || cg.state) + '</b>' +
+          (cg.contract ? ' · agreement ' + e(cg.contract.id) : ' · no draft yet') + '.</p>'));
+  }
+
   /* ============================================ v1.0.1 · comments feed =====
      The conversation layer, deliberately NOT the audit stream: one flat
      chronological list, oldest first, name + date + time, no threading, no
@@ -517,12 +570,19 @@
   function activityTab(p, state) {
     var all = CBP.entriesFor(p.id);
     var tops = all.filter(function (x) { return !x.parent; });
+    /* v1.1.0 · F16 — contract and sync entries are their own kind of history
+       and get their own chip here, on P4, not on the messages hub. */
+    function nOf(type) {
+      return tops.filter(function (x) { return x.type === type; }).length;
+    }
     var counts = {
       all: tops.length,
-      note: tops.filter(function (x) { return x.type === 'note'; }).length,
-      question: tops.filter(function (x) { return x.type === 'question'; }).length,
-      decision: tops.filter(function (x) { return x.type === 'decision'; }).length,
-      system: tops.filter(function (x) { return x.type === 'system'; }).length
+      note: nOf('note'),
+      question: nOf('question'),
+      decision: nOf('decision'),
+      system: nOf('system'),
+      contract: nOf('contract'),
+      sync: nOf('sync')
     };
     var f = state.ui.actFilter || 'all';
     var shown = tops.filter(function (x) { return f === 'all' || x.type === f; });
@@ -533,7 +593,12 @@
     });
 
     var filters = [['all', 'All'], ['note', 'Notes'], ['question', 'Questions'],
-                   ['decision', 'Decisions'], ['system', 'System']]
+                   ['decision', 'Decisions'], ['system', 'System'],
+                   ['contract', 'Contract'], ['sync', 'Sync']]
+      .filter(function (x) {
+        /* the two new chips appear only once the project has such an entry */
+        return (x[0] !== 'contract' && x[0] !== 'sync') || counts[x[0]] > 0;
+      })
       .map(function (x) {
         return '<button class="act-ftab' + (f === x[0] ? ' on' : '') +
                '" data-act="actfilter" data-f="' + x[0] + '">' + e(x[1]) +
@@ -701,37 +766,36 @@
 
   /* ====================================== C-08 vertical approval panel ====*/
 
-  function stepRow(mark, cls, title, sub) {
-    return '<div class="p4-step ' + cls + '"><span class="mk">' + e(mark) + '</span>' +
-           '<div><b>' + e(title) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div></div>';
-  }
+  /* C-15 — two systems × two click-done actions, per-system counter, M1 only.
 
-  /* C-15 — two systems × two click-done actions, per-system counter, M1 only */
+     v1.1.0 (F1 · F8 · F15): the row itself is now U.gateStep, the one fragment
+     P3, P6 and P10 render too, so the state pill, the source chip, the
+     reference, the deep link and the outbound sync chip are the same
+     everywhere. What stays here is the part only this page has: the manual
+     click-done buttons, and they follow the sync mode — in Assisted or Auto
+     with a proposal already waiting, the honest control is a pointer to
+     Approvals, not a second way to write the same date. */
   function gateSystems(p, state, inModal) {
     var canGate = A.can(state.user, 'gate', p);
-    return D.gate(p).map(function (g) {
-      var pill, sub;
-      if (g.state === 'approved') {
-        pill = '<span class="p4-gp ok">approved ✓</span>';
-        sub = g.submitted_at && g.approved_at
-          ? 'submitted ' + D.fmtDateY(g.submitted_at) + ' → approved ' + D.fmtDateY(g.approved_at) +
-            ' · <b class="num">' + D.days(g.days) + '</b>'
-          : (g.approved_at ? 'approved ' + D.fmtDateY(g.approved_at) : 'cleared before the demo window');
-        if (g.ref) sub += ' · ref ' + e(g.ref);
-      } else if (g.state === 'waiting') {
-        pill = '<span class="p4-gp ' + (g.overdue ? 'hot' : 'wait') + '">waiting <span class="num">' +
-               D.days(g.days) + '</span></span>';
-        sub = 'submitted ' + D.fmtDateY(g.submitted_at) + ', no approval yet' +
-              (g.overdue ? ' · past the ' + CBP.CONFIG.GATE_THRESHOLD_DAYS + '-day threshold' : '');
-      } else {
-        pill = '<span class="p4-gp todo">not lodged</span>';
-        sub = A.gateOpen(p) ? 'waiting for the request to be lodged' : 'opens after Request approved';
-      }
-      if (g.remark) sub += '<em class="p4-grem">Remark: ' + e(g.remark) + '</em>';
 
-      var rec = (p.gate || {})[g.key] || {};
-      var buttons = canGate
-        ? '<div class="p4-gbtns">' +
+    return D.gate(p).map(function (g) {
+      var mode = D.syncMode ? D.syncMode(g.key) : 'manual';
+      var props = (D.proposalsFor ? D.proposalsFor(p) : []).filter(function (r) {
+        return r.system === g.key;
+      });
+
+      /* S-01 — the gate clock is read through D.gateSystem, never off p.gate */
+      var rec = D.gateSystem(p, g.key);
+      var awaiting = mode !== 'manual' && props.length > 0;
+
+      var controls = '';
+      if (canGate && awaiting) {
+        controls = '<div class="p4-gwait">Awaiting ' + e(g.label) + ' (' + e(mode) + ') — ' +
+          props.length + ' proposal' + (props.length === 1 ? '' : 's') + ' waiting. ' +
+          '<a href="#/approvals">Confirm it in Approvals</a> rather than recording the date twice.' +
+          '</div>';
+      } else if (canGate) {
+        controls = '<div class="p4-gbtns">' +
             btn('Request submitted ✓', 'gate-click', p.id,
                 { sys: g.key, step: 'submitted', disabled: !!rec.submitted_at }) +
             btn('Request approved ✓', 'gate-click', p.id,
@@ -740,92 +804,107 @@
           '</div>' +
           (g.state === 'approved' ? '' :
             '<input class="p4-input sm" type="text" data-remark-for="' + e(g.key) + '" ' +
-            'placeholder="Optional remark for the next click">')
-        : '';
+            'placeholder="Optional remark for the next click">') +
+          (mode === 'manual' ? '' :
+            '<div class="p4-gmode">' + e(g.label) + ' is in ' + e(mode) + ' mode — the portal ' +
+            'lodges and listens, and a click here still records the step by hand.</div>');
+      }
 
       return '<div class="p4-gsys' + (g.overdue ? ' hot' : '') + '">' +
-        '<div class="p4-gh"><b>' + e(g.label) + '</b>' + pill + '</div>' +
-        '<div class="p4-gsub">' + sub + '</div>' + buttons + '</div>';
+        U.gateStep(p, g.key) + controls + '</div>';
     }).join('') + (canGate ? '' :
       '<p class="p4-note">Gate clicks are recorded by the Regional Manager only (R-2). ' +
       'Everyone else sees the same counters, read-only.</p>');
   }
   CBP.p4.gateSystems = gateSystems;
 
+  /* R-4 keeps both references mandatory and typed by M1, but when a system has
+     already told us its own reference there is no reason to make anyone copy it
+     out again: the audit row supplies the value and it stays editable. */
+  function prefillRef(p, sys) {
+    if ((p.refs || {})[sys]) return p.refs[sys];
+    var src = D.gateSource ? D.gateSource(p, sys, 'approved') : null;
+    return (src && src.ref) ? src.ref : '';
+  }
+
+  function refNote(p) {
+    var got = CBP.CONFIG.GATE_SYSTEMS.filter(function (s) {
+      var src = D.gateSource ? D.gateSource(p, s.key, 'approved') : null;
+      return !!(src && src.ref);
+    });
+    if (!got.length) return '';
+    return '<p class="p4-note">Pre-filled from what ' +
+      e(got.map(function (s) { return s.label; }).join(' and ')) +
+      ' reported — check it against the system of record before marking approved.</p>';
+  }
+
   function approvalPanel(p, state) {
     var user = state.user;
-    var gateOpen = A.gateOpen(p);
     var declined = p.status === 'declined';
-    var done2 = (p.status === 2 || p.status === 1);
     var html = '';
 
-    /* 1 · Request submitted (Process 4) */
-    if (p.status === 4) {
-      html += stepRow('◷', 'wait', 'Request submitted — M2',
-        'waiting on the Area Manager' +
-        (D.daysInStage(p) !== null ? ' · in development <b class="num">' +
-          D.days(D.daysInStage(p)) + '</b>' : ''));
-    } else {
-      html += stepRow('✓', 'ok', 'Request submitted — M2',
-        p.submitted_at ? 'recorded ' + D.fmtDateY(p.submitted_at) : 'recorded before the demo window');
-    }
-
-    /* 2 · Request approved (Process 3) */
-    if (declined) {
-      html += stepRow('✕', 'hot', 'Rejected — M1',
-        (p.declined_at ? D.fmtDateY(p.declined_at) : '') +
-        (p.decline_reason ? ' · ' + e(p.decline_reason) : '') +
-        '<em class="p4-grem">A declined project returns under a new ID (R-3).</em>');
-    } else if (done2 || gateOpen) {
-      html += stepRow('✓', 'ok', 'Request approved — M1',
-        (p.gate_opened_at ? 'gate opened ' + D.fmtDateY(p.gate_opened_at) : 'advanced to the gate') +
-        (p.review_days !== undefined && p.review_days !== null
-          ? ' · review <b class="num">' + D.days(p.review_days) + '</b>' : ''));
-    } else if (p.status === 3) {
-      html += stepRow('◷', 'wait', 'Request approved — M1',
-        'in review <b class="num">' + D.days(D.daysInStage(p)) + '</b>');
-    } else {
-      html += stepRow('◻', 'todo', 'Request approved — M1', 'after the request is submitted');
-    }
+    /* T-08 — steps 1, 2, the Corporate Agreement step and Implementation used to
+       be four hand-written stepRow() narratives here, a second telling of the
+       ladder the header already draws with U.stepper (pills + the U.rungSubline
+       sub-line, one helper, identical wording on P3, P4, P6 and P10). Repeating
+       that line here would only make the record disagree with itself the first
+       time somebody edited one copy. What is left in this panel is what belongs
+       to it alone: the gate controls, the contract gate, the reference form and
+       the action rows. */
 
     /* 3 · external gate */
     html += '<div class="p4-gate"><div class="p4-glab">External gate — Decision Point and CHaS</div>' +
       (declined ? empty('The gate never opened for this record.') : gateSystems(p, state)) +
       '</div>';
 
-    /* 4 · Mark Approved */
-    if (done2) {
-      var refs = p.refs || {};
-      html += stepRow('✓', 'ok', 'Marked approved — 3 → 2',
-        (p.approved_at ? D.fmtDateY(p.approved_at) : '') +
-        (refs.decision_point ? ' · DP ' + e(refs.decision_point) : '') +
-        (refs.chas ? ' · CHaS ' + e(refs.chas) : ''));
-    } else if (A.readyToMark(p)) {
+    /* S-08 — the Corporate Agreement is a gate inside status 2, and a gate is
+       named and reachable on the record, not only described in a sub-line. The
+       STATE comes from the same D.contractGate the rung line reads; what is
+       added here is the name of the gate and the way into the register. */
+    var cg = D.contractGate ? D.contractGate(p) : null;
+    if (cg && cg.state !== 'na' && !declined) {
+      var cc = cg.contract;
+      html += '<div class="p4-gate">' +
+        '<div class="p4-glab">Corporate Agreement — the gate inside status 2</div>' +
+        '<div class="p4-cg' + (cg.met ? ' ok' : '') + '">' +
+          '<span class="p6-gp' + (cg.met ? ' ok' : ' wait') + '">' +
+            e(CONTRACT_CHIP[cg.state] || cg.state) + '</span>' +
+          (cc ? '<b class="num">' + e(cc.id) + '</b>' : '') +
+          (cg.days !== null && cg.days !== undefined
+            ? '<span class="num">' + D.days(cg.days) + ' since it last moved</span>' : '') +
+          (D.can(user, 'contract_view')
+            ? btn(cc ? 'Open agreement' : 'Open Contracts', 'p6x-open-contract',
+                  cc ? cc.id : '')
+            : '') +
+        '</div>' +
+        '<p class="p4-note">' + (cg.met
+          ? 'The agreement has been sent out — implementation may start.'
+          : 'Must be complete and sent out before implementation can start (' +
+            D.money(CBP.CONFIG.CONTRACT_THRESHOLD_USD) + ' threshold).') + '</p>' +
+        '</div>';
+    }
+
+    /* 4 · Mark Approved — the A-07 prompt and the two mandatory references.
+       This is the one rung that carries a FORM, which is why it survives the
+       collapse: R-4 will not take a reference the reader has not typed. */
+    if (A.readyToMark(p)) {
       html += '<div class="p4-ready">' +
         '<b>Both gates cleared — ready to mark approved</b>' +
         '<small>A-07 prompt: the project is still at status 3. Both reference numbers are ' +
         'mandatory (R-4).</small>' +
         (D.can(user, 'markApproved')
           ? '<label class="p4-lab">Decision Point reference' +
-            '<input class="p4-input" type="text" id="refDP" placeholder="e.g. DP-2026-0501"></label>' +
+            '<input class="p4-input" type="text" id="refDP" value="' +
+            e(prefillRef(p, 'decision_point')) + '" placeholder="e.g. DP-2026-0501"></label>' +
             '<label class="p4-lab">CHaS reference' +
-            '<input class="p4-input" type="text" id="refCH" placeholder="e.g. CHS-78110"></label>' +
+            '<input class="p4-input" type="text" id="refCH" value="' +
+            e(prefillRef(p, 'chas')) + '" placeholder="e.g. CHS-78110"></label>' +
+            refNote(p) +
             err(state, 'mark') +
             '<div class="p4-actrow">' + btn('Mark Approved · 3 → 2', 'do-mark', p.id,
               { brass: true, sm: false }) + '</div>'
           : '<small>Only the Regional Manager can mark the project approved.</small>') +
         '</div>';
-    } else if (!declined) {
-      html += stepRow('◻', 'todo', 'Mark Approved — 3 → 2', 'unlocks when both gates show ✓');
-    }
-
-    /* 5 · implementation */
-    if (p.status === 2) {
-      html += stepRow('◷', 'wait', 'Implementation — 2 → 1',
-        'awaiting kickoff <b class="num">' + D.days(D.daysInStage(p)) + '</b>');
-    } else if (p.status === 1) {
-      html += stepRow('✓', 'ok', 'In implementation — status 1',
-        'started ' + D.fmtDateY(p.implementation_date));
     }
 
     /* action buttons per role */
@@ -836,7 +915,20 @@
       acts.push(btn('Return to Review', 'ask-return', p.id, { sm: false }));
       acts.push(btn('Reject', 'ask-reject', p.id, { sm: false }));
     }
-    if (A.can(user, 'start', p)) acts.push(btn('Start implementation', 'ask-start', p.id, { brass: true, sm: false }));
+    /* S-08 — A.can('start') already refuses while the agreement is unsent, so
+       the button would simply vanish. A control that disappears teaches nobody
+       why: it is rendered disabled instead, carrying the reason as its title. */
+    var blocked = p.status === 2 && !declined &&
+      D.contractRequired && D.contractRequired(p) &&
+      CBP.contracts && !CBP.contracts.gateMet(p);
+
+    if (A.can(user, 'start', p)) {
+      acts.push(btn('Start implementation', 'ask-start', p.id, { brass: true, sm: false }));
+    } else if (blocked && (D.can(user, 'markApproved') || D.can(user, 'manageUsers'))) {
+      acts.push('<button class="btn brass" disabled title="' +
+        e('Corporate Agreement must be sent out first') +
+        '">Start implementation</button>');
+    }
 
     var errBlock = ['submit', 'review', 'return', 'reject', 'gate', 'start']
       .map(function (k) { return err(state, k); }).join('');
@@ -1156,6 +1248,21 @@
     ev.stopImmediatePropagation();
     CBP.render();
     if (after) after();
+  });
+
+  /* v1.1.0 — the gate additions this page owns, namespaced 'p4g-'. The retry
+     control is emitted by U.gateStep, so it is wired once here and works on
+     every surface that renders a gate step (P3, P4, P6, P10). */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if (!t) return;
+    var act = t.getAttribute('data-act');
+    if (act !== 'p4g-retry') return;
+
+    A.retrySync(t.getAttribute('data-id'));
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    CBP.render();
   });
 
   /* the composer and the inline editor keep their text in ui, so any other
